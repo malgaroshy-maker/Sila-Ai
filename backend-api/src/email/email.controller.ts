@@ -61,8 +61,9 @@ export class EmailController {
 
     if (account?.blocked_until) {
       const blockedUntil = new Date(account.blocked_until).getTime();
-      if (Date.now() < blockedUntil) {
-        const remainingMins = Math.ceil((blockedUntil - Date.now()) / (60 * 1000));
+      const now = Date.now();
+      if (now < blockedUntil) {
+        const remainingMins = Math.ceil((blockedUntil - now) / (60 * 1000));
         return { 
           message: `Sync is currently blocked by Google to protect your account. Please try again in ${remainingMins} minutes.`,
           blocked: true,

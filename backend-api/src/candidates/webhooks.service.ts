@@ -107,50 +107,66 @@ export class WebhooksService {
         .single();
 
       if (account && account.access_token) {
-        this.logger.log(`Found connected Google account for ${recipient}. Attempting to send email from user to themselves...`);
-        
-        const oauth2Client = new google.auth.OAuth2(
-          process.env.GOOGLE_CLIENT_ID || '',
-          process.env.GOOGLE_CLIENT_SECRET || ''
-        );
-        
-        oauth2Client.setCredentials({
-          access_token: account.access_token,
-          refresh_token: account.refresh_token,
-        });
-
-        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-        
-        const utf8Subject = `=?utf-8?B?${Buffer.from(subjectText).toString('base64')}?=`;
-        const messageParts = [
-          `From: "AI Recruitment System" <${recipient}>`,
-          `To: ${recipient}`,
-          `Content-Type: text/html; charset=utf-8`,
-          `MIME-Version: 1.0`,
-          `Subject: ${utf8Subject}`,
-          '',
-          htmlContent
-        ];
-        
-        const message = messageParts.join('\n');
-        const encodedMessage = Buffer.from(message)
-          .toString('base64')
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '');
-          
-        await gmail.users.messages.send({
-          userId: 'me',
-          requestBody: { raw: encodedMessage },
-          quotaUser: recipient // FIX: Isolate quota by user email
-        } as any);
-        
-        this.logger.log(`✅ Alert email sent successfully to ${recipient} using their own Gmail API!`);
-        return; // Success! Exit the function.
+        // Check for active Google block before sending
+        if (account.blocked_until) {
+          const blockedUntil = new Date(account.blocked_until).getTime();
+          if (Date.now() < blockedUntil) {
+            this.logger.warn(`Skipping Gmail alert for ${recipient} - account is in Google cooldown until ${account.blocked_until}. Falling back to SMTP.`);
+            // Continue to SMTP fallback
+          } else {
+            return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+          }
+        } else {
+          return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+        }
       }
     } catch (apiError: any) {
       this.logger.warn(`Failed to send via Gmail API: ${apiError.message}. Falling back to default SMTP...`);
     }
+
+    // Fallback: Send via Transporter (SMTP / Ethereal)
+    // ... rest of the function
+  }
+
+  private async sendViaGmail(recipient: string, subjectText: string, htmlContent: string, account: any) {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID || '',
+      process.env.GOOGLE_CLIENT_SECRET || ''
+    );
+    
+    oauth2Client.setCredentials({
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subjectText).toString('base64')}?=`;
+    const messageParts = [
+      `From: "AI Recruitment System" <${recipient}>`,
+      `To: ${recipient}`,
+      `Content-Type: text/html; charset=utf-8`,
+      `MIME-Version: 1.0`,
+      `Subject: ${utf8Subject}`,
+      '',
+      htmlContent
+    ];
+    
+    const message = messageParts.join('\n');
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+      
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw: encodedMessage },
+      quotaUser: recipient
+    } as any);
+    
+    this.logger.log(`✅ Alert email sent successfully to ${recipient} using their own Gmail API!`);
+  }
 
     // Fallback: Send via Transporter (SMTP / Ethereal)
     if (!this.transporter) {

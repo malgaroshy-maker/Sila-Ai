@@ -191,13 +191,20 @@ export class EmailProcessorService {
       this.logger.error(`Gmail API Error for ${account.email_address}: ${errorMessage}`);
 
       if (error.code === 429 || error.status === 429) {
-        // Default to 30 mins backoff if no specific time found
-        let backoffMins = 30;
-        const oneHourFuture = new Date(Date.now() + backoffMins * 60 * 1000).toISOString();
+        // Parse "Retry after 2026-03-24T21:45:03.511Z"
+        let blockTime = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // Default 30 mins
+        
+        const retryMatch = errorMessage.match(/Retry after ([\d-T:.Z]+)/);
+        if (retryMatch && retryMatch[1]) {
+          // Add a 1-minute safety buffer to Google's time
+          const googleTime = new Date(retryMatch[1]).getTime();
+          blockTime = new Date(googleTime + 60 * 1000).toISOString();
+          this.logger.warn(`Extracted precise block time from Google: ${blockTime}`);
+        }
         
         await sb.from('email_accounts')
           .update({ 
-            blocked_until: oneHourFuture,
+            blocked_until: blockTime,
             last_error_message: `Google Rate Limit: ${errorMessage}`
           })
           .eq('id', account.id);
