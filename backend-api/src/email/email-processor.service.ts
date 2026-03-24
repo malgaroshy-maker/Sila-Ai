@@ -99,10 +99,10 @@ export class EmailProcessorService {
 
       const res = await gmail.users.messages.list({
         userId: 'me',
-        q: 'is:unread has:attachment filename:pdf newer_than:2d',
-        maxResults: 2,
+        q: 'is:unread has:attachment (filename:pdf OR filename:docx OR filename:doc OR filename:png OR filename:jpg OR filename:jpeg)',
+        maxResults: 20,
         includeSpamTrash: false,
-        quotaUser: qUser // CRITICAL FIX
+        quotaUser: qUser
       } as any);
 
       const messages = res.data.messages || [];
@@ -136,8 +136,16 @@ export class EmailProcessorService {
         const extractAndIngest = async (parts: any[]) => {
           for (const part of parts) {
             if (part.filename && part.body && part.body.attachmentId) {
-              const isPdf = part.filename.toLowerCase().endsWith('.pdf');
-              if (!isPdf) continue;
+              const filename = part.filename.toLowerCase();
+              const isSupported = 
+                filename.endsWith('.pdf') || 
+                filename.endsWith('.docx') || 
+                filename.endsWith('.doc') || 
+                filename.endsWith('.png') || 
+                filename.endsWith('.jpg') || 
+                filename.endsWith('.jpeg');
+              
+              if (!isSupported) continue;
 
               await new Promise(resolve => setTimeout(resolve, 5000)); 
 
