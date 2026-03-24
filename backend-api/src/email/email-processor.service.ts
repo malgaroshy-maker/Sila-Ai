@@ -194,12 +194,14 @@ export class EmailProcessorService {
         // Parse "Retry after 2026-03-24T21:45:03.511Z"
         let blockTime = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // Default 30 mins
         
-        const retryMatch = errorMessage.match(/Retry after ([\d-T:.Z]+)/);
+        const retryMatch = errorMessage.match(/Retry after\s+([\d-T:.Z]+)/i);
         if (retryMatch && retryMatch[1]) {
           // Add a 1-minute safety buffer to Google's time
           const googleTime = new Date(retryMatch[1]).getTime();
           blockTime = new Date(googleTime + 60 * 1000).toISOString();
           this.logger.warn(`Extracted precise block time from Google: ${blockTime}`);
+        } else {
+          this.logger.warn(`Could not extract precise retry time from: "${errorMessage}". Using 30m default.`);
         }
         
         await sb.from('email_accounts')
