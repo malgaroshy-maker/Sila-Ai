@@ -8,13 +8,21 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly oauth2Client: any;
   private readonly msalClient: any;
+  private readonly msRedirectUri: string;
 
   constructor(private supabaseService: SupabaseService) {
+    // Construct redirect URIs dynamically if base URL is provided, otherwise fallback
+    const backendUrl = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:5000';
+    const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || `${backendUrl}/email/auth/google/callback`;
+    this.msRedirectUri = process.env.MS_REDIRECT_URI || `${backendUrl}/email/auth/microsoft/callback`;
+
+    this.logger.log(`Email Service initialized with Google Redirect: ${googleRedirectUri}`);
+
     // Google OAuth Setup
     this.oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID || 'placeholder_google_id',
       process.env.GOOGLE_CLIENT_SECRET || 'placeholder_google_secret',
-      process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/email/auth/google/callback'
+      googleRedirectUri
     );
 
     // Microsoft MSAL Setup
@@ -75,7 +83,7 @@ export class EmailService {
   async getMicrosoftAuthUrl() {
     const authCodeUrlParameters = {
       scopes: ['user.read', 'mail.read', 'offline_access'],
-      redirectUri: process.env.MS_REDIRECT_URI || 'http://localhost:5000/email/auth/microsoft/callback',
+      redirectUri: this.msRedirectUri,
     };
     return await this.msalClient.getAuthCodeUrl(authCodeUrlParameters);
   }
@@ -85,7 +93,7 @@ export class EmailService {
       const tokenRequest = {
         code,
         scopes: ['user.read', 'mail.read', 'offline_access'],
-        redirectUri: process.env.MS_REDIRECT_URI || 'http://localhost:5000/email/auth/microsoft/callback',
+        redirectUri: this.msRedirectUri,
       };
       
       const response = await this.msalClient.acquireTokenByCode(tokenRequest);
