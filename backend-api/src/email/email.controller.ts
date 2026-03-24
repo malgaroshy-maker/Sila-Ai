@@ -50,7 +50,8 @@ export class EmailController {
 
   @Post('sync')
   async syncEmails() {
-    await this.emailProcessorService.handleCron();
+    // Manual sync always forces processing regardless of internal cooldown
+    await this.emailProcessorService.handleCron(true);
     return { message: 'Sync triggered successfully' };
   }
 }

@@ -15,14 +15,14 @@ export class EmailProcessorService {
   ) {}
 
   @Cron('0 */15 * * * *')
-  async handleCron() {
-    if (this.isProcessing) {
+  async handleCron(force = false) {
+    if (this.isProcessing && !force) {
       this.logger.debug('Email ingestion already in progress, skipping...');
       return;
     }
 
     this.isProcessing = true;
-    this.logger.debug('Running email ingestion worker...');
+    this.logger.debug(`Running email ingestion worker (force: ${force})...`);
     
     try {
       const sb = this.supabaseService.getClient();
@@ -36,11 +36,12 @@ export class EmailProcessorService {
       }
 
       for (const account of accounts) {
-        // Cooldown check: Don't sync more than once every 10 minutes per account
+        // Cooldown check: Don't sync more than once every 2 minutes per account (unless forced)
         const lastSynced = account.last_synced_at ? new Date(account.last_synced_at).getTime() : 0;
-        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+        const cooldownMs = 2 * 60 * 1000;
+        const nextAllowed = lastSynced + cooldownMs;
         
-        if (lastSynced > tenMinutesAgo) {
+        if (!force && Date.now() < nextAllowed) {
           this.logger.debug(`Skipping ${account.email_address} - synced recently`);
           continue;
         }
