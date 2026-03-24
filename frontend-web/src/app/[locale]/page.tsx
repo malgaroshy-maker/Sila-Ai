@@ -12,12 +12,24 @@ export default async function Index({
   const { locale } = await params;
   setRequestLocale(locale);
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!url || !key || !apiUrl) {
+    const missing = [];
+    if (!url) missing.push('NEXT_PUBLIC_SUPABASE_URL');
+    if (!key) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    if (!apiUrl) missing.push('NEXT_PUBLIC_API_URL');
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}. Please add them in Vercel and redeploy.`);
+  }
+
   try {
     // Server-side Auth Guard using @supabase/ssr
     const cookieStore = await cookies();
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      url,
+      key,
       {
         cookies: {
           getAll() {
