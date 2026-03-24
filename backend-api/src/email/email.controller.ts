@@ -22,7 +22,8 @@ export class EmailController {
   async googleCallback(@Query('code') code: string, @Res() res: Response) {
     if (!code) return res.status(400).send('No code provided');
     const authResult = await this.emailService.handleGoogleCallback(code);
-    return res.redirect(`http://localhost:3000/en?email=${authResult.email}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/en?email=${authResult.email}`);
   }
 
   // ---- MICROSOFT ROUTES ----
@@ -37,7 +38,8 @@ export class EmailController {
   async microsoftCallback(@Query('code') code: string, @Res() res: Response) {
     if (!code) return res.status(400).send('No code provided');
     const authResult = await this.emailService.handleMicrosoftCallback(code);
-    return res.redirect(`http://localhost:3000/en?email=${authResult.email}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/en?email=${authResult.email}`);
   }
 
   // ---- UNIFIED SUPABASE AUTH STORAGE ----
