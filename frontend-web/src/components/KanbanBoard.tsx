@@ -38,6 +38,10 @@ const STAGES = [
 interface AnalysisResult {
   id: string;
   final_score: number;
+  skills_score: number;
+  language_score: number;
+  gpa_score?: number;
+  ind_readiness_score: number;
   recommendation: string;
   strengths: string[];
   weaknesses: string[];
