@@ -121,7 +121,37 @@ export class WebhooksService {
         }
       }
     } catch (apiError: any) {
-      this.logger.warn(`Failed to send via Gmail API: ${apiError.message}. Falling back to default SMTP...`);
+      const errorMessage = apiError.response?.data?.error?.message || apiError.message;
+      const errorCode = apiError.code || apiError.response?.status || apiError.status;
+      
+      this.logger.warn(`Failed to send via Gmail API: ${errorMessage} (Status: ${errorCode}). Falling back to default SMTP...`);
+
+      // 403 (rateLimitExceeded) or 429 (Too Many Requests)
+      const isRateLimit = 
+        errorCode === 429 || 
+        errorCode === 403 || 
+        errorMessage.toLowerCase().includes('rate limit') || 
+        errorMessage.toLowerCase().includes('retry after');
+
+      if (isRateLimit) {
+        let blockTime = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // Default 30 mins
+        
+        const retryMatch = errorMessage.match(/Retry after\s+([\d-T:.Z]+)/i);
+        if (retryMatch && retryMatch[1]) {
+          const googleTime = new Date(retryMatch[1]).getTime();
+          blockTime = new Date(googleTime + 120 * 1000).toISOString();
+          this.logger.warn(`Detected Gmail rate limit. Setting block until ${blockTime}`);
+        }
+
+        try {
+          const sb = this.supabaseService.getClient();
+          await sb.from('email_accounts')
+            .update({ blocked_until: blockTime })
+            .eq('email_address', recipient);
+        } catch (dbErr) {
+          this.logger.error(`Failed to update blocked_until: ${dbErr.message}`);
+        }
+      }
     }
 
     // Fallback: Send via Transporter (SMTP / Ethereal)

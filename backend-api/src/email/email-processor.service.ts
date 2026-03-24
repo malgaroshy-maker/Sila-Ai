@@ -188,20 +188,29 @@ export class EmailProcessorService {
 
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message || error.message;
-      this.logger.error(`Gmail API Error for ${account.email_address}: ${errorMessage}`);
+      const errorCode = error.code || error.response?.status || error.status;
+      
+      this.logger.error(`Gmail API Error for ${account.email_address}: ${errorMessage} (Status: ${errorCode})`);
 
-      if (error.code === 429 || error.status === 429) {
+      // 403 (rateLimitExceeded) or 429 (Too Many Requests)
+      const isRateLimit = 
+        errorCode === 429 || 
+        errorCode === 403 || 
+        errorMessage.toLowerCase().includes('rate limit') || 
+        errorMessage.toLowerCase().includes('retry after');
+
+      if (isRateLimit) {
         // Parse "Retry after 2026-03-24T21:45:03.511Z"
         let blockTime = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // Default 30 mins
         
         const retryMatch = errorMessage.match(/Retry after\s+([\d-T:.Z]+)/i);
         if (retryMatch && retryMatch[1]) {
-          // Add a 1-minute safety buffer to Google's time
+          // Add a 2-minute safety buffer to Google's time
           const googleTime = new Date(retryMatch[1]).getTime();
-          blockTime = new Date(googleTime + 60 * 1000).toISOString();
-          this.logger.warn(`Extracted precise block time from Google: ${blockTime}`);
+          blockTime = new Date(googleTime + 120 * 1000).toISOString();
+          this.logger.warn(`Extracted precise block time from Google: ${blockTime}. Account will be skipped until then.`);
         } else {
-          this.logger.warn(`Could not extract precise retry time from: "${errorMessage}". Using 30m default.`);
+          this.logger.warn(`Could not extract precise retry time from: "${errorMessage}". Using 30m default block.`);
         }
         
         await sb.from('email_accounts')
