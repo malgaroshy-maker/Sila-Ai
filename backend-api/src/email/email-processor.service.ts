@@ -13,7 +13,7 @@ export class EmailProcessorService {
     private readonly candidatesService: CandidatesService
   ) {}
 
-  @Cron(CronExpression.EVERY_15_MINUTES)
+  @Cron('0 */15 * * * *')
   async handleCron() {
     this.logger.debug('Running email ingestion worker (scheduled)...');
     
