@@ -36,6 +36,7 @@ interface AnalysisResult {
   flags?: string[];
   interview_questions?: string[];
   training_suggestions?: string[];
+  justification?: string;
   applications: {
     id: string;
     job_id: string;
