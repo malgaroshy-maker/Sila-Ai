@@ -15,9 +15,49 @@ import {
   Cpu, LayoutTemplate, Mail, TrendingUp
 } from 'lucide-react';
 
-export default function DashboardInteractive({ initialJobs, initialResults, t, locale }: any) {
-  const [jobs, setJobs] = useState(initialJobs || []);
-  const [results, setResults] = useState(initialResults || []);
+interface Job {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string[];
+}
+
+interface AnalysisResult {
+  id: string;
+  final_score: number;
+  recommendation: string;
+  strengths: string[];
+  weaknesses: string[];
+  tags?: string[];
+  flags?: string[];
+  interview_questions?: string[];
+  training_suggestions?: string[];
+  applications: {
+    id: string;
+    job_id: string;
+    pipeline_stage: string;
+    candidates: {
+      name: string;
+      email: string;
+    };
+    jobs?: {
+      title: string;
+      user_email: string;
+    };
+  };
+  created_at: string;
+}
+
+interface DashboardProps {
+  initialJobs: Job[];
+  initialResults: AnalysisResult[];
+  t: Record<string, string>;
+  locale: string;
+}
+
+export default function DashboardInteractive({ initialJobs, initialResults, t, locale }: DashboardProps) {
+  const [jobs, setJobs] = useState<Job[]>(initialJobs || []);
+  const [results, setResults] = useState<AnalysisResult[]>(initialResults || []);
   const [userEmail, setUserEmail] = useState('');
   const [view, setView] = useState<'list' | 'kanban' | 'insights'>('list');
   
@@ -25,7 +65,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<AnalysisResult | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -65,7 +105,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       loadData(savedEmail);
     }
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: { user: { email?: string } | null } | null } }) => {
       const email = data.session?.user?.email;
       if (email) {
         setUserEmail(email);
@@ -120,7 +160,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     if (!userEmail) return;
     
     // Optimistic update
-    setResults((prev: any[]) => prev.map((r: any) => 
+    setResults((prev: AnalysisResult[]) => prev.map((r: AnalysisResult) => 
       r.applications?.id === applicationId 
         ? { ...r, applications: { ...r.applications, pipeline_stage: newStage } }
         : r
@@ -146,10 +186,10 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       .eq('applications.jobs.user_email', email)
       .order('created_at', { ascending: false });
       
-    if (jobsData) setJobs(jobsData);
+    if (jobsData) setJobs(jobsData as Job[]);
     if (resultsData) {
-      const latestResults: Record<string, any> = {};
-      resultsData.forEach((r: any) => {
+      const latestResults: Record<string, AnalysisResult> = {};
+      (resultsData as unknown as AnalysisResult[]).forEach((r: AnalysisResult) => {
         const appId = r.applications?.id;
         if (appId && (!latestResults[appId] || new Date(r.created_at) > new Date(latestResults[appId].created_at))) {
           latestResults[appId] = r;
@@ -159,7 +199,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     }
   };
 
-  const handleCreateJob = async (e: any) => {
+  const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userEmail) return;
     const reqsArray = jobReqs.split(',').map(r => r.trim());
@@ -169,7 +209,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       body: JSON.stringify({ title: jobTitle, description: jobDesc, requirements: reqsArray })
     });
     if (res.ok) {
-      const newJob = await res.json();
+      const newJob = await res.json() as Job;
       setJobs([newJob, ...jobs]);
       setIsJobModalOpen(false);
       setJobTitle(''); setJobDesc(''); setJobReqs('');
@@ -186,7 +226,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         body: JSON.stringify({ prompt: aiJobPrompt })
       });
       if (res.ok) {
-        const newJob = await res.json();
+        const newJob = await res.json() as Job;
         setJobs([newJob, ...jobs]);
         setIsJobModalOpen(false);
         setAiJobPrompt('');
@@ -200,7 +240,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     }
   };
 
-  const handleUploadCV = async (e: any) => {
+  const handleUploadCV = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cvFile || !userEmail) return;
     setIsUploading(true);
@@ -217,7 +257,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         setCvFile(null);
         await loadData(userEmail);
       } else {
-        const err = await res.json().catch(() => ({}));
+        const err = await res.json() as { message?: string };
         alert(`Failed: ${err.message || 'Upload error'}`);
       }
     } catch (e) {
@@ -244,11 +284,11 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   };
 
   const filteredResults = results
-    .filter((r: any) => {
+    .filter((r: AnalysisResult) => {
       if (!selectedJobId) return true;
       return r.applications?.job_id === selectedJobId;
     })
-    .sort((a: any, b: any) => (b.final_score || 0) - (a.final_score || 0));
+    .sort((a: AnalysisResult, b: AnalysisResult) => (b.final_score || 0) - (a.final_score || 0));
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'from-emerald-500 to-green-500 text-white';
@@ -339,7 +379,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                     <Globe className="w-4 h-4 inline-block me-2" />
                     {t.all_jobs || 'All Jobs'}
                   </button>
-                  {jobs.map((job: any) => (
+                  {jobs.map((job: Job) => (
                     <div
                       key={job.id}
                       onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
@@ -350,20 +390,26 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       }`}
                     >
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-semibold text-sm ${selectedJobId === job.id ? 'text-[#0EA5E9]' : 'text-slate-200'}`}>
-                          {job.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs mt-1 line-clamp-2">{job.description}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`font-bold text-sm truncate ${selectedJobId === job.id ? 'text-[#0EA5E9]' : 'text-slate-200 group-hover:text-white'}`}>{job.title}</h3>
+                          {selectedJobId === job.id && <Zap className="w-3 h-3 text-[#0EA5E9] animate-pulse" />}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                            <Users className="w-3 h-3" />
+                            {results.filter((r: AnalysisResult) => r.applications?.job_id === job.id).length} {t.candidates || 'Candidates'}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ms-2">
+                      <div className="flex items-center gap-2">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleExportPDF(job.id); }}
-                          className="p-1 hover:bg-[#0369A1]/20 rounded text-[#0EA5E9] hover:text-[#0EA5E9]/80 transition-colors"
-                          title={t.exportReport || 'Export Report'}
+                          className="p-2 hover:bg-[#1E293B] rounded-lg text-slate-500 hover:text-[#0EA5E9] transition-colors"
+                          title="Export PDF"
                         >
-                          <FileText className="w-3.5 h-3.5" />
+                          <FileText className="w-4 h-4" />
                         </button>
-                        <ChevronRight className={`w-4 h-4 transition-colors ${selectedJobId === job.id ? 'text-[#0EA5E9]' : 'text-slate-500'}`} />
+                        <ChevronRight className={`w-4 h-4 transition-all ${selectedJobId === job.id ? 'rotate-90 text-[#0EA5E9]' : 'text-slate-600 group-hover:translate-x-0.5'}`} />
                       </div>
                     </div>
                   ))}
@@ -415,7 +461,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                     {t.no_candidates || 'No candidates found'}
                   </div>
                 ) : (
-                  filteredResults.map((res: any) => {
+                  filteredResults.map((res: AnalysisResult) => {
                     const candidateName = res.applications?.candidates?.name || 'Unknown';
                     const candidateEmail = res.applications?.candidates?.email || '';
                     const jobTitle = res.applications?.jobs?.title || 'Unknown Job';
@@ -489,7 +535,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               </div>
             ) : view === 'kanban' ? (
               <KanbanBoard 
-                results={results.filter((r: any) => !selectedJobId || r.applications.job_id === selectedJobId)} 
+                results={results.filter((r: AnalysisResult) => !selectedJobId || r.applications.job_id === selectedJobId)} 
                 onStageChange={handleStageChange}
                 t={t}
                 locale={locale}

@@ -7,9 +7,16 @@ import {
 } from 'recharts';
 import { Loader2, TrendingUp, Cpu, DollarSign, Activity } from 'lucide-react';
 
-export default function AiInsights({ userEmail, t }: { userEmail: string, t: any }) {
+interface AiUsageLog {
+  created_at: string;
+  total_tokens: number;
+  est_cost: string;
+  operation: string;
+}
+
+export default function AiInsights({ userEmail, t }: { userEmail: string, t: Record<string, string> }) {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<AiUsageLog[]>([]);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -42,8 +49,8 @@ export default function AiInsights({ userEmail, t }: { userEmail: string, t: any
   }
 
   // Process data for charts
-  const dailyData: Record<string, any> = {};
-  const opData: Record<string, any> = {};
+  const dailyData: Record<string, { date: string; tokens: number; cost: number }> = {};
+  const opData: Record<string, { name: string; value: number }> = {};
   let totalCost = 0;
   let totalTokens = 0;
 

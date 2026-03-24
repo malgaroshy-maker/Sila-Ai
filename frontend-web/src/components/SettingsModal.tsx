@@ -3,11 +3,16 @@
 import { useState, useEffect } from 'react';
 import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw } from 'lucide-react';
 
-export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { isOpen: boolean, onClose: () => void, userEmail: string, t?: any }) {
+interface Model {
+  name: string;
+  displayName?: string;
+}
+
+export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { isOpen: boolean, onClose: () => void, userEmail: string, t?: Record<string, string> }) {
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [availableModels, setAvailableModels] = useState<Model[]>([]);
   const [aiMode, setAiMode] = useState<'balanced' | 'strict'>('balanced');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);

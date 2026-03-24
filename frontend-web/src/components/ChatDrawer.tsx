@@ -8,7 +8,7 @@ interface ChatMessage {
   text: string;
 }
 
-export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: boolean; onClose: () => void; t?: any; userEmail: string; }) {
+export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: boolean; onClose: () => void; t?: Record<string, string>; userEmail: string; }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const [input, setInput] = useState('');

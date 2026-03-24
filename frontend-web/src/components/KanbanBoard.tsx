@@ -35,10 +35,29 @@ const STAGES = [
   { id: 'Rejected', label: 'Rejected', color: 'rose' },
 ];
 
+interface AnalysisResult {
+  id: string;
+  final_score: number;
+  recommendation: string;
+  strengths: string[];
+  weaknesses: string[];
+  tags?: string[];
+  applications: {
+    id: string;
+    job_id: string;
+    pipeline_stage: string;
+    candidates: {
+      name: string;
+      email: string;
+    };
+  };
+  created_at: string;
+}
+
 interface KanbanProps {
-  results: any[];
+  results: AnalysisResult[];
   onStageChange: (applicationId: string, newStage: string) => Promise<void>;
-  t: any;
+  t: Record<string, string>;
   locale?: string;
 }
 
@@ -50,7 +69,7 @@ export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }
   );
 
   const grouped = useMemo(() => {
-    const map: Record<string, any[]> = {};
+    const map: Record<string, AnalysisResult[]> = {};
     STAGES.forEach(s => map[s.id] = []);
     results.forEach(r => {
       const stage = r.applications.pipeline_stage || 'Applied';
@@ -60,11 +79,11 @@ export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }
     return map;
   }, [results]);
 
-  const handleDragStart = (event: any) => {
-    setActiveId(event.active.id);
+  const handleDragStart = (event: { active: { id: string | number } }) => {
+    setActiveId(String(event.active.id));
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: { active: { id: string | number }, over: { id: string | number } | null }) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       // Find where we dropped
@@ -128,13 +147,13 @@ export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }
   );
 }
 
-function KanbanColumn({ stage, items, t, locale }: { stage: any, items: any[], t: any, locale?: string }) {
+function KanbanColumn({ stage, items, t, locale }: { stage: { id: string, label: string, color: string }, items: AnalysisResult[], t: Record<string, string>, locale?: string }) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
   });
 
   const getStageColor = (color: string) => {
-    const colors: any = {
+    const colors: Record<string, string> = {
       slate: 'text-slate-400 bg-slate-400/10 border-slate-400/20',
       blue: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
       indigo: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
@@ -177,7 +196,7 @@ function KanbanColumn({ stage, items, t, locale }: { stage: any, items: any[], t
   );
 }
 
-function SortableCandidateCard({ result, locale }: { result: any, locale?: string }) {
+function SortableCandidateCard({ result, locale }: { result: AnalysisResult, locale?: string }) {
   const {
     attributes,
     listeners,
@@ -200,7 +219,7 @@ function SortableCandidateCard({ result, locale }: { result: any, locale?: strin
   );
 }
 
-function CandidateCard({ result, isOverlay = false, locale = 'en' }: { result: any, isOverlay?: boolean, locale?: string }) {
+function CandidateCard({ result, isOverlay = false, locale = 'en' }: { result: AnalysisResult | undefined, isOverlay?: boolean, locale?: string }) {
   if (!result) return null;
   const candidate = result.applications.candidates;
   const score = result.final_score;
