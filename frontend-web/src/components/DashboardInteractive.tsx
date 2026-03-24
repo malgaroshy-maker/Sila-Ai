@@ -6,6 +6,8 @@ import SettingsModal from './SettingsModal';
 import ChatDrawer from './ChatDrawer';
 import KanbanBoard from './KanbanBoard';
 import AiInsights from './AiInsights';
+import LanguageSwitcher from './LanguageSwitcher';
+import { Link } from '@/i18n/routing';
 import {
   Briefcase, Users, Plus, Upload, Bot, Settings, RefreshCw, LogOut,
   FileText, Sparkles, Loader2, FileUp, X, Globe, ChevronRight,
@@ -318,14 +320,28 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             </h1>
             <p className="text-slate-400 text-sm mt-0.5">{t.description || 'AI-Powered Recruitment'}</p>
           </div>
-          <div className="flex gap-2.5">
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/about" 
+              className="text-slate-400 hover:text-[#0EA5E9] transition-colors p-2 rounded-lg hover:bg-[#1E293B]"
+              title={t.about || 'About System'}
+            >
+              <HelpCircle className="w-5 h-5" />
+            </Link>
+
+            <div className="h-6 w-px bg-[#1E293B] mx-1" />
+            
+            <LanguageSwitcher />
+
+            <div className="h-6 w-px bg-[#1E293B] mx-1" />
+
             <button 
               onClick={handleRefreshSync} 
               disabled={isRefreshing}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${isRefreshing ? 'bg-[#0F172A] text-slate-500' : 'bg-[#0F172A] text-[#0EA5E9] hover:bg-[#1E293B] border border-[#1E293B]'}`}
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? (t.syncing || 'Syncing...') : (t.refresh || 'Sync')}
+              <span className="hidden md:inline">{isRefreshing ? (t.syncing || 'Syncing...') : (t.refresh || 'Sync')}</span>
             </button>
             <button 
               onClick={() => setIsSettingsModalOpen(true)}
@@ -335,18 +351,21 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             </button>
             <button onClick={() => setIsJobModalOpen(true)} className="flex items-center gap-2 bg-[#0369A1] hover:bg-[#0369A1]/80 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-[#0369A1]/20">
               <Plus className="w-4 h-4" />
-              {t.create_job || 'New Job'}
+              <span className="hidden md:inline">{t.create_job || 'New Job'}</span>
             </button>
             <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-2 bg-[#7C3AED] hover:bg-[#7C3AED]/80 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-[#7C3AED]/20">
               <Upload className="w-4 h-4" />
-              {t.upload_cv || 'Upload CV'}
+              <span className="hidden md:inline">{t.upload_cv || 'Upload CV'}</span>
             </button>
             <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 bg-[#22C55E] hover:bg-[#22C55E]/80 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-[#22C55E]/20">
               <Bot className="w-4 h-4" />
-              {t.ai_chat || 'AI Chat'}
+              <span className="hidden lg:inline">{t.ai_chat || 'AI Chat'}</span>
             </button>
             <button 
-              onClick={() => window.location.href = `/${locale}/login`} 
+              onClick={() => {
+                localStorage.removeItem('user_email');
+                window.location.href = `/${locale}/login`;
+              }} 
               className="text-slate-500 hover:text-red-400 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all"
             >
               <LogOut className="w-4 h-4" />

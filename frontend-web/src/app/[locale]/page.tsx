@@ -48,11 +48,11 @@ export default async function Index({
   } catch (error) {
     console.error('Root Page Error:', error);
     return (
-      <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center p-4 text-center">
+      <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center p-4 text-center font-sans">
         <div className="max-w-md">
           <h1 className="text-2xl font-bold text-red-400 mb-4">Application Error</h1>
-          <p className="text-slate-400 mb-6">
-            Failed to initialize the recruitment dashboard. This is usually caused by missing environment variables (Supabase URL/Key).
+          <p className="text-slate-400 mb-6 font-medium">
+            Failed to initialize the recruitment dashboard. This is usually caused by missing environment variables (Supabase URL/Key) or authentication failure.
           </p>
           <div className="bg-[#0F172A] p-4 rounded-lg border border-[#1E293B] text-xs text-left overflow-auto">
             <code>{String(error)}</code>
@@ -85,7 +85,7 @@ async function DashboardClient({ locale }: { locale: string }) {
     'rejected', 'all_jobs', 'refresh', 'webhook_title', 'webhook_hint',
     'api_key', 'api_key_hint', 'ai_model', 'ai_behavior', 'balanced', 'strict', 'balanced_desc', 'strict_desc',
     'save', 'reload_models', 'checking_models', 'models_found', 'account_connected',
-    'no_jobs', 'no_candidates', 'syncing', 'saving', 'insights'
+    'no_jobs', 'no_candidates', 'syncing', 'saving', 'insights', 'about'
   ];
   
   const translations: Record<string, string> = {};

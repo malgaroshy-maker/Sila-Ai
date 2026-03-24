@@ -79,11 +79,37 @@ export class CandidatesService {
         }
       }
     }
+    
+    // 1.5 Extract candidate name and email from CV text using AI for better accuracy
+    let finalName = name;
+    let finalEmail = email;
+    
+    try {
+      this.logger.log(`Extracting candidate info from CV text for ${email}...`);
+      const extracted = await this.aiService.extractCandidateInfo(userEmail, cvText, cvBuffer, file.mimetype);
+      
+      // Only override if AI found something plausible (not "Unknown" or the default placeholder)
+      if (extracted.name && extracted.name !== 'Unknown') {
+        finalName = extracted.name;
+      }
+      if (extracted.email && extracted.email !== 'unknown@uploaded.cv' && extracted.email.includes('@')) {
+        finalEmail = extracted.email;
+      }
+      
+      this.logger.log(`Extraction result: ${finalName} <${finalEmail}> (Original: ${name} <${email}>)`);
+    } catch (e: any) {
+      this.logger.warn(`Candidate info extraction failed: ${e.message}. Using provided info.`);
+    }
 
     // 2. Upsert Candidate record
     const { data: candidate, error: candError } = await sb
       .from('candidates')
-      .upsert({ name, email, cv_text: cvText, user_email: userEmail }, { onConflict: 'email' })
+      .upsert({ 
+        name: finalName, 
+        email: finalEmail, 
+        cv_text: cvText, 
+        user_email: userEmail 
+      }, { onConflict: 'email' })
       .select()
       .single();
 
