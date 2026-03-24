@@ -103,14 +103,26 @@
     "about": "About System"
   },
   "About": {
-    "title": "About AI Recruitment Intelligence",
-    "description": "An advanced AI-powered platform designed to streamline recruitment processes, analyze CVs, and provide deep insights to help HR teams make better and faster decisions.",
-    "developer": "Developed & Programmed By",
-    "developer_name": "Mahamed algaroshy",
-    "idea": "Idea & Concept By",
+    "title": "AI Recruitment Intelligence System",
+    "subtitle": "ARIS Recruitment System",
+    "description": "A revolutionary platform connecting talent with opportunities using state-of-the-art Natural Language Processing.",
+    "back_to_login": "Back to Login",
+    "developer": "Lead Developer",
+    "developer_name": "Mahamed Algaroshy",
+    "developer_desc": "Electrical Engineer and Software Developer, passionate about creating innovative apps that serve the community and integrate latest AI technologies.",
+    "idea": "Idea Contributor",
     "idea_name": "MOHAMMED ABOURUWAYS",
-    "tech_stack": "Tech Stack",
-    "back_to_dashboard": "Back to Dashboard",
-    "back_to_login": "Back to Login"
+    "idea_desc": "Electrical Engineer and Recruitment Strategist who conceived the intelligent CV-scoring and ranking methodology.",
+    "role_originator": "Strategy & Concept Originator",
+    "feature_ai_title": "Gemini AI",
+    "feature_ai_desc": "Advanced cognitive analysis of candidate profiles with over 95% accuracy.",
+    "feature_security_title": "Data Security",
+    "feature_security_desc": "Enterprise-grade isolation powered by Supabase RLS and secure access policies.",
+    "feature_pipeline_title": "Smart Pipeline",
+    "feature_pipeline_desc": "Beautifully responsive Kanban board designed for maximum recruitment agility.",
+    "tech_next": "Next.js 15",
+    "tech_tailwind": "Tailwind v4",
+    "tech_gemini": "Gemini AI",
+    "footer_crafted": "Crafted with passion by"
   }
 }
