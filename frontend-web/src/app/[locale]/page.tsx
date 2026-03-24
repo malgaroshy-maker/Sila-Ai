@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import DashboardInteractive from '../../components/DashboardInteractive';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Index({
   params
 }: {
