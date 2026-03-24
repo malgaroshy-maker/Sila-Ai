@@ -125,7 +125,26 @@ export class WebhooksService {
     }
 
     // Fallback: Send via Transporter (SMTP / Ethereal)
-    // ... rest of the function
+    if (!this.transporter) {
+      this.logger.warn('Transporter is not initialized yet. Skipping email alert.');
+      return;
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: '"AI Recruitment Bot" <system@ai-recruit.com>',
+        to: recipient,
+        subject: subjectText,
+        html: htmlContent
+      });
+      this.logger.log(`Alert email sent to ${recipient} via SMTP`);
+      
+      if (this.isTestAccount) {
+        this.logger.log(`[TEST EMAIL] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      }
+    } catch (e: any) {
+      this.logger.warn(`Failed to send alert email: ${e.message}`);
+    }
   }
 
   private async sendViaGmail(recipient: string, subjectText: string, htmlContent: string, account: any) {
@@ -166,28 +185,5 @@ export class WebhooksService {
     } as any);
     
     this.logger.log(`✅ Alert email sent successfully to ${recipient} using their own Gmail API!`);
-  }
-
-    // Fallback: Send via Transporter (SMTP / Ethereal)
-    if (!this.transporter) {
-      this.logger.warn('Transporter is not initialized yet. Skipping email alert.');
-      return;
-    }
-
-    try {
-      const info = await this.transporter.sendMail({
-        from: '"AI Recruitment Bot" <system@ai-recruit.com>',
-        to: recipient,
-        subject: subjectText,
-        html: htmlContent
-      });
-      this.logger.log(`Alert email sent to ${recipient} via SMTP`);
-      
-      if (this.isTestAccount) {
-        this.logger.log(`[TEST EMAIL] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
-      }
-    } catch (e: any) {
-      this.logger.warn(`Failed to send alert email: ${e.message}`);
-    }
   }
 }

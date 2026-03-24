@@ -97,7 +97,7 @@
 
 ---
 
-## Phase 6: Scale & Intelligence 🟢
+## Phase 6: Scale & Intelligence ✅
 
 ### 6.1 Vector Database — RAG for AI Chat ✅
 - [x] Enable `pgvector` extension in Supabase
@@ -107,37 +107,36 @@
 - [x] Achieved context-grounded AI responses with high scalability
 
 ### 6.2 Multi-Language OCR (Arabic CV Support) ✅
-- [x] Integrate Google Cloud Vision API for image-based CV parsing (Using Gemini Multimodal OCR instead)
-- [x] Support `.jpg`, `.png`, `.tiff` uploads alongside PDF
+- [x] Support image-based CV parsing (Using Gemini Multimodal OCR)
+- [x] Support `.jpg`, `.png`, `.tiff` uploads
 - [x] Arabic text extraction with proper right-to-left paragraph ordering
 
 ### 6.3 DOCX & Image CV Support (§3.2) ✅
 - [x] Install `mammoth` for `.docx` parsing
 - [x] Extract text content preserving structure
 - [x] Update file upload to accept `.docx`, `.jpg`, `.png`
-- [x] Route to correct parser based on file extension
 
 ### 6.4 AI Spending Dashboard ✅
 - [x] Track token usage per Gemini API call (input + output tokens)
 - [x] Store in `ai_usage_logs` table (timestamp, user, operation, tokens, est. cost)
-- [x] Build dashboard page with charts (Recharts):
-  - Daily token usage bar chart
-  - Cost breakdown by operation (Analysis vs Chat vs Job Generation)
-  - Monthly running total
-- [ ] Alert when approaching budget thresholds (Optional/Future)
+- [x] Build dashboard page with charts (Recharts)
+- [x] Complete token tracking and cost estimation visualization
+- [x] Add automated alert thresholds for budget management
 
 ---
 
-## Deployment Status ✅
-- [x] Backend deployed to Render (Docker)
-- [x] Frontend deployed to Vercel (Next.js 15)
-- [x] Google OAuth configured for production
-- [x] TypeScript strict mode build errors resolved
-- [x] Consolidated to `main` branch
+## Deployment Verification Status
+
+> **Status: ⚠️ PENDING VERIFICATION**
+
+- [ ] Verify frontend build on Vercel
+- [ ] Verify backend health check on Render
+- [ ] Verify connectivity between Frontend and Backend
+- [ ] Test Gmail/OAuth2 callback in production
 
 ---
 
-## Phase 7: Expansion 🔮
+## Phase 7: Expansion 🔮 *FUTURE (Pending Deployment Verification)*
 
 ### 7.1 Outlook / Microsoft Graph Integration (§3.2)
 - [ ] Microsoft OAuth2 flow (Azure AD app registration)

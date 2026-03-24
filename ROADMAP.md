@@ -67,18 +67,35 @@
 
 ---
 
-## Phase 6: Scale & Intelligence 🟢 *FUTURE*
+## Phase 6: Scale & Intelligence ✅ *COMPLETED*
 
 | # | Feature | PRD | Est. |
 |---|---------|-----|------|
 | 29 | Vector Database (RAG with pgvector - 768d) | - | ✅ |
 | 30 | Multi-Language OCR (Using Gemini Multimodal OCR) | §3.2 | ✅ |
 | 31 | DOCX & Image CV Support | §3.2 | ✅ |
-| 32 | AI Spending Dashboard (Token usage + cost tracking) | - | 3h |
+| 32 | AI Spending Dashboard (Token usage + cost tracking) | - | ✅ |
 
 ---
 
-## Phase 7: Expansion 🔮 *LONG-TERM*
+## Deployment Verification Status
+
+> **Status: ⚠️ PENDING VERIFICATION**
+
+| Service | Platform | URL | Status | Notes |
+|---|---|---|---|---|
+| Frontend | Vercel | `[TBD]` | Pending | Waiting on build/runtime check |
+| Backend | Render | `[TBD]` | Pending | Waiting on Puppeteer/Chrome check |
+| Auth | Google | N/A | Pending | Need to verify OAuth redirect |
+
+- [ ] Verify frontend build on Vercel
+- [ ] Verify backend health check (`/health` or root) on Render
+- [ ] Verify connectivity between Frontend and Backend (`process.env.NEXT_PUBLIC_API_URL`)
+- [ ] Test Gmail/OAuth2 callback in production
+
+---
+
+## Phase 7: Expansion 🔮 *FUTURE (Pending Deployment Verification)*
 
 | # | Feature | PRD | Est. |
 |---|---------|-----|------|
