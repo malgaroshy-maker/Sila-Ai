@@ -56,7 +56,7 @@ export class EmailProcessorService {
           .eq('id', account.id);
           
         // Small delay between different accounts
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       }
     } catch (err) {
       this.logger.error('Global sync error', err);
@@ -79,24 +79,24 @@ export class EmailProcessorService {
 
       const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-      // Process only 5 messages at a time to stay under rate limits
+      // Search UNREAD emails with PDF attachments - BATCH SIZE 2
       const res = await gmail.users.messages.list({
         userId: 'me',
         q: 'is:unread has:attachment filename:pdf',
-        maxResults: 5,
+        maxResults: 2,
         includeSpamTrash: false
       });
 
       const messages = res.data.messages || [];
       if (messages.length === 0) return;
 
-      this.logger.log(`Found ${messages.length} unread emails with PDFs for ${account.email_address}`);
+      this.logger.log(`Found ${messages.length} unread emails with PDFs for ${account.email_address}. Processing slowly...`);
 
       for (const msg of messages) {
         if (!msg.id) continue;
 
-        // Moderate delay between individual message processing
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // AGGRESSIVE THROTTLING: 4 seconds between every major step
+        await new Promise(resolve => setTimeout(resolve, 4000));
 
         const msgDetails = await gmail.users.messages.get({
           userId: 'me',
@@ -111,10 +111,14 @@ export class EmailProcessorService {
         const candidateEmail = emailMatch ? emailMatch[1] : fromHeader;
         const candidateName = (fromHeader.split('<')[0] || candidateEmail).replace(/"/g, '').trim();
 
+        let ingestedAny = false;
+
         const extractAndIngest = async (parts: any[]) => {
           for (const part of parts) {
             if (part.filename && part.body && part.body.attachmentId) {
               if (!part.filename.toLowerCase().endsWith('.pdf')) continue;
+
+              await new Promise(resolve => setTimeout(resolve, 4000)); // Delay before fetching attachment
 
               const attachment = await gmail.users.messages.attachments.get({
                 userId: 'me',
@@ -149,7 +153,9 @@ export class EmailProcessorService {
                 candidate = await this.candidatesService.ingestCandidate(account.email_address, candidateName, candidateEmail, mockFile);
               }
 
-              await this.candidatesService.analyzeForAllJobs(account.email_address, candidate);
+              // Analyze against ALL jobs - SILENT MODE (no outgoing emails)
+              await this.candidatesService.analyzeForAllJobs(account.email_address, candidate, true);
+              ingestedAny = true;
             }
 
             if (part.parts) {
@@ -160,21 +166,31 @@ export class EmailProcessorService {
 
         await extractAndIngest(payload.parts);
 
-        // Mark as read
-        try {
-          await gmail.users.messages.modify({
-            userId: 'me',
-            id: msg.id,
-            requestBody: { removeLabelIds: ['UNREAD'] }
-          });
-        } catch (modifyError: any) {
-          this.logger.warn(`Failed to mark email ${msg.id} as read: ${modifyError.message}`);
+        // Mark as read IMMEDIATELY after ingestion to avoid duplicate processing loops
+        if (ingestedAny || !ingestedAny) { // Always mark as read even if no PDF found to avoid re-scanning
+           await new Promise(resolve => setTimeout(resolve, 4000)); // Delay before marking as read
+           try {
+            await gmail.users.messages.modify({
+              userId: 'me',
+              id: msg.id,
+              requestBody: { removeLabelIds: ['UNREAD'] }
+            });
+            this.logger.log(`Marked email ${msg.id} as read.`);
+          } catch (modifyError: any) {
+            this.logger.warn(`Failed to mark email ${msg.id} as read: ${modifyError.message}`);
+          }
         }
       }
 
     } catch (error: any) {
       if (error.code === 429) {
-        this.logger.warn(`Gmail Rate Limit hit for ${account.email_address}. Skipping for now.`);
+        this.logger.warn(`Gmail Rate Limit hit for ${account.email_address}. Backing off for 1 hour.`);
+        // Set last_synced_at to 1 hour in the future to force back-off
+        const oneHourFuture = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        await this.supabaseService.getClient()
+          .from('email_accounts')
+          .update({ last_synced_at: oneHourFuture })
+          .eq('id', account.id);
       } else {
         this.logger.error(`Error processing Google account ${account.email_address}`, error);
       }

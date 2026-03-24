@@ -114,7 +114,7 @@ export class CandidatesService {
    * Step 2: Analyze a candidate against ALL existing jobs for the user.
    * Skips jobs that already have an analysis for this candidate.
    */
-  async analyzeForAllJobs(userEmail: string, candidate: { id: string; name: string; email: string; cv_text: string }) {
+  async analyzeForAllJobs(userEmail: string, candidate: { id: string; name: string; email: string; cv_text: string }, skipNotifications = false) {
     const sb = this.supabaseService.getClient();
 
     // Fetch all jobs
@@ -136,8 +136,10 @@ export class CandidatesService {
       try {
         const result = await this.analyzeForJob(userEmail, candidate, job);
         if (result && !result.skipped) {
-          // Trigger webhook if score is high
-          this.webhooksService.checkAndNotify(userEmail, candidate.name, result.analysis.final_score, job.title);
+          // Trigger webhook if score is high and notifications are not skipped
+          if (!skipNotifications) {
+            this.webhooksService.checkAndNotify(userEmail, candidate.name, result.analysis.final_score, job.title);
+          }
           results.push(result);
         } else if (result) {
           results.push(result);
