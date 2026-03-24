@@ -507,9 +507,9 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         </div>
 
                         {/* Tags */}
-                        {res.tags && res.tags.length > 0 && (
+                        {(res.tags?.length ?? 0) > 0 && (
                           <div className="mt-2 flex gap-1.5 flex-wrap">
-                            {res.tags.map((tag: string, i: number) => (
+                            {res.tags?.map((tag: string, i: number) => (
                               <span key={i} className="bg-[#0369A1]/15 text-[#0EA5E9] text-[10px] font-semibold px-2 py-0.5 rounded-full border border-[#0369A1]/20 inline-flex items-center gap-1">
                                 <Tag className="w-2.5 h-2.5" />{tag}
                               </span>
@@ -518,9 +518,9 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         )}
 
                         {/* Flags */}
-                        {res.flags && res.flags.length > 0 && (
+                        {(res.flags?.length ?? 0) > 0 && (
                           <div className="mt-2 flex gap-1.5 flex-wrap">
-                            {res.flags.map((flag: string, i: number) => (
+                            {res.flags?.map((flag: string, i: number) => (
                               <span key={i} className="bg-amber-500/15 text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-500/20 inline-flex items-center gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5" />{flag}
                               </span>
@@ -632,14 +632,14 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               </div>
 
               {/* Tags */}
-              {selectedCandidate.tags?.length > 0 && (
+              {(selectedCandidate.tags?.length ?? 0) > 0 && (
                 <div className="bg-[#020617]/50 rounded-xl p-4 border border-[#1E293B]/50">
                   <h3 className="font-semibold text-slate-200 mb-2 text-sm flex items-center gap-2">
                     <Tag className="w-4 h-4 text-[#0EA5E9]" />
                     {t.tags || 'Tags'}
                   </h3>
                   <div className="flex gap-2 flex-wrap">
-                    {selectedCandidate.tags.map((tag: string, i: number) => (
+                    {selectedCandidate.tags?.map((tag: string, i: number) => (
                       <span key={i} className="bg-[#0369A1]/20 text-[#0EA5E9] text-xs font-medium px-3 py-1 rounded-full border border-[#0369A1]/25">
                         {tag}
                       </span>
@@ -649,14 +649,14 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               )}
 
               {/* Flags */}
-              {selectedCandidate.flags?.length > 0 && (
+              {(selectedCandidate.flags?.length ?? 0) > 0 && (
                 <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20">
                   <h3 className="font-semibold text-amber-400 mb-2 text-sm flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4" />
                     {t.flags || 'Flags'}
                   </h3>
                   <div className="flex gap-2 flex-wrap">
-                    {selectedCandidate.flags.map((flag: string, i: number) => (
+                    {selectedCandidate.flags?.map((flag: string, i: number) => (
                       <span key={i} className="bg-amber-500/20 text-amber-300 text-xs font-medium px-3 py-1 rounded-full border border-amber-500/25">
                         {flag}
                       </span>
@@ -666,27 +666,27 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               )}
 
               {/* Interview Questions */}
-              {selectedCandidate.interview_questions?.length > 0 && (
+              {(selectedCandidate.interview_questions?.length ?? 0) > 0 && (
                 <div className="bg-violet-500/10 rounded-xl p-4 border border-violet-500/20">
                   <h3 className="font-semibold text-violet-400 mb-2 text-sm flex items-center gap-2">
                     <HelpCircle className="w-4 h-4" />
                     {t.interview_q || 'Interview Questions'}
                   </h3>
                   <ol className="text-sm text-violet-200/80 space-y-2 list-decimal list-inside">
-                    {selectedCandidate.interview_questions.map((q: string, i: number) => <li key={i}>{q}</li>)}
+                    {selectedCandidate.interview_questions?.map((q: string, i: number) => <li key={i}>{q}</li>)}
                   </ol>
                 </div>
               )}
 
               {/* Training Suggestions */}
-              {selectedCandidate.training_suggestions?.length > 0 && (
+              {(selectedCandidate.training_suggestions?.length ?? 0) > 0 && (
                 <div className="bg-cyan-500/10 rounded-xl p-4 border border-cyan-500/20">
                   <h3 className="font-semibold text-cyan-400 mb-2 text-sm flex items-center gap-2">
                     <BookOpen className="w-4 h-4" />
                     {t.training || 'Training Suggestions'}
                   </h3>
                   <ul className="text-sm text-cyan-200/80 space-y-1">
-                    {selectedCandidate.training_suggestions.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                    {selectedCandidate.training_suggestions?.map((s: string, i: number) => <li key={i}>• {s}</li>)}
                   </ul>
                 </div>
               )}
