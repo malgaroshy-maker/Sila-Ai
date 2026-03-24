@@ -141,8 +141,9 @@ export class WebhooksService {
           
         await gmail.users.messages.send({
           userId: 'me',
-          requestBody: { raw: encodedMessage }
-        });
+          requestBody: { raw: encodedMessage },
+          quotaUser: recipient // FIX: Isolate quota by user email
+        } as any);
         
         this.logger.log(`✅ Alert email sent successfully to ${recipient} using their own Gmail API!`);
         return; // Success! Exit the function.

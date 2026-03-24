@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Res, Redirect } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res, Redirect, Headers } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { EmailProcessorService } from './email-processor.service';
 import type { Response } from 'express';
@@ -49,12 +49,33 @@ export class EmailController {
   }
 
   @Post('sync')
-  async syncEmails() {
+  async syncEmails(@Headers('x-user-email') userEmail: string) {
+    if (!userEmail) return { message: 'x-user-email header is required' };
+
+    const sb = this.emailService.getSupabaseClient();
+    const { data: account } = await sb
+      .from('email_accounts')
+      .select('blocked_until')
+      .eq('email_address', userEmail)
+      .single();
+
+    if (account?.blocked_until) {
+      const blockedUntil = new Date(account.blocked_until).getTime();
+      if (Date.now() < blockedUntil) {
+        const remainingMins = Math.ceil((blockedUntil - Date.now()) / (60 * 1000));
+        return { 
+          message: `Sync is currently blocked by Google to protect your account. Please try again in ${remainingMins} minutes.`,
+          blocked: true,
+          remainingMins
+        };
+      }
+    }
+
     // Manual sync always forces processing regardless of internal cooldown
     // Run in background (fire-and-forget) to prevent browser retries/timeouts
     this.emailProcessorService.handleCron(true).catch(err => {
       console.error('Manual sync background error:', err);
     });
-    return { message: 'Sync triggered successfully in background' };
+    return { message: 'Sync triggered successfully in background', blocked: false };
   }
 }

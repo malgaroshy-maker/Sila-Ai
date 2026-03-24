@@ -35,6 +35,10 @@ export class EmailService {
     });
   }
 
+  getSupabaseClient() {
+    return this.supabaseService.getClient();
+  }
+
   // ==== GOOGLE GMAIL OAUTH ====
   getGoogleAuthUrl() {
     const scopes = [
