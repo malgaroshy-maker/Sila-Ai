@@ -2,7 +2,6 @@ import {setRequestLocale} from 'next-intl/server';
 import { getTranslations } from 'next-intl/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { redirect } from 'next/navigation';
 import DashboardInteractive from '../../components/DashboardInteractive';
 
 export default async function Index({
@@ -13,33 +12,45 @@ export default async function Index({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  // Server-side Auth Guard using @supabase/ssr
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  try {
+    // Server-side Auth Guard using @supabase/ssr
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
         },
-      },
-    }
-  );
+      }
+    );
 
-  const { data: { user } } = await supabase.auth.getUser();
+    // This call might throw if env vars are missing
+    await supabase.auth.getUser();
 
-  // Note: Since the app also uses localStorage for user_email, 
-  // we might still allow entry if there's no supabase user but the client-side check will handle the rest.
-  // But for "automatically go to login", this is a good first step.
-  // Actually, if we don't have a supabase user, we can't be sure, so we might skip redirection here 
-  // and do it in DashboardInteractive if even localStorage is empty.
-  
-  return <DashboardClient locale={locale} />;
+    return <DashboardClient locale={locale} />;
+  } catch (error) {
+    console.error('Root Page Error:', error);
+    return (
+      <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center p-4 text-center">
+        <div className="max-w-md">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Application Error</h1>
+          <p className="text-slate-400 mb-6">
+            Failed to initialize the recruitment dashboard. This is usually caused by missing environment variables (Supabase URL/Key).
+          </p>
+          <div className="bg-[#0F172A] p-4 rounded-lg border border-[#1E293B] text-xs text-left overflow-auto">
+            <code>{String(error)}</code>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
 
 async function DashboardClient({ locale }: { locale: string }) {
-  const t = await getTranslations('Index');
+  const t = await getTranslations({ locale, namespace: 'Index' });
 
   const jobs: any[] = [];
   const results: any[] = [];
@@ -60,12 +71,12 @@ async function DashboardClient({ locale }: { locale: string }) {
     'rejected', 'all_jobs', 'refresh', 'webhook_title', 'webhook_hint',
     'api_key', 'api_key_hint', 'ai_model', 'ai_behavior', 'balanced', 'strict', 'balanced_desc', 'strict_desc',
     'save', 'reload_models', 'checking_models', 'models_found', 'account_connected',
-    'no_jobs', 'no_candidates', 'syncing', 'saving'
+    'no_jobs', 'no_candidates', 'syncing', 'saving', 'insights'
   ];
   
   const translations: Record<string, string> = {};
   keys.forEach(k => {
-    try { translations[k] = t(k as any); } catch {}
+    try { translations[k] = t(k as any); } catch { translations[k] = k; }
   });
 
   return <DashboardInteractive initialJobs={jobs || []} initialResults={results || []} t={translations} locale={locale} />;

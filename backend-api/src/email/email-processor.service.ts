@@ -13,9 +13,9 @@ export class EmailProcessorService {
     private readonly candidatesService: CandidatesService
   ) {}
 
-  @Cron('*/30 * * * * *')
+  @Cron(CronExpression.EVERY_15_MINUTES)
   async handleCron() {
-    this.logger.debug('Running email ingestion worker...');
+    this.logger.debug('Running email ingestion worker (scheduled)...');
     
     const { data: accounts, error } = await this.supabaseService.getClient()
       .from('email_accounts')
@@ -47,11 +47,11 @@ export class EmailProcessorService {
 
       const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-      // Search ALL emails with PDF attachments (read + unread + spam)
+      // Search UNREAD emails with PDF attachments
       const res = await gmail.users.messages.list({
         userId: 'me',
-        q: 'has:attachment filename:pdf',
-        includeSpamTrash: true
+        q: 'is:unread has:attachment filename:pdf',
+        includeSpamTrash: false
       });
 
       const messages = res.data.messages || [];
@@ -61,6 +61,9 @@ export class EmailProcessorService {
 
       for (const msg of messages) {
         if (!msg.id) continue;
+
+        // Small delay to avoid hitting rate limits too fast
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const msgDetails = await gmail.users.messages.get({
           userId: 'me',
