@@ -6,6 +6,7 @@ import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw } from 'luc
 export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { isOpen: boolean, onClose: () => void, userEmail: string, t?: any }) {
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [aiMode, setAiMode] = useState<'balanced' | 'strict'>('balanced');
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -26,7 +27,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
     console.log('Fetching settings for:', userEmail);
     setIsSettingsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/settings', {
+      const res = await fetch(`${API_URL}/settings`, {
         headers: { 'x-user-email': userEmail }
       });
       const data = await res.json();
@@ -56,7 +57,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
     console.log('Fetching models for:', userEmail, 'with key:', key);
     setIsModelsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/settings/models?apiKey=${key}`, {
+      const res = await fetch(`${API_URL}/settings/models?apiKey=${key}`, {
         headers: { 'x-user-email': userEmail }
       });
       if (!res.ok) {
@@ -87,7 +88,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
     setIsSaving(true);
     setMessage('');
     try {
-      const res = await fetch('http://localhost:5000/settings/batch', {
+      const res = await fetch(`${API_URL}/settings/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({

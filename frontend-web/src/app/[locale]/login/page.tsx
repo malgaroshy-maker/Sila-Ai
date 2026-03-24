@@ -5,13 +5,14 @@ import { useState } from 'react';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   const handleLogin = (provider: 'google' | 'azure') => {
     setIsLoading(provider);
     if (provider === 'google') {
-      window.location.href = 'http://localhost:5000/email/auth/google';
+      window.location.href = `${API_URL}/email/auth/google`;
     } else {
-      window.location.href = 'http://localhost:5000/email/auth/microsoft';
+      window.location.href = `${API_URL}/email/auth/microsoft`;
     }
   };
 

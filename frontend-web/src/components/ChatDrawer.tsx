@@ -10,6 +10,7 @@ interface ChatMessage {
 
 export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: boolean; onClose: () => void; t?: any; userEmail: string; }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,7 +37,7 @@ export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: 
 
     try {
       const history = messages.map(m => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text }));
-      const res = await fetch('http://localhost:5000/chat', {
+      const res = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({ message: trimmed, history })

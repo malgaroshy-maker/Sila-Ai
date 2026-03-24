@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code')
 
   if (code) {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
       // Send the provider_token and provider_refresh_token to our NestJS API
       // to store in the email_accounts table!
       try {
-        await fetch('http://localhost:5000/email/store-token', {
+        await fetch(`${API_URL}/email/store-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
