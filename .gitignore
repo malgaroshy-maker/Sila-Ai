@@ -1,0 +1,31 @@
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Backend artifacts
+backend-api/dist/
+backend-api/node_modules/
+
+# Frontend artifacts
+frontend-web/.next/
+frontend-web/node_modules/
+frontend-web/out/
+frontend-web/build/
+
+# Mobile artifacts (if any)
+frontend_mobile/.dart_tool/
+frontend_mobile/.packages
+frontend_mobile/build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

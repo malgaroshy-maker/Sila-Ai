@@ -1,0 +1,10 @@
+{
+  "stack": "InternalServerErrorException: Failed to extract text from PDF: Class constructors cannot be invoked without 'new'\n    at CandidatesService.processCandidate (C:\\Users\\masal\\OneDrive\\Documents\\opencode\\cv-scan\\backend-api\\src\\candidates\\candidates.service.ts:44:19)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async extractAttachments (C:\\Users\\masal\\OneDrive\\Documents\\opencode\\cv-scan\\backend-api\\src\\email\\email-processor.service.ts:120:15)\n    at async EmailProcessorService.processGoogleAccount (C:\\Users\\masal\\OneDrive\\Documents\\opencode\\cv-scan\\backend-api\\src\\email\\email-processor.service.ts:130:11)\n    at async EmailProcessorService.handleCron (C:\\Users\\masal\\OneDrive\\Documents\\opencode\\cv-scan\\backend-api\\src\\email\\email-processor.service.ts:32:9)\n    at async bootstrap (C:\\Users\\masal\\OneDrive\\Documents\\opencode\\cv-scan\\backend-api\\test-email.ts:13:5)",
+  "response": {
+    "message": "Failed to extract text from PDF: Class constructors cannot be invoked without 'new'"
+  },
+  "status": 500,
+  "options": {},
+  "message": "Failed to extract text from PDF: Class constructors cannot be invoked without 'new'",
+  "name": "InternalServerErrorException"
+}

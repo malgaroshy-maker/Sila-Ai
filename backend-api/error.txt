@@ -1,0 +1,39 @@
+{
+  "candidate": {
+    "id": "b0877e77-0a4c-4e51-b103-b6216a62d783",
+    "name": "Ahmed Hassan",
+    "email": null,
+    "phone": null,
+    "cv_url": null,
+    "created_at": "2026-03-22T18:30:16.327779+00:00"
+  },
+  "application": {
+    "id": "48cc7d3d-f6cf-471c-80bb-c6dea612c589",
+    "job_id": "6077cfdf-eae8-4bc0-b6e7-9eb0ca5a4ae0",
+    "candidate_id": "b0877e77-0a4c-4e51-b103-b6216a62d783",
+    "status": "analyzed",
+    "created_at": "2026-03-22T18:30:16.514879+00:00"
+  },
+  "analysis": {
+    "id": "44fb5cf0-eb3e-45f4-95d9-0eeca185b610",
+    "application_id": "48cc7d3d-f6cf-471c-80bb-c6dea612c589",
+    "skills_score": 80,
+    "gpa_score": 95,
+    "language_score": 100,
+    "ind_readiness_score": 95,
+    "final_score": 89,
+    "strengths": [
+      "خبرة تتجاوز المتطلبات (6 سنوات مقابل 5+)",
+      "إتقان Node.js، Next.js، وNestJS",
+      "يجيد اللغة العربية بطلاقة (متطلب أساسي)",
+      "يجيد اللغة الإنجليزية (ميزة إضافية)",
+      "معدل تراكمي ممتاز (3.8)"
+    ],
+    "weaknesses": [
+      "عدم ذكر خبرة في React، وهي مهارة أساسية مذكورة في الوصف الوظيفي"
+    ],
+    "recommendation": "Strong",
+    "justification": "المرشح يتمتع بخبرة واسعة تتجاوز المتطلبات ويتقن معظم المهارات الفنية المطلوبة، كما أنه يتحدث العربية بطلاقة مما يجعله متطابقًا مع متطلبات اللغة. نقطة الضعف الرئيسية هي عدم ذكر خبرة في React.",
+    "created_at": "2026-03-22T18:30:16.716547+00:00"
+  }
+}

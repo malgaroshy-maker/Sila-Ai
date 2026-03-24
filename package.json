@@ -1,0 +1,12 @@
+{
+  "name": "cv-scan-root",
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "npm install --prefix backend-api && npm install --prefix frontend-web",
+    "dev": "npx concurrently \"npm --prefix backend-api run start:dev\" \"npm --prefix frontend-web run dev\"",
+    "dev:windows": "powershell -Command \"Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd backend-api; npm run start:dev'; Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd frontend-web; npm run dev'\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
