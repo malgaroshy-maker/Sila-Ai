@@ -65,10 +65,13 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
+# Verify build output
+RUN ls -la ./dist
+
 # Ensure Puppeteer downloads Chrome
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
 RUN npx puppeteer browsers install chrome
 
 EXPOSE 5000
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]
