@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Info, Sparkles, ShieldCheck } from 'lucide-react';
+import { HelpCircle, Sparkles, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations('Login');
@@ -77,7 +77,7 @@ export default function LoginPage() {
             href="/about" 
             className="mt-8 flex items-center justify-center gap-2 text-slate-400 hover:text-blue-600 font-bold transition-all p-3 rounded-xl hover:bg-blue-50/50"
           >
-            <Info size={18} />
+            <HelpCircle size={18} />
             {t('about')}
           </Link>
 
