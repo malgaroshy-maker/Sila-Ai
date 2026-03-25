@@ -98,6 +98,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -326,7 +327,13 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   };
 
   const filteredResults = results
-    .filter((r) => !selectedJobId || r.applications?.job_id === selectedJobId)
+    .filter((r) => {
+      const matchJob = !selectedJobId || r.applications?.job_id === selectedJobId;
+      const matchSearch = !searchTerm || 
+        r.applications?.candidates?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.applications?.candidates?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchJob && matchSearch;
+    })
     .sort((a, b) => (b.final_score || 0) - (a.final_score || 0));
 
   const getScoreColor = (score: number) => {
@@ -354,81 +361,146 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white">
-      {/* Header */}
-      <header className="bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#1E293B] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#0369A1] to-[#0EA5E9] bg-clip-text text-transparent">
-              {t.title || 'AI Recruitment Intelligence'}
-            </h1>
-            <p className="text-slate-400 text-sm mt-0.5">{t.description || 'AI-Powered Recruitment'}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/about?from=dashboard" 
-              className="text-slate-400 hover:text-[#0EA5E9] transition-colors p-2 rounded-lg hover:bg-[#1E293B]"
-              title={t.about || 'About System'}
-            >
-              <HelpCircle className="w-5 h-5" />
-            </Link>
-            <div className="h-6 w-px bg-[#1E293B] mx-1" />
-            <LanguageSwitcher />
-            <div className="h-6 w-px bg-[#1E293B] mx-1" />
-            
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-full border border-[#1E293B]">
-              <div className={`w-2 h-2 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : serverStatus === 'offline' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-amber-500 animate-pulse'}`} />
-              <span className="text-[10px] font-bold text-slate-400">
-                {serverStatus === 'online' ? (t.server_online || 'Online') : 
-                 serverStatus === 'offline' ? (t.server_offline || 'Offline') : 
-                 (t.server_checking || '...')}
-              </span>
+    <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-[#0EA5E9]/30">
+      {/* Premium Header */}
+      <header className="bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#1E293B] sticky top-0 z-40 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-6">
+          {/* Top Row: Brand & Status */}
+          <div className="flex justify-between items-center py-4 border-b border-[#1E293B]/50">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-[#0369A1] to-[#0EA5E9] p-2 rounded-xl shadow-lg shadow-[#0EA5E9]/20">
+                <Cpu className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-100">
+                  {t.title || 'AI Recruitment Intelligence'}
+                </h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 animate-pulse' : serverStatus === 'offline' ? 'bg-rose-500' : 'bg-amber-500 animate-bounce'}`} />
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                    {serverStatus === 'online' ? (t.server_online || 'Online') : 
+                     serverStatus === 'offline' ? (t.server_offline || 'Offline') : 
+                     (t.server_checking || '...')}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <button 
-              onClick={handleRefreshSync} 
-              disabled={isRefreshing}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${isRefreshing ? 'bg-[#0F172A] text-slate-500' : 'bg-[#0F172A] text-[#0EA5E9] hover:bg-[#1E293B] border border-[#1E293B]'}`}
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden md:inline">{isRefreshing ? (t.syncing || 'Syncing...') : (t.refresh || 'Sync')}</span>
-            </button>
-            <button 
-              onClick={() => setView(view === 'insights' ? 'list' : 'insights')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-[#1E293B] cursor-pointer transition-all ${view === 'insights' ? 'bg-[#0369A1] text-white underline underline-offset-4 decoration-2' : 'bg-[#0F172A] text-slate-300 hover:bg-[#1E293B]'}`}
-              title={t.insights || 'AI Insights'}
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden xl:inline">{t.insights || 'Insights'}</span>
-            </button>
-            <button 
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="flex items-center gap-2 bg-[#0F172A] text-slate-300 hover:bg-[#1E293B] px-3 py-2 rounded-lg text-sm font-medium border border-[#1E293B] cursor-pointer transition-all"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-            <button onClick={() => setIsJobModalOpen(true)} className="flex items-center gap-2 bg-[#0369A1] hover:bg-[#0369A1]/80 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-[#0369A1]/20">
-              <Plus className="w-4 h-4" />
-              <span className="hidden md:inline">{t.create_job || 'New Job'}</span>
-            </button>
-            <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-2 bg-[#7C3AED] hover:bg-[#7C3AED]/80 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-[#7C3AED]/20">
-              <Upload className="w-4 h-4" />
-              <span className="hidden md:inline">{t.upload_cv || 'Upload CV'}</span>
-            </button>
-            <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-2 bg-[#22C55E] hover:bg-[#22C55E]/80 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all shadow-lg shadow-[#22C55E]/20">
-              <Bot className="w-4 h-4" />
-              <span className="hidden lg:inline">{t.ai_chat || 'AI Chat'}</span>
-            </button>
-            <button 
-              onClick={async () => {
-                await supabase.auth.signOut();
-                localStorage.removeItem('user_email');
-                window.location.href = `/${locale}/login`;
-              }} 
-              className="text-slate-500 hover:text-red-400 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Consumption Indicators */}
+              <div className="hidden lg:flex items-center gap-6 me-4">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t.tokens_used}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Zap className="w-3 h-3 text-amber-500 fill-amber-500/20" />
+                    <span className="text-xs font-mono font-bold text-slate-300">12.4k</span>
+                  </div>
+                </div>
+                <div className="w-px h-8 bg-[#1E293B]" />
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t.cvs_processed}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <FileText className="w-3 h-3 text-[#0EA5E9] fill-[#0EA5E9]/20" />
+                    <span className="text-xs font-mono font-bold text-slate-300">142</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-8 w-px bg-[#1E293B] mx-2 hidden sm:block" />
+              <LanguageSwitcher />
+              
+              <button 
+                onClick={() => setIsSettingsModalOpen(true)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-[#1E293B] rounded-xl transition-all duration-200 border border-transparent hover:border-[#1E293B]"
+                title={t.settings || 'Settings'}
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+
+              <button 
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  localStorage.removeItem('user_email');
+                  window.location.href = `/${locale}/login`;
+                }} 
+                className="p-2 text-slate-500 hover:text-rose-400 transition-all duration-200"
+                title={t.logout || 'Logout'}
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Row: Actions & Navigation */}
+          <div className="flex flex-col md:flex-row justify-between items-center py-3 gap-4">
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="relative group flex-1 md:flex-none">
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-[#0EA5E9] transition-colors" />
+                <input 
+                  type="text" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={t.searching || 'Search candidates...'} 
+                  className="bg-[#020617]/50 border border-[#1E293B] rounded-xl ps-10 pe-4 py-2 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/20 focus:border-[#0EA5E9] transition-all"
+                />
+              </div>
+              
+              <select 
+                onChange={(e) => setSelectedJobId(e.target.value)}
+                value={selectedJobId || ''}
+                className="bg-[#020617]/50 border border-[#1E293B] rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/20 focus:border-[#0EA5E9] transition-all cursor-pointer min-w-[140px]"
+              >
+                <option value="">{t.all_jobs || 'All Jobs'}</option>
+                {jobs.map(job => (
+                  <option key={job.id} value={job.id}>{job.title}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
+               <button 
+                onClick={handleRefreshSync} 
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-[#0F172A] hover:bg-[#1E293B] text-[#0EA5E9] border border-[#1E293B] rounded-xl text-sm font-bold transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>{isRefreshing ? (t.syncing || 'Syncing...') : (t.refresh || 'Sync')}</span>
+              </button>
+
+              <button 
+                onClick={() => setView('insights')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm ${view === 'insights' ? 'bg-[#0369A1] text-white shadow-[#0369A1]/30 border-transparent' : 'bg-[#0F172A] text-slate-300 border border-[#1E293B] hover:bg-[#1E293B]'}`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>{t.insights || 'Insights'}</span>
+              </button>
+
+              <div className="w-px h-6 bg-[#1E293B] mx-1 hidden lg:block" />
+
+              <button 
+                onClick={() => setIsJobModalOpen(true)} 
+                className="flex items-center gap-2 bg-[#0369A1] hover:bg-[#0EA5E9] text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-[#0369A1]/20 whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t.create_job || 'New Job'}</span>
+              </button>
+
+              <button 
+                onClick={() => setIsUploadModalOpen(true)} 
+                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-indigo-500/20 whitespace-nowrap"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{t.upload_cv || 'Upload CV'}</span>
+              </button>
+
+              <button 
+                onClick={() => setIsChatOpen(true)} 
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-emerald-500/20 whitespace-nowrap"
+              >
+                <Bot className="w-4 h-4" />
+                <span>{t.ai_chat || 'AI Chat'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>

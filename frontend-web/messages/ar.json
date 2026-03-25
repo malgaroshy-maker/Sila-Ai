@@ -30,7 +30,8 @@
     "readiness": "الجاهزية",
     "ai_justification": "مُبرّر الذكاء الاصطناعي",
     "strengths": "نقاط القوة الرئيسية",
-    "improvement_areas": "نقاط الضعف",
+    "weaknesses": "نقاط الضعف",
+    "improvement_areas": "مجالات التحسين",
     "tags": "التصنيفات",
     "flags": "تنبيهات",
     "interview_q": "أسئلة المقابلة",
@@ -64,6 +65,8 @@
     "exportReport": "تصدير التقرير",
     "searching": "جاري البحث...",
     "no_candidates": "لا يوجد مرشحين حتى الآن",
+    "no_jobs": "لا توجد وظائف مضافة حتى الآن",
+    "ai_config": "إعدادات خوارزمية الذكاء الاصطناعي",
     "syncing": "جاري المزامنة...",
     "saving": "جاري الحفاظ...",
     "insights": "استهلاك الذكاء الاصطناعي",
@@ -163,7 +166,9 @@
     "downloaded": "تم التحميل!",
     "server_online": "متصل",
     "server_offline": "غير متصل",
-    "server_checking": "..."
+    "server_checking": "جاري التحقق...",
+    "tokens_used": "توكينز الذكاء الاصطناعي",
+    "cvs_processed": "سير تم فحصها"
   },
   "Login": {
     "welcome": "مرحباً بك مجدداً",

@@ -30,7 +30,8 @@
     "readiness": "Readiness",
     "ai_justification": "AI Justification",
     "strengths": "Key Strengths",
-    "improvement_areas": "Weaknesses",
+    "weaknesses": "Weaknesses",
+    "improvement_areas": "Improvement Areas",
     "tags": "Tags",
     "flags": "Flags",
     "interview_q": "Interview Questions",
@@ -65,6 +66,7 @@
     "searching": "Searching...",
     "no_candidates": "No candidates found yet",
     "no_jobs": "No jobs created yet",
+    "ai_config": "AI Algorithm Configuration",
     "syncing": "Syncing...",
     "saving": "Saving...",
     "webhook_title": "Webhook URL for Notifications",
@@ -163,7 +165,9 @@
     "downloaded": "Downloaded!",
     "server_online": "Online",
     "server_offline": "Offline",
-    "server_checking": "..."
+    "server_checking": "Checking...",
+    "tokens_used": "AI Tokens",
+    "cvs_processed": "CVs Scanned"
   },
   "Login": {
     "welcome": "Welcome Back",
