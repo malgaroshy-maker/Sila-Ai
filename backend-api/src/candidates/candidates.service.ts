@@ -154,7 +154,14 @@ export class CandidatesService {
     // 1.7 Upload to Supabase Storage if it's a manual upload (no Gmail IDs)
     let cvUrl = undefined;
     if (!gmailMessageId && file && file.buffer) {
-      const fileName = `${userEmail}/${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+      // Sanitize filename: remove non-ASCII characters and special symbols to prevent Supabase 'Invalid key' error
+      const safeOriginalName = file.originalname
+        .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII (Arabic etc)
+        .replace(/[\s\(\)\[\]\{\}\%\&\$\#\@\!\^\*]/g, '_') // Replace spaces and special chars
+        .replace(/_{2,}/g, '_'); // Collapse multiple underscores
+      
+      const fileName = `${userEmail}/${Date.now()}_${safeOriginalName || 'uploaded_cv'}`;
+      
       const { data: uploadData, error: uploadError } = await sb.storage
         .from('cv-backups')
         .upload(fileName, file.buffer, { contentType: file.mimetype, upsert: true });

@@ -858,64 +858,80 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             {/* Modal Footer */}
             <div className="p-8 pt-0 border-t border-[#1E293B] bg-[#0F172A] mt-auto shrink-0 z-20">
               <div className="flex justify-between items-center mt-6">
-                 <div className="flex gap-2">
-                   <button 
-                      onClick={async () => {
-                        const candidateId = selectedCandidate.applications?.candidates?.id;
-                        if (!candidateId) return;
+                     <div className="flex gap-2">
+                    <button 
+                       onClick={async () => {
+                         const cand = selectedCandidate.applications?.candidates;
+                         const candidateId = cand?.id;
+                         console.log('Attempting download for Candidate ID:', candidateId, 'User:', userEmail);
+                         
+                         if (!candidateId) {
+                           console.error('No candidate ID found in selectedCandidate.applications:', selectedCandidate.applications);
+                           return;
+                         }
 
-                        setDownloadStatus(prev => ({ ...prev, [candidateId]: 'loading' }));
-                        const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${candidateId}/cv-download`;
-                        
-                        try {
-                          const res = await fetch(downloadUrl, {
-                            headers: { 'x-user-email': userEmail }
-                          });
+                         setDownloadStatus(prev => ({ ...prev, [candidateId]: 'loading' }));
+                         const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${candidateId}/cv-download`;
+                         console.log('Download URL:', downloadUrl);
+                         
+                         try {
+                           const res = await fetch(downloadUrl, {
+                             headers: { 'x-user-email': userEmail }
+                           });
 
-                          if (res.ok) {
-                            if (res.redirected) {
-                              setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
-                              setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
-                              window.open(res.url, '_blank');
-                              return;
-                            }
+                           console.log('Download response status:', res.status, 'redirected:', res.redirected);
 
-                            const blob = await res.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `CV_${selectedCandidate.applications?.candidates?.name.replace(/\s+/g, '_')}.pdf`;
-                            document.body.appendChild(a);
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                            setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
-                            setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
-                          } else {
-                            setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
-                            const fallbackUrl = selectedCandidate.applications?.candidates?.cv_url;
-                            if (fallbackUrl) window.open(fallbackUrl, '_blank');
-                          }
-                        } catch (err) {
-                          setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
-                          console.error('Download failed:', err);
-                          const fallbackUrl = selectedCandidate.applications?.candidates?.cv_url;
-                          if (fallbackUrl) window.open(fallbackUrl, '_blank');
-                        }
-                      }} 
-                     className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 min-w-[160px] justify-center"
-                   >
-                     {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? (
-                       <Loader2 className="w-4 h-4 animate-spin" />
-                     ) : downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? (
-                       <CheckCircle className="w-4 h-4 text-emerald-400" />
-                     ) : (
-                       <FileText className="w-4 h-4" />
-                     )}
-                     {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? t.downloading : 
-                      downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? t.downloaded : 
-                      t.view_cv || 'View Original CV'}
-                   </button>
-                 </div>
+                           if (res.ok) {
+                             if (res.redirected) {
+                               console.log('Redirecting to:', res.url);
+                               setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
+                               setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
+                               window.open(res.url, '_blank');
+                               return;
+                             }
+
+                             const blob = await res.blob();
+                             console.log('Blob received, size:', blob.size);
+                             const url = window.URL.createObjectURL(blob);
+                             const a = document.createElement('a');
+                             a.href = url;
+                             const safeName = (cand?.name || 'CV').replace(/\s+/g, '_');
+                             a.download = `CV_${safeName}.pdf`;
+                             document.body.appendChild(a);
+                             a.click();
+                             window.URL.revokeObjectURL(url);
+                             setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
+                             setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
+                           } else {
+                             console.error('Download proxy failed with status:', res.status);
+                             setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
+                             const fallbackUrl = cand?.cv_url;
+                             if (fallbackUrl) {
+                               console.log('Falling back to direct URL:', fallbackUrl);
+                               window.open(fallbackUrl, '_blank');
+                             }
+                           }
+                         } catch (err) {
+                           setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
+                           console.error('Download interactive failed:', err);
+                           const fallbackUrl = cand?.cv_url;
+                           if (fallbackUrl) window.open(fallbackUrl, '_blank');
+                         }
+                       }} 
+                      className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 min-w-[160px] justify-center"
+                    >
+                      {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <FileText className="w-4 h-4" />
+                      )}
+                      {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? t.downloading : 
+                       downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? t.downloaded : 
+                       t.view_cv || 'View Original CV'}
+                    </button>
+                  </div>
                  <button onClick={() => setSelectedCandidate(null)} className="px-8 py-2.5 bg-white text-black hover:bg-slate-200 rounded-xl text-sm font-black transition-all">
                    {t.close || 'Done'}
                  </button>
