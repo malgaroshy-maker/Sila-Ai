@@ -219,7 +219,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     const { data: jobsData } = await supabase.from('jobs').select('*').eq('user_email', email).order('created_at', { ascending: false });
     const { data: resultsData } = await supabase
       .from('analysis_results')
-      .select('*, applications!inner(id, job_id, candidate_id, pipeline_stage, jobs!inner(title, user_email), candidates(name, email))')
+      .select('*, applications!inner(id, job_id, candidate_id, pipeline_stage, jobs!inner(title, user_email), candidates(id, name, email, cv_url))')
       .eq('applications.jobs.user_email', email)
       .order('created_at', { ascending: false });
       
@@ -892,7 +892,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                          const apps = selectedCandidate.applications;
                          const app = Array.isArray(apps) ? apps[0] : apps;
                          const cand = app?.candidates;
-                         const candidateId = cand?.id;
+                         const candidateId = cand?.id || app?.candidate_id || (selectedCandidate as any).candidate_id;
                          
                          console.log('Download Debug:', { candidateId, userEmail, app, cand });
                          
