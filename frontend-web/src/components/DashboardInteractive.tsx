@@ -653,8 +653,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
           <div className="bg-[#0F172A] rounded-[2.5rem] border border-[#1E293B] shadow-2xl shadow-blue-500/10 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
             
             {/* Modal Header */}
-            <div className="p-8 pb-4 relative overflow-hidden">
-               <div className={`absolute top-0 end-0 w-64 h-64 opacity-20 bg-gradient-to-br ${getScoreColor(selectedCandidate.final_score)} blur-3xl -translate-y-32 translate-x-32`} />
+            <div className="p-8 bg-[#0F172A] relative shrink-0 z-20 border-b border-[#1E293B]/30 rounded-t-[2.5rem] flex flex-col gap-6">
+               <div className={`absolute top-0 end-0 w-64 h-64 opacity-20 bg-gradient-to-br ${getScoreColor(selectedCandidate.final_score)} blur-3xl -translate-y-32 translate-x-32 pointer-events-none`} />
                
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                   <div className="flex items-center gap-5">
@@ -685,7 +685,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                </div>
 
                {/* Tab Navigation */}
-               <div className="flex items-center gap-1 mt-8 bg-[#1E293B]/30 p-1.5 rounded-2xl border border-[#1E293B]/50 max-w-md">
+               <div className="flex items-center gap-1 bg-[#1E293B]/30 p-1.5 rounded-2xl border border-[#1E293B]/50 max-w-md relative z-10 w-full md:w-fit">
                  <button 
                    onClick={() => setModalTab('intelligence')}
                    className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${modalTab === 'intelligence' ? 'bg-[#0369A1] text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
@@ -711,7 +711,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-8 pt-4 space-y-6">
+            <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-8 relative z-10 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
               
               {modalTab === 'intelligence' && (
                 <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
@@ -838,7 +838,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             </div>
 
             {/* Modal Footer */}
-            <div className="p-8 pt-0 border-t border-[#1E293B] bg-[#0F172A] mt-auto">
+            <div className="p-8 pt-0 border-t border-[#1E293B] bg-[#0F172A] mt-auto shrink-0 z-20">
               <div className="flex justify-between items-center mt-6">
                  <div className="flex gap-2">
                    <button onClick={() => window.open(selectedCandidate.applications?.candidates?.cv_url, '_blank')} className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2">
