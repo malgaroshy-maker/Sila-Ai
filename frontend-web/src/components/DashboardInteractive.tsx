@@ -85,6 +85,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [modalTab, setModalTab] = useState<'intelligence' | 'overview' | 'prep'>('intelligence');
+  const [downloadStatus, setDownloadStatus] = useState<{[key: string]: 'idle' | 'loading' | 'success'}>( {});
 
   // Form states
   const [jobTitle, setJobTitle] = useState('');
@@ -863,6 +864,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         const candidateId = selectedCandidate.applications?.candidates?.id;
                         if (!candidateId) return;
 
+                        setDownloadStatus(prev => ({ ...prev, [candidateId]: 'loading' }));
                         const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${candidateId}/cv-download`;
                         
                         try {
@@ -871,20 +873,11 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                           });
 
                           if (res.ok) {
-                            // Check if it was a redirect (for manual/fallback URLs)
                             if (res.redirected) {
+                              setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
+                              setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
                               window.open(res.url, '_blank');
                               return;
-                            }
-
-                            const contentType = res.headers.get('Content-Type');
-                            if (contentType && contentType.includes('application/json')) {
-                               // It might be a JSON response with a URL (some configs)
-                               const json = await res.json();
-                               if (json.url) {
-                                 window.open(json.url, '_blank');
-                                 return;
-                               }
                             }
 
                             const blob = await res.blob();
@@ -895,21 +888,32 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                             document.body.appendChild(a);
                             a.click();
                             window.URL.revokeObjectURL(url);
+                            setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
+                            setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
                           } else {
-                            // Fallback to direct URL if proxy fails
+                            setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
                             const fallbackUrl = selectedCandidate.applications?.candidates?.cv_url;
                             if (fallbackUrl) window.open(fallbackUrl, '_blank');
                           }
                         } catch (err) {
+                          setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
                           console.error('Download failed:', err);
                           const fallbackUrl = selectedCandidate.applications?.candidates?.cv_url;
                           if (fallbackUrl) window.open(fallbackUrl, '_blank');
                         }
                       }} 
-                     className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                     className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 min-w-[160px] justify-center"
                    >
-                     <FileText className="w-4 h-4" />
-                     {t.view_cv || 'View Original CV'}
+                     {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? (
+                       <Loader2 className="w-4 h-4 animate-spin" />
+                     ) : downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? (
+                       <CheckCircle className="w-4 h-4 text-emerald-400" />
+                     ) : (
+                       <FileText className="w-4 h-4" />
+                     )}
+                     {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? t.downloading : 
+                      downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? t.downloaded : 
+                      t.view_cv || 'View Original CV'}
                    </button>
                  </div>
                  <button onClick={() => setSelectedCandidate(null)} className="px-8 py-2.5 bg-white text-black hover:bg-slate-200 rounded-xl text-sm font-black transition-all">
@@ -952,10 +956,45 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setIsUploadModalOpen(false)}>
           <div className="bg-[#0F172A] rounded-2xl border border-[#1E293B] p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><FileUp className="w-5 h-5 text-[#7C3AED]" />{t.upload_cv}</h2>
-            <form onSubmit={handleUploadCV} className="space-y-4 pt-4">
-              <input type="file" required onChange={e => setCvFile(e.target.files?.[0] || null)} className="w-full text-slate-300" />
-              <button type="submit" disabled={isUploading || !cvFile} className="w-full py-2 bg-[#7C3AED] text-white rounded-lg font-medium disabled:opacity-40">
-                {isUploading ? t.analyzing : t.upload_and_analyze}
+            <form onSubmit={handleUploadCV} className="space-y-6 pt-4">
+              <div className="relative group">
+                <input 
+                  type="file" 
+                  id="cv-upload"
+                  required 
+                  onChange={e => setCvFile(e.target.files?.[0] || null)} 
+                  className="hidden" 
+                />
+                <label 
+                  htmlFor="cv-upload"
+                  className="w-full flex flex-col items-center gap-4 bg-[#020617] border-2 border-dashed border-[#1E293B] hover:border-[#7C3AED]/40 p-8 rounded-3xl cursor-pointer transition-all"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#7C3AED]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Upload className="w-6 h-6 text-[#7C3AED]" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-slate-200 mb-1">
+                      {cvFile ? cvFile.name : (t.choose_file || 'Choose File')}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      {cvFile ? `${(cvFile.size / 1024 / 1024).toFixed(2)} MB` : (t.file_no_chosen || 'No file chosen')}
+                    </p>
+                  </div>
+                </label>
+              </div>
+              <button 
+                type="submit" 
+                disabled={isUploading || !cvFile} 
+                className="w-full py-3.5 bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-2xl font-black text-sm shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 active:scale-[0.98] transition-all disabled:opacity-40"
+              >
+                {isUploading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {t.analyzing}
+                  </div>
+                ) : (
+                  t.upload_and_analyze
+                )}
               </button>
             </form>
           </div>
