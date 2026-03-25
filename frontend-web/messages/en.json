@@ -160,7 +160,10 @@
     "file_no_chosen": "No file chosen",
     "choose_file": "Choose File",
     "downloading": "Downloading...",
-    "downloaded": "Downloaded!"
+    "downloaded": "Downloaded!",
+    "server_online": "Online",
+    "server_offline": "Offline",
+    "server_checking": "..."
   },
   "Login": {
     "welcome": "Welcome Back",

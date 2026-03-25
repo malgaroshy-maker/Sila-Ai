@@ -86,6 +86,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [modalTab, setModalTab] = useState<'intelligence' | 'overview' | 'prep'>('intelligence');
   const [downloadStatus, setDownloadStatus] = useState<{[key: string]: 'idle' | 'loading' | 'success'}>( {});
+  const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
 
   // Form states
   const [jobTitle, setJobTitle] = useState('');
@@ -235,6 +236,22 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     }
   };
 
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiBase}/health`, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) setServerStatus('online');
+        else setServerStatus('offline');
+      } catch {
+        setServerStatus('offline');
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, []);
+
   const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userEmail) return;
@@ -358,6 +375,16 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             <div className="h-6 w-px bg-[#1E293B] mx-1" />
             <LanguageSwitcher />
             <div className="h-6 w-px bg-[#1E293B] mx-1" />
+            
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#0F172A] rounded-full border border-[#1E293B]">
+              <div className={`w-2 h-2 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : serverStatus === 'offline' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-amber-500 animate-pulse'}`} />
+              <span className="text-[10px] font-bold text-slate-400">
+                {serverStatus === 'online' ? (t.server_online || 'Online') : 
+                 serverStatus === 'offline' ? (t.server_offline || 'Offline') : 
+                 (t.server_checking || '...')}
+              </span>
+            </div>
+
             <button 
               onClick={handleRefreshSync} 
               disabled={isRefreshing}
@@ -861,29 +888,31 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                      <div className="flex gap-2">
                     <button 
                        onClick={async () => {
-                         const cand = selectedCandidate.applications?.candidates;
+                         // selectedCandidate.applications can be an object OR an array depending on Supabase join
+                         const apps = selectedCandidate.applications;
+                         const app = Array.isArray(apps) ? apps[0] : apps;
+                         const cand = app?.candidates;
                          const candidateId = cand?.id;
-                         console.log('Attempting download for Candidate ID:', candidateId, 'User:', userEmail);
+                         
+                         console.log('Download Debug:', { candidateId, userEmail, app, cand });
                          
                          if (!candidateId) {
-                           console.error('No candidate ID found in selectedCandidate.applications:', selectedCandidate.applications);
+                           alert('Error: Candidate ID not found. Check console.');
+                           console.error('No candidate ID found. Structure:', selectedCandidate);
                            return;
                          }
 
                          setDownloadStatus(prev => ({ ...prev, [candidateId]: 'loading' }));
-                         const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${candidateId}/cv-download`;
-                         console.log('Download URL:', downloadUrl);
+                         const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                         const downloadUrl = `${apiBase}/candidates/${candidateId}/cv-download`;
                          
                          try {
                            const res = await fetch(downloadUrl, {
                              headers: { 'x-user-email': userEmail }
                            });
 
-                           console.log('Download response status:', res.status, 'redirected:', res.redirected);
-
                            if (res.ok) {
                              if (res.redirected) {
-                               console.log('Redirecting to:', res.url);
                                setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
                                setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
                                window.open(res.url, '_blank');
@@ -891,7 +920,6 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                              }
 
                              const blob = await res.blob();
-                             console.log('Blob received, size:', blob.size);
                              const url = window.URL.createObjectURL(blob);
                              const a = document.createElement('a');
                              a.href = url;
@@ -903,32 +931,35 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                              setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
                              setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
                            } else {
-                             console.error('Download proxy failed with status:', res.status);
-                             setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
                              const fallbackUrl = cand?.cv_url;
                              if (fallbackUrl) {
-                               console.log('Falling back to direct URL:', fallbackUrl);
                                window.open(fallbackUrl, '_blank');
+                               setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
+                               setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
+                             } else {
+                               alert('Download failed. No original CV available.');
+                               setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
                              }
                            }
                          } catch (err) {
                            setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
-                           console.error('Download interactive failed:', err);
+                           alert('Connection error while downloading.');
                            const fallbackUrl = cand?.cv_url;
                            if (fallbackUrl) window.open(fallbackUrl, '_blank');
                          }
                        }} 
                       className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 min-w-[160px] justify-center"
                     >
-                      {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? (
+                      {/* Using optional chaining and fallback for ID check to prevent crash if undefined */}
+                      {downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'loading' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? (
+                      ) : downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'success' ? (
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <FileText className="w-4 h-4" />
                       )}
-                      {downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'loading' ? t.downloading : 
-                       downloadStatus[selectedCandidate.applications?.candidates?.id!] === 'success' ? t.downloaded : 
+                      {downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'loading' ? t.downloading : 
+                       downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'success' ? t.downloaded : 
                        t.view_cv || 'View Original CV'}
                     </button>
                   </div>

@@ -160,7 +160,10 @@
     "file_no_chosen": "لم يتم اختيار ملف",
     "choose_file": "اختر ملف",
     "downloading": "جاري التحميل...",
-    "downloaded": "تم التحميل!"
+    "downloaded": "تم التحميل!",
+    "server_online": "متصل",
+    "server_offline": "غير متصل",
+    "server_checking": "..."
   },
   "Login": {
     "welcome": "مرحباً بك مجدداً",
