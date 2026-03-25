@@ -23,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { 
   GripVertical, User, Mail, Star, 
   CheckCircle2, XCircle, Clock, 
-  MessageSquare, Award, Loader2 
+  MessageSquare, Award, Loader2, GraduationCap
 } from 'lucide-react';
 
 const STAGES = [
@@ -50,6 +50,7 @@ interface AnalysisResult {
   interview_questions?: string[];
   training_suggestions?: string[];
   justification?: string;
+  is_fresh_graduate?: boolean;
   applications: {
     id: string;
     job_id: string;
@@ -234,39 +235,52 @@ function CandidateCard({ result, isOverlay = false, locale = 'en' }: { result: A
   const scoreColor = score >= 80 ? 'text-[#22C55E]' : score >= 60 ? 'text-[#EAB308]' : 'text-[#EF4444]';
 
   return (
-    <div className={`bg-[#1E293B]/80 border border-[#334155] rounded-xl p-4 transition-all hover:border-[#0EA5E9]/30 hover:shadow-lg hover:shadow-[#0EA5E9]/5 cursor-grab active:cursor-grabbing group ${isOverlay ? 'scale-105' : ''}`}>
-      <div className="flex items-start justify-between gap-3 mb-3">
+    <div className={`bg-[#020617]/40 border border-[#1E293B]/50 rounded-xl p-4 transition-all hover:border-[#0EA5E9]/30 hover:shadow-lg hover:shadow-[#0EA5E9]/5 cursor-grab active:cursor-grabbing group relative overflow-hidden ${isOverlay ? 'scale-105 rotate-2 shadow-2xl bg-[#1E293B]' : ''}`}>
+      {/* Background Score Glow */}
+      <div className={`absolute top-0 end-0 w-16 h-16 opacity-5 bg-gradient-to-br ${score >= 80 ? 'from-emerald-500' : score >= 60 ? 'from-amber-500' : 'from-red-500'} blur-2xl -translate-y-8 translate-x-8`} />
+
+      <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-slate-100 text-sm truncate group-hover:text-[#0EA5E9] transition-colors">
-            {candidate.name}
-          </h4>
-          <p className="text-[10px] text-slate-500 truncate flex items-center gap-1 mt-0.5">
-            <Mail className="w-2.5 h-2.5" />
+          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+            <h4 className="font-bold text-slate-100 text-sm truncate group-hover:text-white transition-colors">
+              {candidate.name}
+            </h4>
+            {result.is_fresh_graduate && (
+              <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-[#0EA5E9]/30">
+                <GraduationCap className="w-2.5 h-2.5" />
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-slate-500 truncate flex items-center gap-1">
+            <Mail className="w-2.5 h-2.5 text-slate-600" />
             {candidate.email}
           </p>
         </div>
-        <div className={`text-lg font-black ${scoreColor} leading-none`}>
+        <div className={`text-base font-black ${scoreColor} leading-none`}>
           {score}
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1 mb-3">
+      <div className="flex flex-wrap gap-1 mb-3 relative z-10">
         {result.tags?.slice(0, 2).map((tag: string, i: number) => (
-          <span key={i} className="px-1.5 py-0.5 bg-[#0369A1]/10 text-[#0EA5E9] text-[9px] font-bold rounded border border-[#0369A1]/20 uppercase">
+          <span key={i} className="px-1.5 py-0.5 bg-[#0F172A] text-slate-400 text-[9px] font-medium rounded-md border border-[#1E293B] uppercase group-hover:border-[#334155]">
             {tag}
           </span>
         ))}
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-[#334155]">
-        <div className="flex items-center -space-x-1">
-          {result.recommendation === 'Strong' && <Award className="w-3.5 h-3.5 text-emerald-400" />}
-          {result.recommendation === 'Average' && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
-          {result.recommendation === 'Weak' && <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+      <div className="flex items-center justify-between pt-3 border-t border-[#1E293B]/50 relative z-10">
+        <div className="flex items-center gap-1">
+          <div className={`ps-2.5 pe-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+            result.recommendation === 'Strong' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+            result.recommendation === 'Average' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 
+            'bg-red-500/10 text-red-400 border border-red-500/20'
+          }`}>
+            {result.recommendation}
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-[9px] font-medium text-slate-500 bg-[#0F172A] px-2 py-0.5 rounded-full border border-[#1E293B]">
-          <Clock className="w-2.5 h-2.5" />
-          {new Date(result.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        <div className="text-[9px] font-medium text-slate-600 group-hover:text-slate-400 transition-colors">
+          {new Date(result.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })}
         </div>
       </div>
     </div>

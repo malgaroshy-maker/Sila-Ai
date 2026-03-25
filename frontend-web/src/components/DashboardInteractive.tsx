@@ -13,7 +13,7 @@ import {
   FileText, Sparkles, Loader2, FileUp, X, Globe, ChevronRight,
   Zap, Target, HelpCircle, BookOpen, Tag, AlertTriangle, CheckCircle, XCircle,
   Search, MessageSquare, Filter, ArrowUpRight, ShieldCheck, Download, Send,
-  Cpu, LayoutTemplate, Mail, TrendingUp
+  Cpu, LayoutTemplate, Mail, TrendingUp, GraduationCap, Info
 } from 'lucide-react';
 import { SyncStatus } from './SyncStatus';
 
@@ -39,6 +39,11 @@ interface AnalysisResult {
   interview_questions?: string[];
   training_suggestions?: string[];
   justification?: string;
+  is_fresh_graduate?: boolean;
+  project_impact_score?: number;
+  cultural_fit_score?: number;
+  career_trajectory?: string;
+  project_highlights?: string[];
   applications: {
     id: string;
     job_id: string;
@@ -46,6 +51,7 @@ interface AnalysisResult {
     candidates: {
       name: string;
       email: string;
+      cv_url?: string;
     };
     jobs?: {
       title: string;
@@ -76,6 +82,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [modalTab, setModalTab] = useState<'intelligence' | 'overview' | 'prep'>('intelligence');
 
   // Form states
   const [jobTitle, setJobTitle] = useState('');
@@ -428,33 +436,69 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         {t.all_jobs || 'All Jobs'}
                       </button>
                       {jobs.map((job) => (
-                        <div
-                          key={job.id}
-                          onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
-                          className={`w-full text-start px-4 py-3.5 rounded-xl transition-all cursor-pointer group flex items-center justify-between ${
-                            selectedJobId === job.id 
-                              ? 'bg-[#0369A1]/20 border border-[#0369A1]/30 shadow-lg shadow-[#0369A1]/5' 
-                              : 'hover:bg-[#1E293B] border border-transparent'
-                          }`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className={`font-bold text-sm truncate ${selectedJobId === job.id ? 'text-[#0EA5E9]' : 'text-slate-200 group-hover:text-white'}`}>{job.title}</h3>
+                        <div key={job.id} className="space-y-1">
+                          <div
+                            onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
+                            className={`w-full text-start px-4 py-3.5 rounded-xl transition-all cursor-pointer group flex items-center justify-between ${
+                              selectedJobId === job.id 
+                                ? 'bg-[#0369A1]/20 border border-[#0369A1]/30 shadow-lg shadow-[#0369A1]/5' 
+                                : 'hover:bg-[#1E293B] border border-transparent'
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className={`font-bold text-sm truncate ${selectedJobId === job.id ? 'text-[#0EA5E9]' : 'text-slate-200 group-hover:text-white'}`}>{job.title}</h3>
+                              </div>
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                                <Users className="w-3 h-3" />
+                                {results.filter((r) => r.applications?.job_id === job.id).length} {t.candidates || 'Candidates'}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                              <Users className="w-3 h-3" />
-                              {results.filter((r) => r.applications?.job_id === job.id).length} {t.candidates || 'Candidates'}
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setExpandedJobId(expandedJobId === job.id ? null : job.id); 
+                                }}
+                                className={`p-2 rounded-lg transition-colors ${expandedJobId === job.id ? 'bg-[#0EA5E9]/20 text-[#0EA5E9]' : 'text-slate-500 hover:text-[#0EA5E9] hover:bg-[#1E293B]'}`}
+                                title={t.job_details || 'Job Details'}
+                              >
+                                <Info className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleExportPDF(job.id); }}
+                                className="p-2 hover:bg-[#1E293B] rounded-lg text-slate-500 hover:text-[#0EA5E9] transition-colors"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                              <ChevronRight className={`w-4 h-4 transition-all ${selectedJobId === job.id ? 'rotate-90 text-[#0EA5E9]' : 'text-slate-600 group-hover:translate-x-0.5'}`} />
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleExportPDF(job.id); }}
-                              className="p-2 hover:bg-[#1E293B] rounded-lg text-slate-500 hover:text-[#0EA5E9] transition-colors"
-                            >
-                              <FileText className="w-4 h-4" />
-                            </button>
-                            <ChevronRight className={`w-4 h-4 transition-all ${selectedJobId === job.id ? 'rotate-90 text-[#0EA5E9]' : 'text-slate-600 group-hover:translate-x-0.5'}`} />
-                          </div>
+                          
+                          {/* Expanded Job Details */}
+                          {expandedJobId === job.id && (
+                            <div className="px-4 py-3 mx-2 mb-2 bg-[#020617]/50 rounded-xl border border-[#1E293B] animate-in slide-in-from-top-2 duration-200">
+                              <h4 className="text-[11px] font-bold text-[#0EA5E9] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <FileText className="w-3 h-3" />
+                                {t.job_desc_title || 'Description'}
+                              </h4>
+                              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+                                {job.description}
+                              </p>
+                              
+                              <h4 className="text-[11px] font-bold text-[#0EA5E9] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <Target className="w-3 h-3" />
+                                {t.requirements_title || 'Requirements'}
+                              </h4>
+                              <div className="flex flex-wrap gap-1.5">
+                                {job.requirements?.map((req, idx) => (
+                                  <span key={idx} className="text-[10px] bg-[#1E293B] text-slate-300 px-2 py-0.5 rounded-md border border-[#334155]/30">
+                                    {req}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </>
@@ -502,7 +546,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               )}
 
               {view === 'list' ? (
-                <div className="p-4 space-y-3 max-h-[700px] overflow-y-auto">
+                <div className="p-4 space-y-4 max-h-[700px] overflow-y-auto">
                   {filteredResults.length === 0 ? (
                     <div className="text-center text-slate-500 py-16 border border-dashed border-[#1E293B] rounded-xl">
                       {t.no_candidates || 'No candidates found'}
@@ -512,24 +556,77 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       <div 
                         key={res.id} 
                         onClick={() => setSelectedCandidate(res)} 
-                        className="bg-[#020617]/50 hover:bg-[#1E293B] border border-[#1E293B]/50 hover:border-[#1E293B] rounded-xl p-4 cursor-pointer transition-all group"
+                        className="bg-[#020617]/40 hover:bg-[#1E293B]/60 border border-[#1E293B]/50 hover:border-[#0EA5E9]/30 rounded-2xl p-5 cursor-pointer transition-all group relative overflow-hidden"
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-bold text-base text-slate-100 group-hover:text-white truncate">{res.applications?.candidates?.name || 'Unknown'}</h3>
-                            <p className="text-[#0EA5E9] text-xs font-medium mt-1">{res.applications?.jobs?.title || 'Unknown Job'}</p>
+                        {/* Status Backdrop Glow */}
+                        <div className={`absolute top-0 end-0 w-32 h-32 opacity-10 bg-gradient-to-br transition-opacity group-hover:opacity-20 ${getScoreColor(res.final_score || 0)} blur-3xl -translate-y-12 translate-x-12`} />
+                        
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <h3 className="font-bold text-lg text-slate-100 group-hover:text-white truncate">
+                                {res.applications?.candidates?.name || 'Unknown'}
+                              </h3>
+                              {res.is_fresh_graduate && (
+                                <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-[#0EA5E9]/30 flex items-center gap-1">
+                                  <GraduationCap className="w-3 h-3" />
+                                  {t.fresh_grad_badge || 'Fresh Grad'}
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${getRecBadge(res.recommendation)}`}>
+                                {res.recommendation}
+                              </span>
+                            </div>
+                            <p className="text-slate-400 text-sm flex items-center gap-2">
+                              <Briefcase className="w-3.5 h-3.5 text-slate-500" />
+                              {res.applications?.jobs?.title || 'Unknown Job'}
+                            </p>
                           </div>
-                          <div className={`ms-3 px-3 py-1.5 rounded-lg font-bold text-sm bg-gradient-to-br ${getScoreColor(res.final_score || 0)} shadow-lg`}>
-                            {res.final_score || 0}%
+
+                          <div className="flex items-center gap-6">
+                            {/* Score Metrics */}
+                            <div className="hidden sm:flex items-center gap-4 border-s border-[#1E293B] ps-6">
+                              <div className="text-center">
+                                <p className="text-[10px] font-bold text-slate-500 mb-0.5 uppercase tracking-tighter">{t.skills || 'Skills'}</p>
+                                <p className="text-sm font-black text-white">{res.skills_score}%</p>
+                              </div>
+                              {res.gpa_score && (
+                                <div className="text-center">
+                                  <p className="text-[10px] font-bold text-slate-500 mb-0.5 uppercase tracking-tighter">{t.gpa || 'GPA'}</p>
+                                  <p className="text-sm font-black text-[#0EA5E9]">{res.gpa_score}%</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Final Circle Score */}
+                            <div className="flex items-center justify-center relative">
+                              <svg className="w-14 h-14 -rotate-90">
+                                <circle cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-[#1E293B]" />
+                                <circle cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                                  strokeDasharray={2 * Math.PI * 24}
+                                  strokeDashoffset={2 * Math.PI * 24 * (1 - (res.final_score || 0) / 100)}
+                                  className={res.final_score >= 80 ? 'text-emerald-500' : res.final_score >= 60 ? 'text-amber-500' : 'text-red-500'} 
+                                />
+                              </svg>
+                              <span className="absolute text-[13px] font-black text-white">{res.final_score}%</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="mt-3 flex gap-2 flex-wrap">
-                          <span className="bg-[#1E293B]/50 px-2.5 py-1 rounded text-xs text-slate-300">
-                            {t.skills || 'Skills'}: <strong className="text-white">{res.skills_score}</strong>
-                          </span>
-                          <span className="bg-[#1E293B]/50 px-2.5 py-1 rounded text-xs text-slate-300">
-                            {t.language || 'Lang'}: <strong className="text-white">{res.language_score}</strong>
-                          </span>
+
+                        {/* Tags & Flags Ribbon */}
+                        <div className="mt-4 pt-4 border-t border-[#1E293B]/50 flex flex-wrap items-center gap-2">
+                          {(res.tags || []).map((tag, i) => (
+                            <span key={i} className="flex items-center gap-1.5 bg-[#0F172A] text-slate-400 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-[#1E293B] group-hover:border-[#1E293B] transition-colors">
+                              <Tag className="w-3 h-3 text-[#0EA5E9]" />
+                              {tag}
+                            </span>
+                          ))}
+                          {(res.flags || []).map((flag, i) => (
+                            <span key={i} className="flex items-center gap-1.5 bg-red-500/10 text-red-400 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-red-500/20">
+                              <AlertTriangle className="w-3 h-3" />
+                              {flag}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     ))
@@ -552,38 +649,207 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
       {/* Modals */}
       {selectedCandidate && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setSelectedCandidate(null)}>
-          <div className="bg-[#0F172A] rounded-2xl border border-[#1E293B] p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-white">{selectedCandidate.applications?.candidates?.name}</h2>
-                <p className="text-[#0EA5E9] font-medium text-sm mt-1">{selectedCandidate.applications?.jobs?.title}</p>
-              </div>
-              <div className={`text-3xl font-black px-4 py-2 rounded-xl bg-gradient-to-br ${getScoreColor(selectedCandidate.final_score)}`}>
-                {selectedCandidate.final_score}%
-              </div>
+        <div className="fixed inset-0 bg-[#020617]/80 backdrop-blur-xl flex items-center justify-center p-4 z-50 animate-in fade-in duration-300" onClick={() => setSelectedCandidate(null)}>
+          <div className="bg-[#0F172A] rounded-[2.5rem] border border-[#1E293B] shadow-2xl shadow-blue-500/10 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+            
+            {/* Modal Header */}
+            <div className="p-8 pb-4 relative overflow-hidden">
+               <div className={`absolute top-0 end-0 w-64 h-64 opacity-20 bg-gradient-to-br ${getScoreColor(selectedCandidate.final_score)} blur-3xl -translate-y-32 translate-x-32`} />
+               
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                  <div className="flex items-center gap-5">
+                    <div className={`w-20 h-20 rounded-3xl flex items-center justify-center bg-gradient-to-br shadow-xl ${getScoreColor(selectedCandidate.final_score)}`}>
+                       <span className="text-3xl font-black text-white">{selectedCandidate.final_score}%</span>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                        {selectedCandidate.applications?.candidates?.name}
+                        {selectedCandidate.is_fresh_graduate && (
+                          <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-[#0EA5E9]/30">
+                            {t.fresh_grad_badge || 'Fresh Grad'}
+                          </span>
+                        )}
+                      </h2>
+                      <p className="text-slate-400 font-medium flex items-center gap-2 mt-1">
+                        <Briefcase className="w-4 h-4 text-[#0EA5E9]" />
+                        {selectedCandidate.applications?.jobs?.title}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setSelectedCandidate(null)} className="p-3 bg-[#1E293B] hover:bg-[#334155] text-slate-400 hover:text-white rounded-2xl transition-all">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+               </div>
+
+               {/* Tab Navigation */}
+               <div className="flex items-center gap-1 mt-8 bg-[#1E293B]/30 p-1.5 rounded-2xl border border-[#1E293B]/50 max-w-md">
+                 <button 
+                   onClick={() => setModalTab('intelligence')}
+                   className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${modalTab === 'intelligence' ? 'bg-[#0369A1] text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                 >
+                   <Cpu className="w-3.5 h-3.5" />
+                   {t.neural_intelligence || 'Neural Intelligence'}
+                 </button>
+                 <button 
+                   onClick={() => setModalTab('overview')}
+                   className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${modalTab === 'overview' ? 'bg-[#1E293B] text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                 >
+                   <LayoutTemplate className="w-3.5 h-3.5" />
+                   {t.overview || 'Overview'}
+                 </button>
+                 <button 
+                   onClick={() => setModalTab('prep')}
+                   className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${modalTab === 'prep' ? 'bg-[#7C3AED] text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                 >
+                   <Target className="w-3.5 h-3.5" />
+                   {t.strategic_prep || 'Strategic Prep'}
+                 </button>
+               </div>
             </div>
-            <div className="space-y-4">
-              <div className="bg-[#020617]/50 rounded-xl p-4 border border-[#1E293B]/50">
-                <h3 className="font-semibold text-slate-200 mb-2 text-sm flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#0EA5E9]" />
-                  {t.ai_justification || 'AI Justification'}
-                </h3>
-                <p className="text-slate-300 text-sm leading-relaxed">{selectedCandidate.justification}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
-                  <h3 className="font-bold text-emerald-400 mb-2 text-sm flex items-center gap-2"><CheckCircle className="w-4 h-4" />{t.strengths || 'Strengths'}</h3>
-                  <ul className="text-sm text-emerald-200/80 space-y-1">{selectedCandidate.strengths?.map((s, i) => <li key={i}>• {s}</li>)}</ul>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-8 pt-4 space-y-6">
+              
+              {modalTab === 'intelligence' && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+                  {/* Scores Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#0EA5E9]/30 transition-all">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#0EA5E9]">{t.cultural_fit || 'Cultural Fit'}</p>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.cultural_fit_score || 0}%</div>
+                    </div>
+                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#F59E0B]/30 transition-all">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#F59E0B]">{t.project_impact || 'Project Impact'}</p>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.project_impact_score || 0}%</div>
+                    </div>
+                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#10B981]/30 transition-all">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#10B981]">{t.skills_match || 'Skills Match'}</p>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.skills_score || 0}%</div>
+                    </div>
+                  </div>
+
+                  {/* Career Trajectory */}
+                  <div className="bg-[#0369A1]/5 border border-[#0369A1]/20 p-6 rounded-3xl">
+                    <h3 className="text-[#0EA5E9] font-bold text-sm mb-3 flex items-center gap-2">
+                       <TrendingUp className="w-4 h-4" />
+                       {t.career_trajectory_title || 'Career Trajectory Prediction'}
+                    </h3>
+                    <p className="text-slate-300 text-sm italic leading-relaxed">
+                      "{selectedCandidate.career_trajectory || 'Predicting future growth path...'}"
+                    </p>
+                  </div>
+
+                  {/* Project Highlights (for grads) */}
+                  {selectedCandidate.project_highlights && selectedCandidate.project_highlights.length > 0 && (
+                    <div className="bg-[#020617]/30 border border-[#1E293B] p-6 rounded-3xl">
+                      <h3 className="text-slate-200 font-bold text-sm mb-4 flex items-center gap-2">
+                         <Sparkles className="w-4 h-4 text-[#F59E0B]" />
+                         {t.project_highlights_title || 'Academic & Research Highlights'}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedCandidate.project_highlights.map((h, i) => (
+                          <div key={i} className="flex items-start gap-3 bg-[#1E293B]/40 p-3 rounded-2xl border border-[#334155]/30">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9] mt-1.5 flex-shrink-0" />
+                            <span className="text-xs text-slate-300">{h}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="bg-red-500/10 p-4 rounded-xl border border-red-500/20">
-                  <h3 className="font-bold text-red-400 mb-2 text-sm flex items-center gap-2"><XCircle className="w-4 h-4" />{t.weaknesses || 'Weaknesses'}</h3>
-                  <ul className="text-sm text-red-200/80 space-y-1">{selectedCandidate.weaknesses?.map((w, i) => <li key={i}>• {w}</li>)}</ul>
+              )}
+
+              {modalTab === 'overview' && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+                  <div className="bg-[#1E293B]/20 border border-[#1E293B] p-6 rounded-3xl">
+                    <h3 className="text-slate-200 font-black text-sm mb-4 flex items-center gap-2 uppercase tracking-widest">
+                       <Zap className="w-4 h-4 text-[#0EA5E9]" />
+                       {t.ai_analysis || 'AI Rational Analysis'}
+                    </h3>
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      {selectedCandidate.justification}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-3xl">
+                      <h3 className="text-emerald-400 font-bold text-sm mb-3 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        {t.strengths || 'Key Strengths'}
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedCandidate.strengths?.map((s, i) => (
+                          <li key={i} className="text-xs text-emerald-100/70 py-1 border-b border-emerald-500/10 last:border-0">• {s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-red-500/5 border border-red-500/20 p-6 rounded-3xl">
+                      <h3 className="text-red-400 font-bold text-sm mb-3 flex items-center gap-2">
+                        <XCircle className="w-4 h-4" />
+                        {t.improvement_areas || 'Weaknesses'}
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedCandidate.weaknesses?.map((w, i) => (
+                          <li key={i} className="text-xs text-red-100/70 py-1 border-b border-red-500/10 last:border-0">• {w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {modalTab === 'prep' && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+                  {/* Interview Questions */}
+                  <div className="bg-[#7C3AED]/5 border border-[#7C3AED]/20 p-6 rounded-3xl">
+                    <h3 className="text-[#A78BFA] font-bold text-sm mb-4 flex items-center gap-2">
+                       <MessageSquare className="w-4 h-4" />
+                       {t.recommended_questions || 'Neural Interview Strategy'}
+                    </h3>
+                    <div className="space-y-3">
+                      {(selectedCandidate.interview_questions || []).map((q, i) => (
+                        <div key={i} className="bg-[#1E293B]/60 p-4 rounded-2xl border border-[#7C3AED]/10 text-xs text-slate-200 leading-relaxed shadow-sm">
+                          {q}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Industry-Bridge Roadmap */}
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-3xl">
+                    <h3 className="text-emerald-400 font-bold text-sm mb-4 flex items-center gap-2">
+                       <ArrowUpRight className="w-4 h-4" />
+                       {t.industry_roadmap || 'Industry-Bridge Roadmap'}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(selectedCandidate.training_suggestions || []).map((tS, i) => (
+                        <div key={i} className="flex items-center gap-3 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
+                          <BookOpen className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs text-emerald-100/80 font-medium">{tS}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="mt-6 pt-4 border-t border-[#1E293B] flex justify-end">
-              <button onClick={() => setSelectedCandidate(null)} className="px-5 py-2 bg-[#020617] text-slate-300 hover:bg-[#1E293B] rounded-lg text-sm">{t.close || 'Close'}</button>
+
+            {/* Modal Footer */}
+            <div className="p-8 pt-0 border-t border-[#1E293B] bg-[#0F172A] mt-auto">
+              <div className="flex justify-between items-center mt-6">
+                 <div className="flex gap-2">
+                   <button onClick={() => window.open(selectedCandidate.applications?.candidates?.cv_url, '_blank')} className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                     <FileText className="w-4 h-4" />
+                     {t.view_cv || 'View Original CV'}
+                   </button>
+                 </div>
+                 <button onClick={() => setSelectedCandidate(null)} className="px-8 py-2.5 bg-white text-black hover:bg-slate-200 rounded-xl text-sm font-black transition-all">
+                   {t.close || 'Done'}
+                 </button>
+              </div>
             </div>
           </div>
         </div>

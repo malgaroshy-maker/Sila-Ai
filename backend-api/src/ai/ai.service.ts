@@ -68,25 +68,33 @@ export class AiService {
         "language_score": 0,
         "ind_readiness_score": 0,
         "final_score": 0,
-        "strengths": ["نقاط القوة"],
-        "weaknesses": ["نقاط الضعف"],
+        "is_fresh_graduate": false,
+        "project_impact_score": 0,
+        "cultural_fit_score": 0,
+        "career_trajectory": "تحليل مسار المرشح المهني وتوجهه المستقبلي",
+        "project_highlights": ["أبرز مشروع أو إنجاز 1", "إنجاز 2"],
+        "strengths": ["نقطة قوة 1"],
+        "weaknesses": ["نقطة ضعف 1"],
         "recommendation": "Strong|Average|Weak",
-        "justification": "مبرر التقييم باختصار",
-        "tags": ["Senior", "Full-Stack"],
-        "flags": [],
-        "interview_questions": ["سؤال مقابلة مخصص 1", "سؤال 2", "سؤال 3"],
-        "training_suggestions": ["اقتراح تدريبي 1"]
+        "justification": "مبرر التقييم باختصار مع ذكر الملاءمة الثقافية والتوقعات",
+        "tags": ["Senior", "Junior", "🎓 Fresh Grad", "Full-Stack"],
+        "flags": ["🚩 Gap Detected", "🚩 Missing Tool"],
+        "interview_questions": ["سؤال مقابلة مخصص 1 (ركز على المشاريع للخريجين الجدد)", "سؤال 2", "سؤال 3"],
+        "training_suggestions": ["اقتراح لسد الفجوة بين الأكاديميا والصناعة (خاصة للخريجين)", "اقتراح 2"]
       }
 
       تعليمات مهمة:
-      - skills_score, language_score, ind_readiness_score, final_score: أرقام من 0 إلى 100
-      - gpa_score: إذا كان المعدل التراكمي (GPA) مذكور في السيرة الذاتية، أدخل الدرجة من 100. إذا لم يُذكر المعدل التراكمي، اجعل القيمة null
-      - strengths و weaknesses: قوائم نصية
-      - recommendation: "Strong" أو "Average" أو "Weak"
-      - tags: مصفوفة من التصنيفات التلقائية مثل "Senior", "Junior", "Full-Stack", "Backend", "Frontend", "Fresh Graduate", "Manager" إلخ
-      - flags: مصفوفة من التنبيهات مثل "Weak CV" (سيرة ذاتية ضعيفة), "Overqualified" (مؤهل أكثر من اللازم), "Missing Key Skills" (مهارات أساسية مفقودة). اتركها فارغة [] إذا لم يكن هناك تنبيهات
-      - interview_questions: 3 أسئلة مقابلة مخصصة بناءً على السيرة الذاتية والوظيفة
-      - training_suggestions: اقتراحات تدريبية لتحسين المرشح. اتركها فارغة [] إذا كان المرشح قوياً
+      - is_fresh_graduate: true إذا كان المرشح طالباً حالياً أو تخرج مؤخراً (خلال سنتين) وليس لديه خبرة مهنية كبيرة.
+      - project_impact_score: للخريجين الجدد، قم بتقييم مشاريعهم الجامعية كبديل لسنوات الخبرة (0-100). للمحترفين، استخدم 0.
+      - cultural_fit_score: مدى ملاءمة شخصية ومهارات المرشح لبيئة العمل (0-100).
+      - career_trajectory: وصف قصير لمسار نمو المرشح المتوقع.
+      - project_highlights: قائمة بأهم 2-3 مشاريع أو إنجازات تقنية/أكاديمية.
+      - skills_score, language_score, ind_readiness_score, final_score: أرقام من 0 إلى 100.
+      - gpa_score: المعدل التراكمي من 100 إذا وجد، وإلا null.
+      - tags: مصفوفة تشمل "🎓 Fresh Grad" إذا كان خريجاً جديداً، بالإضافة لمهاراته الأساسية.
+      - flags: مصفوفة تنبيهات مثل "🚩 Gap Detected", "🚩 Job Hopper", "🚩 Missing Tool", "🚩 Overqualified".
+      - interview_questions: 3 أسئلة، ركز في حالة الخريجين على مشاريعهم وقدرتهم على التعلم.
+      - training_suggestions: ركز على سد الفجوة المهنية للخريجين (Industry-Bridge).
       
       ${settings.aiMode === 'strict' 
         ? 'STRICT MODE ACTIVE: You must heavily penalize any missing skills or requirements. Do NOT give partial credit. If exact requirements are not met, the ind_readiness_score and final_score MUST be very low.' 

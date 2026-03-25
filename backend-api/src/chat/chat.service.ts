@@ -69,7 +69,8 @@ export class ChatService {
     const analysisSummary = analyses.map(a => {
       const name = a.applications?.candidates?.name || 'Unknown';
       const job = a.applications?.jobs?.title || 'Unknown Job';
-      return `- ${name} | Job: "${job}" | Score: ${a.final_score}/100 | Rec: ${a.recommendation} | Tags: ${a.tags?.join(', ')}`;
+      const isGrad = a.is_fresh_graduate ? '🎓 Fresh Grad' : 'Professional';
+      return `- ${name} (${isGrad}) | Job: "${job}" | Score: ${a.final_score}/100 | Fit: ${a.cultural_fit_score}/100 | Trajectory: ${a.career_trajectory} | Tags: ${a.tags?.join(', ')}`;
     }).join('\n');
 
     const systemPrompt = `أنت مساعد ذكاء اصطناعي متخصص في التوظيف (RAG-Enabled).
