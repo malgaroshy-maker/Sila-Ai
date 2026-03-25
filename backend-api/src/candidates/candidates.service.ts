@@ -88,6 +88,11 @@ export class CandidatesService {
       this.logger.log(`Extracting candidate info from CV text for ${email}...`);
       const extracted = await this.aiService.extractCandidateInfo(userEmail, cvText, cvBuffer, file.mimetype);
       
+      if (!extracted.is_cv) {
+        this.logger.warn(`Document for ${email} identified as non-CV. Skipping ingestion.`);
+        return null; // Return null so caller knows to skip
+      }
+
       // Only override if AI found something plausible (not "Unknown" or the default placeholder)
       if (extracted.name && extracted.name !== 'Unknown') {
         finalName = extracted.name;
@@ -98,7 +103,8 @@ export class CandidatesService {
       
       this.logger.log(`Extraction result: ${finalName} <${finalEmail}> (Original: ${name} <${email}>)`);
     } catch (e: any) {
-      this.logger.warn(`Candidate info extraction failed: ${e.message}. Using provided info.`);
+      this.logger.warn(`Candidate info extraction failed or non-CV detected: ${e.message}.`);
+      // If we already returned null above, this won't be reached if it was a purposeful stop
     }
 
     // 2. Upsert Candidate record
@@ -338,6 +344,9 @@ export class CandidatesService {
 
     // 3. Ingest the candidate
     const candidate = await this.ingestCandidate(userEmail, info.name, info.email, file);
+    if (!candidate) {
+      return { candidate: null, analyses: [], message: 'Skipped: Not a professional CV' };
+    }
 
     // 4. Analyze against ALL jobs
     const analyses = await this.analyzeForAllJobs(userEmail, candidate);

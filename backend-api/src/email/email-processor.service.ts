@@ -231,7 +231,11 @@ export class EmailProcessorService {
                 candidate = await this.candidatesService.ingestCandidate(account.user_email, candidateName, candidateEmail, mockFile);
               }
 
-              await this.candidatesService.analyzeForAllJobs(account.user_email, candidate, true);
+              if (candidate) {
+                await this.candidatesService.analyzeForAllJobs(account.user_email, candidate, true);
+              } else {
+                this.logger.warn(`File ${part.filename} from ${candidateEmail} was not a CV. Skipping.`);
+              }
             }
 
             if (part.parts) {
@@ -303,24 +307,31 @@ export class EmailProcessorService {
   }
 
   private isProbablyCV(filename: string, snippet: string): boolean {
-    const cvKeywords = ['cv', 'resume', 'السيرة', 'الذاتية', 'application', 'profile', 'job', 'hiring', 'recruitment'];
+    const cvKeywords = ['cv', 'resume', 'السيرة', 'الذاتية', 'application', 'profile', 'job', 'hiring', 'recruitment', 'experience', 'career'];
     const lowerFile = filename.toLowerCase();
     const lowerSnippet = snippet.toLowerCase();
     
     // If filename has CV keywords, it's very likely
     if (filename && cvKeywords.some(kw => lowerFile.includes(kw))) return true;
     
+    // Filter out common non-CV noise (marketing, welcome emails, etc.)
+    const noiseKeywords = [
+      'unsubscribe', 'privacy policy', 'welcome to', 'subscription', 'verify your email', 
+      'newsletter', 'promo', 'discount', 'invoice', 'receipt', 'shipping notice',
+      'password reset', 'your order', 'one-time password', 'security alert'
+    ];
+    if (noiseKeywords.some(kw => lowerSnippet.includes(kw))) return false;
+
     // If snippet has CV keywords
     if (cvKeywords.some(kw => lowerSnippet.includes(kw))) return true;
 
-    // Filter out common non-CV noise (marketing, welcome emails, etc.)
-    const spamKeywords = ['unsubscribe', 'privacy policy', 'welcome to', 'subscription', 'verify your email', 'newsletter'];
-    if (spamKeywords.some(kw => lowerSnippet.includes(kw))) return false;
-
-    // If it has "Attached" and common CV extensions, it's a good candidate
-    const attachmentKeywords = ['attach', 'file', 'cv', 'pdf', 'docx'];
+    // If it has "Attached" and common CV extensions in text, it's a good candidate
+    const attachmentKeywords = ['attach', 'file', 'cv', 'pdf', 'docx', 'resume'];
     if (attachmentKeywords.some(kw => lowerSnippet.includes(kw))) return true;
 
-    return true; // Default to true to avoid missing potential CVs
+    // If it's a very short email without keywords, it's probably noise
+    if (lowerSnippet.length < 50 && !cvKeywords.some(kw => lowerSnippet.includes(kw))) return false;
+
+    return true; // Default to true to avoid missing potential CVs (AI check will be second line of defense)
   }
 }

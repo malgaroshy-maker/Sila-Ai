@@ -122,19 +122,29 @@ export class AiService {
   /**
    * Extract candidate name and email from CV text using AI.
    */
-  async extractCandidateInfo(userEmail: string, cvText: string, cvBuffer?: Buffer, mimeType?: string): Promise<{ name: string; email: string }> {
+  async extractCandidateInfo(userEmail: string, cvText: string, cvBuffer?: Buffer, mimeType?: string): Promise<{ name: string; email: string; is_cv: boolean }> {
     const settings = await this.getSettings(userEmail);
     const genAI = new GoogleGenerativeAI(settings.apiKey);
     const model = genAI.getGenerativeModel({ model: settings.model });
 
     const prompt = `
-      Extract the candidate's full name and email address from this CV/resume text.
+      Extract the candidate's full name and email address from this text.
+      Also, determine if this document is actually a Professional CV/Resume for a job candidate.
+
       Return ONLY a JSON object with no extra text:
-      { "name": "Full Name", "email": "email@example.com" }
+      { 
+        "name": "Full Name", 
+        "email": "email@example.com",
+        "is_cv": true 
+      }
       
-      If the name or email is not found, use "Unknown" for name and "unknown@uploaded.cv" for email.
+      CRITICAL INSTRUCTIONS:
+      - If the document is an image that doesn't contain a clear CV (like a logo, icon, or personal photo), set "is_cv": false.
+      - If it is just a short cover letter, interview invitation, or company document, set "is_cv": false.
+      - Default to "is_cv": true only if it is clearly a professional profile or resume.
+      - If the name or email is not found, use "Unknown" for name and "unknown@uploaded.cv" for email.
       
-      CV Text:
+      Text Content:
       ${cvText}
     `;
 
@@ -159,11 +169,12 @@ export class AiService {
       // Safety check: ensure name and email are never null or empty strings
       return {
         name: parsed.name && parsed.name.trim() !== '' ? parsed.name : 'Unknown',
-        email: parsed.email && parsed.email.trim() !== '' ? parsed.email : 'unknown@uploaded.cv'
+        email: parsed.email && parsed.email.trim() !== '' ? parsed.email : 'unknown@uploaded.cv',
+        is_cv: parsed.is_cv === true
       };
     } catch (error: any) {
       this.logger.error('Failed to extract candidate info:', error.message);
-      return { name: 'Unknown', email: 'unknown@uploaded.cv' };
+      return { name: 'Unknown', email: 'unknown@uploaded.cv', is_cv: true }; // Default to true on error to avoid false positives
     }
   }
 
