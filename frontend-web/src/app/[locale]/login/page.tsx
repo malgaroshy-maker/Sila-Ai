@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { HelpCircle, Sparkles, ShieldCheck } from 'lucide-react';
+import { HelpCircle, Sparkles, ShieldCheck, ChevronRight } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations('Login');
@@ -29,77 +29,126 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafbfc] p-6 relative overflow-hidden font-sans">
-      {/* Background blobs */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-blue-100/50 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-[-5%] left-[-5%] w-80 h-80 bg-emerald-100/40 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen flex bg-white font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Left Column: Visual Storytelling (Hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-900 shrink-0">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/images/login-hero.png" 
+            alt="AI Recruitment Brain" 
+            className="w-full h-full object-cover opacity-60 scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/40 to-transparent" />
+        </div>
 
-      {/* Language Switcher Corner */}
-      <div className="absolute top-8 right-8 z-10">
-        <LanguageSwitcher />
-      </div>
-
-      {/* Main Card */}
-      <div className="max-w-md w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-blue-900/5 border border-slate-100 text-center relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
-          
-          <div className="mb-10 space-y-4">
-            <div className="inline-flex p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-2 transform group-hover:rotate-12 transition-transform duration-500">
-              <Sparkles className="text-blue-600 h-8 w-8" />
+        <div className="relative z-10 p-16 flex flex-col justify-between w-full">
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
+                <Sparkles className="text-indigo-400 h-8 w-8" />
+              </div>
+              <span className="text-2xl font-black text-white tracking-widest uppercase italic">ARIS</span>
             </div>
-            <div>
-              <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight mb-2 leading-tight">
-                {t('welcome')}
-              </h1>
-              <p className="text-slate-500 font-medium text-lg">
-                {t('subtitle')}
+            
+            <div className="space-y-8 mt-12">
+              <h2 className="text-5xl xl:text-7xl font-black text-white leading-[1.1] tracking-tight max-w-xl">
+                The AI Brain for <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-blue-400 to-emerald-400 italic">Modern Hiring.</span>
+              </h2>
+              <p className="text-xl text-slate-300 font-medium max-w-lg leading-relaxed">
+                Connect your inbox and let our neural engine score, rank, and shortlist candidates in seconds.
               </p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl">
+            <div className="space-y-2">
+              <div className="text-indigo-400 font-black text-2xl tracking-tight">95%</div>
+              <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Analysis Accuracy</p>
+            </div>
+            <div className="space-y-2">
+              <div className="text-emerald-400 font-black text-2xl tracking-tight">10x</div>
+              <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Faster Hiring</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column: Auth Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-16 relative bg-[#fafbfc]">
+        <div className="absolute top-8 start-8 z-10 flex items-center gap-4">
+          <LanguageSwitcher />
+        </div>
+
+        <div className="max-w-md w-full space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="text-center lg:text-start">
+            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-4">
+              {t('welcome')}
+            </h1>
+            <p className="text-lg text-slate-500 font-medium">
+              {t('subtitle')}
+            </p>
           </div>
 
           <div className="space-y-4">
             <button 
               onClick={() => handleLogin('google')} 
               disabled={!!isLoading}
-              className="w-full h-16 flex items-center justify-center gap-4 bg-white border-2 border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 text-slate-700 px-8 rounded-2xl font-bold text-lg transition-all duration-300 cursor-pointer disabled:opacity-50 group/btn shadow-sm hover:shadow-md"
+              className="w-full h-16 group relative flex items-center justify-between bg-white border-2 border-slate-100 hover:border-indigo-400 hover:bg-slate-50 text-slate-900 px-8 rounded-2xl font-black text-lg transition-all duration-300 cursor-pointer disabled:opacity-50 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 active:scale-95"
             >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6 group-hover/btn:scale-110 transition-transform" />
-              <span>{isLoading === 'google' ? t('connecting') : t('google')}</span>
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-50 group-hover:scale-110 transition-transform">
+                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6" />
+                </div>
+                <span>{isLoading === 'google' ? t('connecting') : t('google')}</span>
+              </div>
+              <ChevronRight className={`w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors ${locale === 'ar' ? 'rotate-180' : ''}`} />
             </button>
 
             <button 
-              onClick={() => handleLogin('azure')} 
-              disabled={!!isLoading}
-              className="w-full h-16 flex items-center justify-center gap-4 bg-white border-2 border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 text-slate-700 px-8 rounded-2xl font-bold text-lg transition-all duration-300 cursor-pointer disabled:opacity-50 group/btn shadow-sm hover:shadow-md"
+              disabled
+              className="w-full h-16 group relative flex items-center justify-between bg-slate-50 border-2 border-slate-100/50 text-slate-400 px-8 rounded-2xl font-bold text-lg opacity-70 grayscale cursor-not-allowed"
             >
-              <img src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft" className="w-6 h-6 group-hover/btn:scale-110 transition-transform" />
-              <span>{isLoading === 'azure' ? t('connecting') : t('microsoft')}</span>
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100/50">
+                  <img src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft" className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col items-start leading-none">
+                  <span>{t('microsoft')}</span>
+                  <span className="text-[10px] font-black tracking-widest uppercase mt-1 text-slate-400">
+                    {t('coming_soon')}
+                  </span>
+                </div>
+              </div>
             </button>
           </div>
 
-          <Link 
-            href="/about" 
-            className="mt-8 flex items-center justify-center gap-2 text-slate-400 hover:text-blue-600 font-bold transition-all p-3 rounded-xl hover:bg-blue-50/50"
-          >
-            <HelpCircle size={18} />
-            {t('about')}
-          </Link>
+          <div className="pt-4 space-y-8">
+            <Link 
+              href="/about?from=login" 
+              className="group flex items-center justify-center lg:justify-start gap-3 text-slate-500 hover:text-indigo-600 font-black transition-all"
+            >
+              <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-50 transition-colors">
+                <HelpCircle size={18} />
+              </div>
+              <span className="underline underline-offset-4 decoration-2 decoration-slate-200 group-hover:decoration-indigo-200">{t('about')}</span>
+            </Link>
 
-          <div className="mt-8 pt-8 border-t border-slate-50 flex items-start gap-3 text-start text-xs text-slate-400 font-medium leading-relaxed">
-            <ShieldCheck size={28} className="text-blue-200 shrink-0" />
-            <p>{t('disclaimer')}</p>
+            <div className="p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100/50 flex items-start gap-4 text-start">
+              <ShieldCheck size={28} className="text-indigo-500 shrink-0 mt-1" />
+              <div>
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                  {t('disclaimer')}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <footer className="mt-12 text-slate-400 text-sm font-semibold tracking-wide flex items-center gap-4">
-        <span>ARIS • AI Recruitment Intelligence</span>
-        <div className="w-1 h-1 bg-slate-300 rounded-full" />
-        <span>v1.0</span>
-      </footer>
+        <footer className="mt-auto pt-16 w-full max-w-md flex items-center justify-between text-slate-400 text-[10px] font-black uppercase tracking-widest">
+          <span>ARIS • v1.0</span>
+          <span>© {new Date().getFullYear()}</span>
+        </footer>
+      </div>
     </div>
   );
 }

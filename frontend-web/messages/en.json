@@ -139,13 +139,15 @@
     "microsoft": "Continue with Microsoft (Outlook)",
     "connecting": "Connecting...",
     "disclaimer": "Continuing will grant read access to your inbox for automated CV extraction.",
-    "about": "About System"
+    "about": "About System",
+    "coming_soon": "(Coming Soon)"
   },
   "About": {
     "title": "AI Recruitment Intelligence System",
     "subtitle": "ARIS Recruitment System",
     "description": "A revolutionary platform connecting talent with opportunities using state-of-the-art Natural Language Processing.",
     "back_to_login": "Back to Login",
+    "back_to_dashboard": "Back to Dashboard",
     "developer": "Lead Developer",
     "developer_name": "Mahamed Algaroshy",
     "developer_desc": "Electrical Engineer and Software Developer, passionate about creating innovative apps that serve the community and integrate latest AI technologies.",

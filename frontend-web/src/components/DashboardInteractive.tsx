@@ -339,7 +339,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
           </div>
           <div className="flex items-center gap-3">
             <Link 
-              href="/about" 
+              href="/about?from=dashboard" 
               className="text-slate-400 hover:text-[#0EA5E9] transition-colors p-2 rounded-lg hover:bg-[#1E293B]"
               title={t.about || 'About System'}
             >

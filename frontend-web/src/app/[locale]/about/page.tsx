@@ -1,140 +1,166 @@
+'use client';
+
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
+import { useSearchParams } from 'next/navigation';
 import { 
   ChevronRight, Cpu, LayoutTemplate, ShieldCheck, 
-  Sparkles, Mail, Globe, Zap
+  Sparkles, Mail, Globe, Zap, ArrowLeft
 } from 'lucide-react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function AboutPage() {
   const t = useTranslations('About');
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
   const isRtl = locale === 'ar';
 
+  const backHref = from === 'dashboard' ? '/' : '/login';
+  const backLabel = from === 'dashboard' ? t('back_to_dashboard') : t('back_to_login');
+
   return (
-    <div className="min-h-screen bg-[#fafbfc] text-slate-900 selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden font-sans">
-      {/* Background Decorative Elements */}
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-indigo-500/30 overflow-x-hidden font-sans">
+      {/* Premium Background Visuals */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-100/40 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[5%] right-[-5%] w-[35%] h-[35%] bg-emerald-100/30 rounded-full blur-[100px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/20 rounded-full blur-[160px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[140px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5" />
       </div>
 
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-slate-200/50 px-6 py-4">
+      <nav className="sticky top-0 z-50 bg-slate-950/50 backdrop-blur-2xl border-b border-white/5 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link 
-            href="/" 
-            className="flex items-center gap-2 group transition-all"
+            href={backHref} 
+            className="flex items-center gap-3 group px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-indigo-500/50 transition-all active:scale-95"
           >
-            <div className="p-2 bg-slate-900 rounded-lg group-hover:bg-blue-600 transition-colors">
-              <ChevronRight className={`text-white h-4 w-4 transition-transform ${isRtl ? '' : 'rotate-180'}`} />
+            <div className={`p-1.5 bg-indigo-500 rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]`}>
+              <ArrowLeft className={`text-white h-4 w-4 transition-transform ${isRtl ? 'rotate-180' : ''} group-hover:-translate-x-0.5`} />
             </div>
-            <span className="font-semibold text-slate-700 group-hover:text-blue-600">
-              {t('back_to_login')}
+            <span className="font-bold text-slate-200 group-hover:text-white transition-colors">
+              {backLabel}
             </span>
           </Link>
 
-          <LanguageSwitcher />
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
+          </div>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-12 lg:py-24">
-        {/* Header Section */}
-        <div className="text-center space-y-6 mb-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-semibold tracking-wide uppercase">
-            <Sparkles size={14} />
+      <main className="max-w-6xl mx-auto px-6 py-16 lg:py-32">
+        {/* Hero Section */}
+        <div className="text-center space-y-8 mb-32 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-black tracking-widest uppercase">
+            <Sparkles size={14} className="animate-spin-slow" />
             {t('title')}
           </div>
-          <h1 className="text-4xl lg:text-6xl font-black bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight tracking-tight">
+          <h1 className="text-5xl lg:text-8xl font-black bg-gradient-to-br from-white via-slate-200 to-slate-500 bg-clip-text text-transparent leading-[1.1] tracking-tighter">
             {t('subtitle')}
           </h1>
-          <p className="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-xl lg:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-medium">
             {t('description')}
           </p>
         </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-40">
           {[
-            { icon: Cpu, color: 'text-blue-600', bg: 'bg-blue-50', title: t('feature_ai_title'), desc: t('feature_ai_desc') },
-            { icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', title: t('feature_security_title'), desc: t('feature_security_desc') },
-            { icon: LayoutTemplate, color: 'text-purple-600', bg: 'bg-purple-50', title: t('feature_pipeline_title'), desc: t('feature_pipeline_desc') }
+            { icon: Cpu, color: 'text-indigo-400', glow: 'shadow-indigo-500/20', title: t('feature_ai_title'), desc: t('feature_ai_desc') },
+            { icon: ShieldCheck, color: 'text-emerald-400', glow: 'shadow-emerald-500/20', title: t('feature_security_title'), desc: t('feature_security_desc') },
+            { icon: LayoutTemplate, color: 'text-blue-400', glow: 'shadow-blue-500/20', title: t('feature_pipeline_title'), desc: t('feature_pipeline_desc') }
           ].map((feature, i) => (
-            <div key={i} className="group p-8 bg-white/60 backdrop-blur-sm border border-slate-200 rounded-3xl hover:shadow-2xl hover:shadow-blue-200/20 transition-all duration-300 hover:-translate-y-2">
-              <div className={`w-14 h-14 rounded-2xl ${feature.bg} flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform`}>
-                <feature.icon className={`${feature.color} h-7 w-7`} />
+            <div key={i} className="group relative p-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-500 overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className={`w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8 border border-white/10 group-hover:scale-110 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/30 transition-all duration-500 shadow-2xl ${feature.glow}`}>
+                <feature.icon className={`${feature.color} h-8 w-8`} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-slate-800">{feature.title}</h3>
-              <p className="text-slate-500 leading-relaxed font-medium">{feature.desc}</p>
+              <h3 className="text-2xl font-black mb-4 text-white tracking-tight">{feature.title}</h3>
+              <p className="text-slate-400 leading-relaxed font-medium text-lg">{feature.desc}</p>
             </div>
           ))}
         </div>
 
-        {/* Team / Credits Section */}
-        <div className="relative p-8 lg:p-16 mb-32 rounded-[3rem] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] pointer-events-none" />
-          
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Developer */}
-            <div className="space-y-8 bg-white/5 backdrop-blur-md p-10 rounded-[2.5rem] border border-white/10 hover:border-blue-400/30 transition-colors">
-              <div className="flex items-center gap-5">
-                <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-400/20 shadow-inner">
-                  <Cpu className="text-blue-400 h-8 w-8" />
+        {/* Visionaries Section */}
+        <div className="relative p-1 lg:p-1 mb-40 rounded-[4rem] bg-gradient-to-br from-indigo-500/20 to-blue-500/20 shadow-2xl shadow-indigo-500/10">
+          <div className="bg-slate-950 rounded-[3.9rem] p-10 lg:p-20 overflow-hidden relative">
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px]" />
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px]" />
+            
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20">
+              {/* Lead Developer */}
+              <div className="space-y-10 group">
+                <div className="flex items-center gap-6">
+                  <div className="p-5 bg-indigo-500/10 rounded-3xl border border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500">
+                    <Cpu className="h-10 w-10" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black text-white tracking-tight">{t('developer_name')}</h2>
+                    <p className="text-indigo-400 font-black uppercase tracking-[0.2em] text-xs mt-1">{t('developer')}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-blue-400/80 font-bold uppercase tracking-widest text-[10px] mb-1">{t('developer')}</p>
-                  <h2 className="text-3xl font-black text-white">{t('developer_name')}</h2>
+                <p className="text-slate-400 leading-relaxed text-xl font-medium italic border-s-4 border-indigo-500/30 ps-6">
+                  "{t('developer_desc')}"
+                </p>
+                <div className="flex gap-4">
+                  <span className="px-5 py-2.5 bg-white/5 rounded-xl border border-white/10 text-slate-300 font-bold text-sm tracking-wide">Next.js Architect</span>
+                  <span className="px-5 py-2.5 bg-white/5 rounded-xl border border-white/10 text-slate-300 font-bold text-sm tracking-wide">AI Engineer</span>
                 </div>
               </div>
-              <p className="text-slate-300 leading-relaxed text-lg">
-                {t('developer_desc')}
-              </p>
-              <div className="flex gap-4">
-                 <button className="p-3 bg-white/5 rounded-xl border border-white/10 text-white hover:bg-white hover:text-slate-900 transition-all cursor-pointer">
-                  <Globe size={20} />
-                 </button>
-                 <button className="p-3 bg-white/5 rounded-xl border border-white/10 text-white hover:bg-white hover:text-slate-900 transition-all cursor-pointer">
-                  <Mail size={20} />
-                 </button>
-              </div>
-            </div>
 
-            {/* Idea Contributor */}
-            <div className="space-y-8 bg-white/5 backdrop-blur-md p-10 rounded-[2.5rem] border border-white/10 hover:border-emerald-400/30 transition-colors">
-              <div className="flex items-center gap-5">
-                <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-400/20 shadow-inner">
-                  <Sparkles className="text-emerald-400 h-8 w-8" />
+              {/* Concept Originator */}
+              <div className="space-y-10 group">
+                <div className="flex items-center gap-6">
+                  <div className="p-5 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500">
+                    <Sparkles className="h-10 w-10" />
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black text-white tracking-tight">{t('idea_name')}</h2>
+                    <p className="text-emerald-400 font-black uppercase tracking-[0.2em] text-xs mt-1">{t('idea')}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-emerald-400/80 font-bold uppercase tracking-widest text-[10px] mb-1">{t('idea')}</p>
-                  <h2 className="text-3xl font-black text-white">{t('idea_name')}</h2>
+                <p className="text-slate-400 leading-relaxed text-xl font-medium italic border-s-4 border-emerald-500/30 ps-6">
+                  "{t('idea_desc')}"
+                </p>
+                <div className="flex gap-4">
+                  <div className="px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-sm font-black uppercase tracking-wider">
+                    {t('role_originator')}
+                  </div>
                 </div>
-              </div>
-              <p className="text-slate-300 leading-relaxed text-lg">
-                {t('idea_desc')}
-              </p>
-              <div className="flex gap-4">
-                 <div className="px-6 py-3 bg-emerald-500/20 border border-emerald-400/30 rounded-2xl text-emerald-300 text-sm font-black uppercase tracking-wider">
-                   {t('role_originator')}
-                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer info */}
-        <footer className="text-center pt-10 border-t border-slate-200/50 space-y-6">
-          <div className="flex items-center justify-center gap-8 flex-wrap opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="flex items-center gap-2 font-bold"><Globe size={18} /> {t('tech_next')}</div>
-            <div className="flex items-center gap-2 font-bold"><Zap size={18} /> {t('tech_tailwind')}</div>
-            <div className="flex items-center gap-2 font-bold"><Sparkles size={18} /> {t('tech_gemini')}</div>
+        {/* Tech Stack Footer */}
+        <div className="text-center pt-20 border-t border-white/5 space-y-12">
+          <div className="flex items-center justify-center gap-12 flex-wrap opacity-30 hover:opacity-100 transition-opacity duration-700 grayscale hover:grayscale-0">
+            <div className="flex items-center gap-3 font-black tracking-widest uppercase text-sm"><Globe size={20} /> {t('tech_next')}</div>
+            <div className="flex items-center gap-3 font-black tracking-widest uppercase text-sm"><Zap size={20} /> {t('tech_tailwind')}</div>
+            <div className="flex items-center gap-3 font-black tracking-widest uppercase text-sm"><Sparkles size={20} /> {t('tech_gemini')}</div>
           </div>
-          <p className="text-slate-400 text-sm font-semibold tracking-tight">
-            © {new Date().getFullYear()} ARIS - AI Recruitment Intelligence System. {t('footer_crafted')} {t('developer_name')}.
-          </p>
-        </footer>
+          
+          <div className="space-y-4">
+            <div className="flex justify-center items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-[0.3em]">
+              Crafted With Passion
+            </div>
+            <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
+              © {new Date().getFullYear()} ARIS • AI Recruitment Intelligence System • Developed by {t('developer_name')}
+            </p>
+          </div>
+        </div>
       </main>
+
+      <style jsx global>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
