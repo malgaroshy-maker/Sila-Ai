@@ -24,6 +24,12 @@ export class CandidatesService {
     let cvText = '';
     let cvBuffer: Buffer | undefined = undefined;
 
+    // Reject files larger than 10MB (extremely unlikely for a CV)
+    if (file && file.size > 10 * 1024 * 1024) {
+      this.logger.warn(`File ${file.originalname} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Skipping.`);
+      return null;
+    }
+
     if (!file || !file.buffer) {
       this.logger.warn('ingestCandidate called with missing file or buffer');
       cvText = '[Missing CV Content]';
@@ -53,6 +59,14 @@ export class CandidatesService {
         const { PDFParse } = require('pdf-parse');
         const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
         const pdfData = await parser.getText();
+        
+        // Reject if more than 5 pages (CVs are rarely longer)
+        if (pdfData.numpages > 5) {
+          this.logger.warn(`PDF ${file.originalname} has ${pdfData.numpages} pages. Skipping (Max 5).`);
+          await parser.destroy();
+          return null;
+        }
+
         cvText = pdfData.text || '';
         await parser.destroy();
 
@@ -287,6 +301,12 @@ export class CandidatesService {
       throw new InternalServerErrorException('File or buffer is missing');
     }
 
+    // Reject files larger than 10MB (extremely unlikely for a CV)
+    if (file.size > 10 * 1024 * 1024) {
+      this.logger.warn(`File ${file.originalname} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Skipping.`);
+      return { candidate: null, analyses: [], message: 'Skipped: File too large' };
+    }
+
     if (file.mimetype === 'text/plain') {
       cvText = file.buffer.toString('utf8');
     } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -313,6 +333,14 @@ export class CandidatesService {
         const { PDFParse } = require('pdf-parse');
         const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
         const pdfData = await parser.getText();
+
+        // Reject if more than 5 pages (CVs are rarely longer)
+        if (pdfData.numpages > 5) {
+          this.logger.warn(`PDF ${file.originalname} has ${pdfData.numpages} pages. Skipping (Max 5).`);
+          await parser.destroy();
+          return { candidate: null, analyses: [], message: 'Skipped: Too many pages' };
+        }
+
         cvText = pdfData.text || '';
         await parser.destroy();
 
