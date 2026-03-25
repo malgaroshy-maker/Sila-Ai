@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw } from 'lucide-react';
+import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History } from 'lucide-react';
 
 interface Model {
   name: string;
@@ -15,6 +15,14 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   const [availableModels, setAvailableModels] = useState<Model[]>([]);
   const [aiMode, setAiMode] = useState<'balanced' | 'strict'>('balanced');
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [exceptionalThreshold, setExceptionalThreshold] = useState(90);
+  const [rejectThreshold, setRejectThreshold] = useState(50);
+  const [duplicateStrategy, setDuplicateStrategy] = useState<'update' | 'skip' | 'new'>('update');
+  const [analysisLanguage, setAnalysisLanguage] = useState<'BH' | 'EN' | 'AR'>('BH');
+  const [evaluationFocus, setEvaluationFocus] = useState<'balanced' | 'technical' | 'career'>('balanced');
+  const [syncFrequency, setSyncFrequency] = useState<'manual' | '1h' | '6h' | '24h'>('6h');
+  const [maskPii, setMaskPii] = useState(true);
+  
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isModelsLoading, setIsModelsLoading] = useState(false);
   const isLoading = isSettingsLoading || isModelsLoading;
@@ -42,6 +50,13 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
       if (data) {
         setAiMode(data.ai_mode || 'balanced');
         setWebhookUrl(data.webhook_url || '');
+        setExceptionalThreshold(parseInt(data.exceptional_threshold) || 90);
+        setRejectThreshold(parseInt(data.reject_threshold) || 50);
+        setDuplicateStrategy(data.duplicate_strategy || 'update');
+        setAnalysisLanguage(data.analysis_language || 'BH');
+        setEvaluationFocus(data.evaluation_focus || 'balanced');
+        setSyncFrequency(data.sync_frequency || '6h');
+        setMaskPii(data.mask_pii !== false); // Default to true
       }
       
       if (data.gemini_api_key) {
@@ -100,7 +115,14 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
           gemini_api_key: apiKey,
           gemini_model: selectedModel,
           ai_mode: aiMode,
-          webhook_url: webhookUrl
+          webhook_url: webhookUrl,
+          exceptional_threshold: exceptionalThreshold.toString(),
+          reject_threshold: rejectThreshold.toString(),
+          duplicate_strategy: duplicateStrategy,
+          analysis_language: analysisLanguage,
+          evaluation_focus: evaluationFocus,
+          sync_frequency: syncFrequency,
+          mask_pii: maskPii
         })
       });
       
@@ -150,108 +172,200 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
             </div>
           )}
 
-          <div className="space-y-4">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.webhook_title || 'Webhook Alert URL'}</label>
-              <div className="flex gap-2">
+          {/* Section: AI Configuration */}
+          <div className="space-y-4 pt-2">
+            <h3 className="text-xs font-bold text-[#0EA5E9] uppercase tracking-widest flex items-center gap-2">
+              <Cpu className="w-4 h-4" />
+              {t.ai_config || 'AI Configuration'}
+            </h3>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
+                <Key className="w-4 h-4 text-slate-400" />
+                {t.api_key || 'Gemini API Key'}
+              </label>
+              <input 
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                onBlur={() => fetchModels(apiKey)}
+                placeholder="AIzaSy..."
+                className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-2 focus:ring-[#0369A1] outline-none transition-all placeholder-slate-500"
+              />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-2">
+                <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-slate-400" />
+                  {t.ai_model || 'AI Model'}
+                </label>
+                <select 
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-1 focus:ring-[#0369A1] outline-none transition-all cursor-pointer"
+                >
+                  {availableModels.length > 0 ? (
+                    availableModels.map((m) => (
+                      <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                    ))
+                  ) : (
+                    <option value="gemini-1.5-flash">gemini-1.5-flash (Default)</option>
+                  )}
+                </select>
+              </div>
+              <button 
+                type="button"
+                onClick={() => fetchModels(apiKey)}
+                disabled={isLoading || !apiKey}
+                className="p-2.5 bg-[#1E293B] hover:bg-[#334155] rounded-lg text-slate-300 transition-colors self-end h-[42px]"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.analysis_language || 'AI Language'}</label>
+                <select 
+                  value={analysisLanguage}
+                  onChange={(e) => setAnalysisLanguage(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+                >
+                  <option value="BH">{t.lang_bh || 'Bilingual'}</option>
+                  <option value="EN">{t.lang_en || 'English Only'}</option>
+                  <option value="AR">{t.lang_ar || 'Arabic Only'}</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.evaluation_focus || 'AI Focus'}</label>
+                <select 
+                  value={evaluationFocus}
+                  onChange={(e) => setEvaluationFocus(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+                >
+                  <option value="balanced">{t.focus_balanced || 'Balanced'}</option>
+                  <option value="technical">{t.focus_technical || 'Technical'}</option>
+                  <option value="career">{t.focus_career || 'Career'}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300">{t.ai_behavior || 'AI Behavior Mode'}</label>
+              <div className="flex rounded-lg border border-[#1E293B] overflow-hidden p-1 bg-[#020617]">
+                <button
+                  onClick={() => setAiMode('balanced')}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${aiMode === 'balanced' ? 'bg-[#0369A1] text-white' : 'text-slate-400'}`}
+                >
+                  {t.balanced || 'Balanced'}
+                </button>
+                <button
+                  onClick={() => setAiMode('strict')}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${aiMode === 'strict' ? 'bg-rose-500 text-white' : 'text-slate-400'}`}
+                >
+                  {t.strict || 'Strict'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Notifications & Thresholds */}
+          <div className="space-y-4 pt-4 border-t border-[#1E293B]">
+            <h3 className="text-xs font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2">
+              <Bell className="w-4 h-4" />
+              {t.notifications || 'Notifications & Thresholds'}
+            </h3>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-slate-300">{t.exceptional_threshold || 'Exceptional Score'}</label>
+                  <span className="text-xs font-bold text-[#0EA5E9] bg-[#0EA5E9]/10 px-2 py-0.5 rounded">{exceptionalThreshold}%</span>
+                </div>
+                <input 
+                  type="range" min="70" max="100" step="1"
+                  value={exceptionalThreshold}
+                  onChange={(e) => setExceptionalThreshold(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-[#1E293B] rounded-lg appearance-none cursor-pointer accent-[#0EA5E9]"
+                />
+                <p className="text-[10px] text-slate-500 italic">{t.threshold_hint || 'Triggers email alerts for candidates scoring above this.'}</p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-slate-300">{t.reject_threshold || 'Auto-Reject Below'}</label>
+                  <span className="text-xs font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded">{rejectThreshold}%</span>
+                </div>
+                <input 
+                  type="range" min="0" max="60" step="1"
+                  value={rejectThreshold}
+                  onChange={(e) => setRejectThreshold(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-[#1E293B] rounded-lg appearance-none cursor-pointer accent-rose-500"
+                />
+                <p className="text-[10px] text-slate-500 italic">{t.reject_hint || 'Moves candidates below this score to rejected status.'}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.webhook_title || 'Webhook Alert URL'}</label>
                 <input 
                   type="url" 
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
                   placeholder="https://hooks.slack.com/services/..."
-                  className="w-full bg-[#0F172A] border border-[#1E293B] rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-[#0EA5E9] transition-all"
+                  className="w-full bg-[#0F172A] border border-[#1E293B] rounded-lg px-4 py-2 text-sm text-slate-200 focus:border-[#0EA5E9] outline-none"
                 />
               </div>
-              <p className="text-[10px] text-slate-500 leading-relaxed italic">
-                {t.webhook_hint || 'Optional: We will send candidates with score 90%+ to this URL.'}
-              </p>
             </div>
-
-          <div className="space-y-2 pt-2">
-            <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
-              <Key className="w-4 h-4 text-slate-400" />
-              {t.api_key || 'Gemini API Key'}
-            </label>
-            <input 
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              onBlur={() => fetchModels(apiKey)}
-              placeholder="AIzaSy..."
-              className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-2 focus:ring-[#0369A1] outline-none transition-all placeholder-slate-500"
-            />
-            <p className="text-[10px] text-slate-500 italic mt-1">
-              {t.api_key_hint || 'Get your free Gemini API key from'} <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[#0EA5E9] hover:underline">Google AI Studio</a>
-            </p>
           </div>
 
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-2">
-              <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-slate-400" />
-                {t.ai_model || 'AI Model'}
-              </label>
-              <select 
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-1 focus:ring-[#0369A1] outline-none transition-all cursor-pointer"
-              >
-                {availableModels.length > 0 ? (
-                  availableModels.map((m) => (
-                    <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
-                  ))
-                ) : (
-                  <option value="gemini-1.5-flash">gemini-1.5-flash (Default)</option>
-                )}
-              </select>
-            </div>
-            <button 
-              type="button"
-              onClick={() => fetchModels(apiKey)}
-              disabled={isLoading || !apiKey}
-              className="p-2.5 bg-[#1E293B] hover:bg-[#334155] rounded-lg text-slate-300 transition-colors self-end h-[42px]"
-              title={t.reload_models || 'Reload Models'}
-            >
-              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-          <p className="text-[10px] text-slate-500 italic mt-1">
-            {isLoading ? (t.checking_models || 'Checking API models...') : availableModels.length > 0 ? `${availableModels.length} ${t.models_found || 'models found'}.` : 'Showing system default model.'}
-          </p>
+          {/* Section: Data & Sync */}
+          <div className="space-y-4 pt-4 border-t border-[#1E293B]">
+            <h3 className="text-xs font-bold text-teal-500 uppercase tracking-widest flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              {t.data_privacy || 'Data & Sync'}
+            </h3>
 
-          <div className="space-y-2 pt-2">
-            <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
-              <LayoutTemplate className="w-4 h-4 text-slate-400" />
-              {t.ai_behavior || 'AI Behavior Mode'}
-            </label>
-            <div className="flex rounded-lg border border-[#1E293B] overflow-hidden p-1 bg-[#020617]">
-              <button
-                disabled={isLoading}
-                onClick={() => setAiMode('balanced')}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  aiMode === 'balanced' 
-                    ? 'bg-[#0369A1] text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#1E293B]/50'
-                }`}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.duplicate_strategy || 'Duplicates'}</label>
+                <select 
+                  value={duplicateStrategy}
+                  onChange={(e) => setDuplicateStrategy(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+                >
+                  <option value="update">{t.strategy_update || 'Update'}</option>
+                  <option value="skip">{t.strategy_skip || 'Skip'}</option>
+                  <option value="new">{t.strategy_new || 'Separate'}</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.sync_frequency || 'Sync Freq'}</label>
+                <select 
+                  value={syncFrequency}
+                  onChange={(e) => setSyncFrequency(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+                >
+                  <option value="manual">{t.sync_manual || 'Manual'}</option>
+                  <option value="1h">{t.sync_1h || '1 Hour'}</option>
+                  <option value="6h">{t.sync_6h || '6 Hours'}</option>
+                  <option value="24h">{t.sync_24h || 'Daily'}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-[#020617] rounded-xl border border-[#1E293B]">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-white">{t.mask_pii || 'Privacy Masking'}</p>
+                <p className="text-[10px] text-slate-500">{t.privacy_hint || 'Hides PII in AI reports.'}</p>
+              </div>
+              <button 
+                onClick={() => setMaskPii(!maskPii)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${maskPii ? 'bg-[#0EA5E9]' : 'bg-[#1E293B]'}`}
               >
-                {t.balanced || 'Balanced'}
-              </button>
-              <button
-                disabled={isLoading}
-                onClick={() => setAiMode('strict')}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                  aiMode === 'strict' 
-                    ? 'bg-rose-500 text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#1E293B]/50'
-                }`}
-              >
-                {t.strict || 'Strict'}
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${maskPii ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
             </div>
-            <p className="text-xs text-slate-500 mt-2 px-1">
-              {aiMode === 'balanced' 
-                ? (t.balanced_desc || 'Balanced mode gracefully evaluates missing requirements.') 
-                : (t.strict_desc || 'Strict mode severely penalizes missing key skills.')}
-            </p>
           </div>
 
           {message && (

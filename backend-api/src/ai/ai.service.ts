@@ -16,7 +16,10 @@ export class AiService {
     return {
       apiKey: settings.gemini_api_key || process.env.GEMINI_API_KEY || '',
       model: settings.gemini_model || 'gemini-1.5-flash',
-      aiMode: settings.ai_mode || 'balanced'
+      aiMode: settings.ai_mode || 'balanced',
+      analysisLanguage: settings.analysis_language || 'BH',
+      evaluationFocus: settings.evaluation_focus || 'balanced',
+      maskPii: settings.mask_pii !== false
     };
   }
 
@@ -88,6 +91,22 @@ export class AiService {
       ${settings.aiMode === 'strict' 
         ? 'STRICT MODE ACTIVE: You must heavily penalize any missing skills or requirements. Do NOT give partial credit. If exact requirements are not met, the ind_readiness_score and final_score MUST be very low.' 
         : 'BALANCED MODE ACTIVE: Evaluate the candidate comprehensively. Gracefully handle partial matches and transferable skills.'}
+
+      ${settings.evaluationFocus === 'technical' 
+        ? 'EVALUATION FOCUS: PRIORITIZE TECHNICAL SKILLS. Highly value specific tools, frameworks, and hard-skills listed in the requirements.' 
+        : settings.evaluationFocus === 'career'
+        ? 'EVALUATION FOCUS: PRIORITIZE CAREER & LEADERSHIP. Highly value years of experience, leadership roles, and professional career progression.'
+        : 'EVALUATION FOCUS: BALANCED. Value both technical mastery and professional experience equally.'}
+
+      ${settings.analysisLanguage === 'EN' 
+        ? 'LANGUAGE: Return all textual fields (justification, strengths, weaknesses, recommendation, questions) exclusively in ENGLISH.' 
+        : settings.analysisLanguage === 'AR'
+        ? 'LANGUAGE: Return all textual fields (justification, strengths, weaknesses, recommendation, questions) exclusively in ARABIC.'
+        : 'LANGUAGE: BILINGUAL. For the "justification" field, provide a short paragraph in English followed by a paragraph in Arabic. Other fields should be in both or English.'}
+
+      ${settings.maskPii 
+        ? 'PRIVACY: Mask PII. Do NOT include phone numbers, email addresses, or specific home addresses in the textual justification or summaries. Use placeholders like [PHONE] or [ADDRESS] if necessary.' 
+        : ''}
     `;
 
     try {

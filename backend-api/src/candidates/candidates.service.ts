@@ -98,6 +98,19 @@ export class CandidatesService {
     let finalName = name;
     let finalEmail = email;
     
+    // Fetch settings for duplicate strategy
+    const { data: userSettings } = await sb
+      .from('settings')
+      .select('key, value')
+      .eq('user_email', userEmail);
+    
+    const settingsMap = (userSettings || []).reduce((acc, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {} as any);
+
+    const duplicateStrategy = settingsMap.duplicate_strategy || 'update';
+
     try {
       this.logger.log(`Extracting candidate info from CV text for ${email}...`);
       const extracted = await this.aiService.extractCandidateInfo(userEmail, cvText, cvBuffer, file.mimetype);
@@ -116,6 +129,22 @@ export class CandidatesService {
       }
       
       this.logger.log(`Extraction result: ${finalName} <${finalEmail}> (Original: ${name} <${email}>)`);
+
+      // Check for existing candidate BEFORE upsert if strategy is 'skip'
+      if (duplicateStrategy === 'skip') {
+        const { data: existing } = await sb
+          .from('candidates')
+          .select('id')
+          .eq('user_email', userEmail)
+          .eq('email', finalEmail)
+          .single();
+        
+        if (existing) {
+          this.logger.log(`Duplicate candidate ${finalEmail} found. Strategy is "skip". Skipping upsert.`);
+          return existing;
+        }
+      }
+
     } catch (e: any) {
       this.logger.warn(`Candidate info extraction failed or non-CV detected: ${e.message}.`);
       // If we already returned null above, this won't be reached if it was a purposeful stop
@@ -225,17 +254,32 @@ export class CandidatesService {
 
     // Analyze CV using AI
     this.logger.log(`AI analyzing: ${candidate.name} → "${job.title}" for user ${userEmail}`);
+    
+    const { data: thresholdSettings } = await sb
+      .from('settings')
+      .select('key, value')
+      .eq('user_email', userEmail)
+      .eq('key', 'reject_threshold');
+    
+    const rejectThreshold = parseInt(thresholdSettings?.[0]?.value) || 0;
+
     const analysisResult = await this.aiService.analyzeCandidate(
       userEmail,
       { title: job.title, description: job.description, requirements: job.requirements },
       candidate.cv_text
     );
 
+    let status = 'analyzed';
+    if (rejectThreshold > 0 && analysisResult.final_score < rejectThreshold) {
+      this.logger.log(`Candidate ${candidate.name} auto-rejected (Score ${analysisResult.final_score} < Threshold ${rejectThreshold})`);
+      status = 'rejected';
+    }
+
     // Create Application record
     const { data: application, error: appError } = await sb
       .from('applications')
       .upsert(
-        { job_id: job.id, candidate_id: candidate.id, status: 'analyzed' },
+        { job_id: job.id, candidate_id: candidate.id, status },
         { onConflict: 'job_id, candidate_id' }
       )
       .select()

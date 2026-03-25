@@ -39,22 +39,31 @@ export class WebhooksService {
       this.logger.log(`Ethereal test account created: ${testAccount.user}`);
     }
   }
-
   async checkAndNotify(userEmail: string, candidateName: string, score: number, jobTitle: string) {
-    if (score < 90) return;
-
-    this.logger.log(`Exceptional candidate detected: ${candidateName} for ${jobTitle} with score ${score}`);
-
-    // 1. Check if user has a webhook URL or if we should just email them
+    // 1. Check if user has a webhook URL or custom threshold
     const sb = this.supabaseService.getClient();
-    const { data: settings } = await sb
+    const { data: userSettings } = await sb
       .from('settings')
-      .select('webhook_url')
+      .select('key, value')
       .eq('user_email', userEmail)
-      .single();
+      .in('key', ['webhook_url', 'exceptional_threshold']);
 
-    if (settings?.webhook_url) {
-      this.triggerWebhook(settings.webhook_url, {
+    const settingsMap = (userSettings || []).reduce((acc, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {} as any);
+
+    const threshold = parseInt(settingsMap.exceptional_threshold) || 90;
+
+    if (score < threshold) {
+      this.logger.debug(`Score ${score} is below threshold ${threshold} for ${userEmail}. Skipping notify.`);
+      return;
+    }
+
+    this.logger.log(`Exceptional candidate detected: ${candidateName} for ${jobTitle} with score ${score} (Threshold: ${threshold})`);
+
+    if (settingsMap.webhook_url) {
+      this.triggerWebhook(settingsMap.webhook_url, {
         event: 'EXCEPTIONAL_CANDIDATE',
         candidateName,
         score,
@@ -81,18 +90,37 @@ export class WebhooksService {
   }
 
   private async sendAlertEmail(recipient: string, name: string, score: number, job: string) {
-    const subjectText = `🚀 Exceptional Candidate Found: ${name}`;
+    const subjectText = `🚀 Exceptional Candidate Found: ${name} | مرشح استثنائي جديد`;
     const htmlContent = `
-      <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #0369a1;">Exceptional Candidate Detected!</h2>
-        <p>We found a high-potential candidate for your role: <strong>${job}</strong></p>
-        <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin: 20px 0;">
-          <p style="margin: 0;"><strong>Name:</strong> ${name}</p>
-          <p style="margin: 5px 0 0 0;"><strong>Final Match Score:</strong> <span style="color: #15803d; font-size: 1.2em;">${score}%</span></p>
+      <div dir="ltr" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 600px; margin: auto; background-color: #ffffff;">
+        
+        <!-- English Section -->
+        <div style="margin-bottom: 30px; border-bottom: 2px dashed #f1f5f9; padding-bottom: 20px;">
+          <h2 style="color: #0369a1; margin-top: 0;">Exceptional Candidate Detected!</h2>
+          <p style="color: #334155; line-height: 1.6;">We found a high-potential candidate for your role: <strong style="color: #0ea5e9;">${job}</strong></p>
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+            <p style="margin: 0; color: #1e293b;"><strong>Name:</strong> ${name}</p>
+            <p style="margin: 10px 0 0 0; color: #1e293b;"><strong>Match Score:</strong> <span style="color: #15803d; font-size: 1.4em; font-weight: bold;">${score}%</span></p>
+          </div>
+          <p style="margin-top: 20px; color: #64748b; font-size: 0.95em;">Please log in to your recruitment dashboard to review the profile.</p>
         </div>
-        <p>Please log in to the dashboard to review their profile and take action.</p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-        <p style="font-size: 0.8em; color: #64748b;">This is an automated notification from your AI Recruitment Assistant.</p>
+
+        <!-- Arabic Section -->
+        <div dir="rtl" style="text-align: right;">
+          <h2 style="color: #0369a1; margin-top: 0;">تم اكتشاف مرشح استثنائي!</h2>
+          <p style="color: #334155; line-height: 1.6;">لقد وجدنا مرشحاً يتمتع بإمكانيات عالية لوظيفتك الشاغرة: <strong style="color: #0ea5e9;">${job}</strong></p>
+          <div style="background: #fdf2f8; padding: 20px; border-radius: 8px; border-right: 4px solid #db2777;">
+            <p style="margin: 0; color: #1e293b;"><strong>الاسم:</strong> ${name}</p>
+            <p style="margin: 10px 0 0 0; color: #1e293b;"><strong>درجة المطابقة:</strong> <span style="color: #15803d; font-size: 1.4em; font-weight: bold;">${score}%</span></p>
+          </div>
+          <p style="margin-top: 20px; color: #64748b; font-size: 0.95em;">يرجى تسجيل الدخول إلى لوحة التحكم الخاصة بك لمراجعة الملف الشخصي.</p>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 30px 0;">
+        <p style="font-size: 0.8em; color: #94a3b8; text-align: center;">
+          This is an automated notification from your AI Recruitment System.<br>
+          هذا إشعار تلقائي من نظام التوظيف بالذكاء الاصطناعي الخاص بك.
+        </p>
       </div>
     `;
 

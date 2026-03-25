@@ -74,14 +74,37 @@ export class EmailProcessorService {
           }
         }
 
-        // Cooldown check: Don't sync more than once every 5 minutes per account (unless forced)
-        const lastSynced = account.last_synced_at ? new Date(account.last_synced_at).getTime() : 0;
-        const cooldownMs = 5 * 60 * 1000;
-        const nextAllowed = lastSynced + cooldownMs;
+        // 1. Fetch user settings for sync frequency
+        const { data: userSettings } = await sb
+          .from('settings')
+          .select('key, value')
+          .eq('user_email', account.user_email);
         
-        if (!force && Date.now() < nextAllowed) {
-          this.logger.debug(`Skipping ${account.email_address} - synced recently`);
-          continue;
+        const settingsMap = (userSettings || []).reduce((acc, s) => {
+          acc[s.key] = s.value;
+          return acc;
+        }, {} as any);
+
+        const syncFreq = settingsMap.sync_frequency || '6h';
+
+        // 2. Cooldown check based on sync_frequency
+        if (!force) {
+          if (syncFreq === 'manual') {
+            this.logger.debug(`Skipping ${account.email_address} - manual sync only`);
+            continue;
+          }
+
+          const lastSynced = account.last_synced_at ? new Date(account.last_synced_at).getTime() : 0;
+          let cooldownMs = 6 * 60 * 60 * 1000; // Default 6h
+          
+          if (syncFreq === '1h') cooldownMs = 60 * 60 * 1000;
+          else if (syncFreq === '24h') cooldownMs = 24 * 60 * 60 * 1000;
+          
+          const nextAllowed = lastSynced + cooldownMs;
+          if (Date.now() < nextAllowed) {
+            this.logger.debug(`Skipping ${account.email_address} - frequency ${syncFreq} not yet elapsed`);
+            continue;
+          }
         }
 
         if (account.provider === 'google') {
