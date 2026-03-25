@@ -15,7 +15,11 @@ export default function LoginPage() {
   const handleLogin = (provider: 'google' | 'azure') => {
     setIsLoading(provider);
     const existingEmail = localStorage.getItem('user_email');
-    const query = existingEmail ? `?userEmail=${encodeURIComponent(existingEmail)}` : '';
+    const params = new URLSearchParams();
+    if (existingEmail) params.append('userEmail', existingEmail);
+    params.append('locale', locale);
+    
+    const query = `?${params.toString()}`;
     
     if (provider === 'google') {
       window.location.href = `${API_URL}/email/auth/google${query}`;

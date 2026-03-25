@@ -40,13 +40,13 @@ export class EmailService {
   }
 
   // ==== GOOGLE GMAIL OAUTH ====
-  getGoogleAuthUrl(userEmail?: string) {
+  getGoogleAuthUrl(userEmail?: string, locale: string = 'ar') {
     const scopes = [
       'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/userinfo.email'
     ];
     
-    const state = userEmail ? Buffer.from(JSON.stringify({ userEmail })).toString('base64') : undefined;
+    const state = Buffer.from(JSON.stringify({ userEmail, locale })).toString('base64');
 
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
@@ -66,14 +66,18 @@ export class EmailService {
       const userInfo = await oauth2.userinfo.get();
       const emailAddress = userInfo.data.email;
 
-      // Determine the overall recruiter (user_email)
+      // Determine the overall recruiter (user_email) and locale
       let recruiterEmail = emailAddress; // Fallback to the account's own email if no state provided
+      let locale = 'ar';
       if (state) {
         try {
           const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
           if (decoded.userEmail) {
             recruiterEmail = decoded.userEmail;
             this.logger.log(`Associating Gmail ${emailAddress} with recruiter ${recruiterEmail}`);
+          }
+          if (decoded.locale) {
+            locale = decoded.locale;
           }
         } catch (e) {
           this.logger.warn('Failed to decode OAuth state', e);
@@ -95,7 +99,7 @@ export class EmailService {
         .single();
 
       if (error) throw new InternalServerErrorException(error.message);
-      return { success: true, email: emailAddress, message: 'Google account connected successfully' };
+      return { success: true, email: emailAddress, locale, message: 'Google account connected successfully' };
     } catch (error: any) {
       this.logger.error('Google Auth Error:', error);
       throw new InternalServerErrorException('Failed to authenticate with Google');
@@ -103,8 +107,8 @@ export class EmailService {
   }
 
   // ==== MICROSOFT OUTLOOK OAUTH ====
-  async getMicrosoftAuthUrl(userEmail?: string) {
-    const state = userEmail ? Buffer.from(JSON.stringify({ userEmail })).toString('base64') : undefined;
+  async getMicrosoftAuthUrl(userEmail?: string, locale: string = 'ar') {
+    const state = Buffer.from(JSON.stringify({ userEmail, locale })).toString('base64');
     const authCodeUrlParameters = {
       scopes: ['user.read', 'mail.read', 'offline_access'],
       redirectUri: this.msRedirectUri,
@@ -124,14 +128,18 @@ export class EmailService {
       const response = await this.msalClient.acquireTokenByCode(tokenRequest);
       const emailAddress = response.account?.username;
 
-      // Determine the overall recruiter (user_email)
+      // Determine the overall recruiter (user_email) and locale
       let recruiterEmail = emailAddress;
+      let locale = 'ar';
       if (state) {
         try {
           const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
           if (decoded.userEmail) {
             recruiterEmail = decoded.userEmail;
             this.logger.log(`Associating Outlook ${emailAddress} with recruiter ${recruiterEmail}`);
+          }
+          if (decoded.locale) {
+            locale = decoded.locale;
           }
         } catch (e) {
           this.logger.warn('Failed to decode Microsoft OAuth state', e);
@@ -153,7 +161,7 @@ export class EmailService {
         .single();
 
       if (error) throw new InternalServerErrorException(error.message);
-      return { success: true, email: emailAddress, message: 'Microsoft account connected successfully' };
+      return { success: true, email: emailAddress, locale, message: 'Microsoft account connected successfully' };
     } catch (error: any) {
       this.logger.error('Microsoft Auth Error:', error);
       throw new InternalServerErrorException('Failed to authenticate with Microsoft');

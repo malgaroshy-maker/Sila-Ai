@@ -34,8 +34,8 @@ export class EmailController {
   // ---- GOOGLE ROUTES ----
   @Get('auth/google')
   @Redirect()
-  async googleAuth(@Query('userEmail') userEmail?: string) {
-    const url = this.emailService.getGoogleAuthUrl(userEmail);
+  async googleAuth(@Query('userEmail') userEmail?: string, @Query('locale') locale: string = 'ar') {
+    const url = this.emailService.getGoogleAuthUrl(userEmail, locale);
     return { url };
   }
 
@@ -48,16 +48,16 @@ export class EmailController {
     if (!code) return res.status(400).send('No code provided');
     const authResult = await this.emailService.handleGoogleCallback(code, state);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    // Use the recruiter's email for the redirect to keep them logged in as themselves
     const redirectEmail = authResult.email; 
-    return res.redirect(`${frontendUrl}/en?email=${redirectEmail}`);
+    const locale = authResult.locale || 'ar';
+    return res.redirect(`${frontendUrl}/${locale}?email=${redirectEmail}`);
   }
 
   // ---- MICROSOFT ROUTES ----
   @Get('auth/microsoft')
   @Redirect()
-  async microsoftAuth(@Query('userEmail') userEmail?: string) {
-    const url = await this.emailService.getMicrosoftAuthUrl(userEmail);
+  async microsoftAuth(@Query('userEmail') userEmail?: string, @Query('locale') locale: string = 'ar') {
+    const url = await this.emailService.getMicrosoftAuthUrl(userEmail, locale);
     return { url };
   }
 
@@ -70,7 +70,8 @@ export class EmailController {
     if (!code) return res.status(400).send('No code provided');
     const authResult = await this.emailService.handleMicrosoftCallback(code, state);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/en?email=${authResult.email}`);
+    const locale = authResult.locale || 'ar';
+    return res.redirect(`${frontendUrl}/${locale}?email=${authResult.email}`);
   }
 
   // ---- UNIFIED SUPABASE AUTH STORAGE ----

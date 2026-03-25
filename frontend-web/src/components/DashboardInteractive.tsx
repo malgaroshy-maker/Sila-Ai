@@ -91,6 +91,25 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // 1. Check for email in URL query params (from backend redirect)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlEmail = urlParams.get('email');
+        
+        if (urlEmail) {
+          // Found email in URL, this is our new primary session email
+          setUserEmail(urlEmail);
+          localStorage.setItem('user_email', urlEmail);
+          
+          // Clean up URL
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          
+          await loadData(urlEmail);
+          setIsAuthLoading(false);
+          return;
+        }
+
+        // 2. Check Supabase session
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user?.email) {
