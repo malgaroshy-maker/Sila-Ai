@@ -54,14 +54,23 @@ export default function AiInsights({ userEmail, t }: { userEmail: string, t: Rec
   let totalCost = 0;
   let totalTokens = 0;
 
+  const opNames: Record<string, string> = {
+    'analysis': t.op_analysis || 'CV Analysis',
+    'info_extraction': t.op_info_extraction || 'Data Extraction',
+    'ocr': t.op_ocr || 'Image OCR',
+    'job_generation': t.op_job_generation || 'Job Generation',
+    'embedding': t.op_embedding || 'Vector Embedding'
+  };
+
   data.forEach(log => {
     const date = new Date(log.created_at).toLocaleDateString();
     dailyData[date] = dailyData[date] || { date, tokens: 0, cost: 0 };
     dailyData[date].tokens += log.total_tokens;
     dailyData[date].cost += parseFloat(log.est_cost);
 
-    opData[log.operation] = opData[log.operation] || { name: log.operation, value: 0 };
-    opData[log.operation].value += parseFloat(log.est_cost);
+    const translatedOp = opNames[log.operation] || log.operation;
+    opData[translatedOp] = opData[translatedOp] || { name: translatedOp, value: 0 };
+    opData[translatedOp].value += parseFloat(log.est_cost);
 
     totalCost += parseFloat(log.est_cost);
     totalTokens += log.total_tokens;
@@ -121,7 +130,7 @@ export default function AiInsights({ userEmail, t }: { userEmail: string, t: Rec
                   contentStyle={{ backgroundColor: '#0F172A', border: '1px solid #1E293B', borderRadius: '8px' }}
                   itemStyle={{ color: '#0EA5E9' }}
                 />
-                <Bar dataKey="tokens" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
+                <Bar name={t.total_tokens || 'Tokens'} dataKey="tokens" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

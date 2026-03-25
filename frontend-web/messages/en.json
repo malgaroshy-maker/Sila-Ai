@@ -104,6 +104,7 @@
     "lang_bh": "Bilingual (AR/EN)",
     "lang_en": "English Only",
     "lang_ar": "Arabic Only",
+    "notifications": "Notifications & Thresholds",
     "exceptional_threshold": "Exceptional Candidate Threshold",
     "reject_threshold": "Auto-Reject Threshold",
     "duplicate_strategy": "Duplicate Handling",
@@ -124,7 +125,12 @@
     "mask_pii": "Mask PII in AI Reports",
     "privacy_hint": "Hides phone numbers and addresses from AI prompts for better privacy.",
     "threshold_hint": "Triggers email alerts for candidates scoring above this.",
-    "reject_hint": "Moves candidates scoring below this directly to 'Rejected'."
+    "reject_hint": "Moves candidates scoring below this directly to 'Rejected'.",
+    "op_analysis": "CV Analysis",
+    "op_info_extraction": "Data Extraction",
+    "op_ocr": "Image OCR",
+    "op_job_generation": "Job Generation",
+    "op_embedding": "Vector Embedding"
   },
   "Login": {
     "welcome": "Welcome Back",

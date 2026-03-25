@@ -85,7 +85,20 @@ async function DashboardClient({ locale }: { locale: string }) {
     'rejected', 'all_jobs', 'refresh', 'webhook_title', 'webhook_hint',
     'api_key', 'api_key_hint', 'ai_model', 'ai_behavior', 'balanced', 'strict', 'balanced_desc', 'strict_desc',
     'save', 'reload_models', 'checking_models', 'models_found', 'account_connected',
-    'no_jobs', 'no_candidates', 'syncing', 'saving', 'insights', 'about'
+    'no_jobs', 'no_candidates', 'syncing', 'saving', 'insights', 'about',
+    // Settings personalization keys
+    'ai_config', 'analysis_language', 'evaluation_focus', 'ai_behavior',
+    'balanced', 'strict', 'balanced_desc', 'strict_desc',
+    'lang_bh', 'lang_en', 'lang_ar',
+    'focus_balanced', 'focus_technical', 'focus_career',
+    'notifications', 'exceptional_threshold', 'reject_threshold',
+    'threshold_hint', 'reject_hint', 'webhook_title', 'webhook_hint',
+    'data_privacy', 'duplicate_strategy', 'sync_frequency', 'mask_pii',
+    'strategy_update', 'strategy_skip', 'strategy_new',
+    'sync_manual', 'sync_1h', 'sync_6h', 'sync_24h',
+    'privacy_hint', 'api_key', 'api_key_hint', 'ai_model', 'reload_models',
+    'checking_models', 'models_found', 'account_connected', 'save',
+    'op_analysis', 'op_info_extraction', 'op_ocr', 'op_job_generation', 'op_embedding'
   ];
   
   const translations: Record<string, string> = {};
