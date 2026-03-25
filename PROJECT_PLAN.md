@@ -123,16 +123,22 @@
 - [x] Complete token tracking and cost estimation visualization
 - [x] Add automated alert thresholds for budget management
 
+### 6.5 UI Refactor & Advanced Personalization ✅
+- [x] **AI Insights UI Refactor**: Moved insights to a dedicated full-width analytics dashboard.
+- [x] **Advanced Recruiter Settings**: Implemented scoring thresholds (Exceptional/Reject), duplicate strategies, and AI focus modes.
+- [x] **Full Localization Fix**: Resolved all translation gaps in Arabic for charts, tooltips, and settings.
+- [x] **PII Masking**: Added privacy controls to hide candidate-sensitive data from AI prompts.
+
 ---
 
 ## Deployment Verification Status
 
-> **Status: ⚠️ PENDING VERIFICATION**
+> **Status: ✅ COMPLETED**
 
-- [ ] Verify frontend build on Vercel
-- [ ] Verify backend health check on Render
-- [ ] Verify connectivity between Frontend and Backend
-- [ ] Test Gmail/OAuth2 callback in production
+- [x] Verify frontend build on Vercel
+- [x] Verify backend health check on Render
+- [x] Verify connectivity between Frontend and Backend
+- [x] Test Gmail/OAuth2 callback in production
 
 ---
 

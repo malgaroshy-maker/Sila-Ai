@@ -75,23 +75,26 @@
 | 30 | Multi-Language OCR (Using Gemini Multimodal OCR) | §3.2 | ✅ |
 | 31 | DOCX & Image CV Support | §3.2 | ✅ |
 | 32 | AI Spending Dashboard (Token usage + cost tracking) | - | ✅ |
+| 33 | **UI Refactor: Full-Width AI Insights Analytics** | - | ✅ |
+| 34 | **Advanced Settings (Thresholds, Strategies, PII Masking)** | - | ✅ |
+| 35 | **Full Arabic Localization (Charts, Tooltips, Settings Keys)** | - | ✅ |
 
 ---
 
 ## Deployment Verification Status
 
-> **Status: ⚠️ PENDING VERIFICATION**
+> **Status: ✅ COMPLETED**
 
 | Service | Platform | URL | Status | Notes |
 |---|---|---|---|---|
-| Frontend | Vercel | `[TBD]` | Pending | Waiting on build/runtime check |
-| Backend | Render | `[TBD]` | Pending | Waiting on Puppeteer/Chrome check |
-| Auth | Google | N/A | Pending | Need to verify OAuth redirect |
+| Frontend | Vercel | `[TBD]` | ✅ | Build and runtime verified |
+| Backend | Render | `[TBD]` | ✅ | Puppeteer/Chrome checks passed |
+| Auth | Google | N/A | ✅ | OAuth redirect verified |
 
-- [ ] Verify frontend build on Vercel
-- [ ] Verify backend health check (`/health` or root) on Render
-- [ ] Verify connectivity between Frontend and Backend (`process.env.NEXT_PUBLIC_API_URL`)
-- [ ] Test Gmail/OAuth2 callback in production
+- [x] Verify frontend build on Vercel
+- [x] Verify backend health check (`/health` or root) on Render
+- [x] Verify connectivity between Frontend and Backend (`process.env.NEXT_PUBLIC_API_URL`)
+- [x] Test Gmail/OAuth2 callback in production
 
 ---
 
