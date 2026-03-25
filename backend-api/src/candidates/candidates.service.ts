@@ -123,7 +123,8 @@ export class CandidatesService {
         const { error: embedError } = await sb.from('candidate_embeddings').upsert({
           candidate_id: candidate.id,
           content: cvText, // Storing full text for RAG retrieval
-          embedding: embedding
+          embedding: embedding,
+          user_email: userEmail
         }, { onConflict: 'candidate_id' });
         
         if (embedError) this.logger.error(`Embedding storage error: ${embedError.message}`);

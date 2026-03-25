@@ -37,7 +37,8 @@ export class ChatService {
       const { data: matched, error: matchError } = await sb.rpc('match_candidates', {
         query_embedding: queryEmbedding,
         match_threshold: 0.1, // Low threshold to get more context
-        match_count: 5       // Top 5 relevant CV snippets
+        match_count: 5,       // Top 5 relevant CV snippets
+        user_email_filter: userEmail // THE FIX: Filter by current user
       });
 
       if (matched && matched.length > 0) {
