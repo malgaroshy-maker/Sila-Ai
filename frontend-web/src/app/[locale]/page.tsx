@@ -70,32 +70,28 @@ async function DashboardClient({ locale }: { locale: string }) {
   const results: any[] = [];
 
   const keys = [
-    'title', 'description', 'jobs', 'candidates', 'create_job', 'upload_cv', 
-    'analysis_results', 'ai_chat', 'logout', 'settings', 'create_job_form', 
-    'create_job_ai', 'job_title', 'job_desc', 'job_reqs', 'cancel', 'create', 
-    'ai_prompt_hint', 'generating', 'generate_and_create', 'upload_desc', 
-    'select_cv', 'upload_and_analyze', 'skills', 'language', 'gpa', 'readiness', 
-    'ai_justification', 'strengths', 'weaknesses', 'tags', 'flags', 'interview_q', 
-    'training', 'close', 'chat_title', 'chat_subtitle', 'chat_clear', 
+    'title', 'description', 'upload_cv', 'jobs', 'candidates', 'create_job', 'dashboard', 
+    'analysis_results', 'ai_chat', 'logout', 'settings', 'create_job_form', 'create_job_ai', 
+    'job_title', 'job_desc', 'job_reqs', 'cancel', 'create', 'ai_prompt_hint', 'generating', 
+    'generate_and_create', 'upload_desc', 'select_cv', 'upload_and_analyze', 'skills', 
+    'language', 'gpa', 'readiness', 'ai_justification', 'strengths', 'weaknesses', 'tags', 
+    'flags', 'interview_q', 'training', 'close', 'chat_title', 'chat_subtitle', 'chat_clear', 
     'chat_empty_title', 'chat_empty_desc', 'chat_placeholder', 'chat_no_response', 
-    'chat_error', 'chat_prompt_1', 'chat_prompt_2', 'chat_prompt_3', 
-    'chat_prompt_4', 'job_placeholder', 'req_placeholder',
-    // New keys for localization fixes
-    'kanban', 'list', 'applied', 'screening', 'interview', 'offered', 'hired', 
-    'api_key', 'api_key_hint', 'ai_model', 'ai_behavior', 'balanced', 'strict', 'balanced_desc', 'strict_desc',
-    'save', 'reload_models', 'checking_models', 'models_found', 'account_connected',
-    'no_jobs', 'no_candidates', 'syncing', 'saving', 'insights', 'about',
-    // Settings personalization keys
-    'ai_config', 'analysis_language', 'evaluation_focus', 'ai_behavior',
-    'balanced', 'strict', 'balanced_desc',    'title', 'description', 'upload_cv', 'jobs', 'candidates', 'create_job', 'dashboard', 'analysis_results', 'ai_chat', 'logout', 'settings',
-    'create_job_form', 'create_job_ai', 'job_title', 'job_desc', 'job_reqs', 'cancel', 'create', 'ai_prompt_hint', 'generating', 'generate_and_create',
-    'upload_desc', 'upload_and_analyze', 'skills', 'language', 'gpa', 'readiness', 'ai_justification', 'strengths', 'weaknesses', 'tags', 'flags',
-    'interview_q', 'training', 'close', 'kanban', 'list', 'all_jobs', 'filter', 'refresh', 'syncing', 'saving', 'insights', 'about',
-    'ai_config', 'api_key', 'ai_model', 'ai_behavior', 'balanced', 'strict', 'save', 'account_connected', 'ai_spending', 'token_usage', 'est_cost',
-    'daily_usage', 'usage_by_op', 'total_monthly_cost', 'total_tokens', 'requests', 'lang_bh', 'lang_en', 'lang_ar', 'notifications',
-    'exceptional_threshold', 'reject_threshold', 'duplicate_strategy', 'strategy_update', 'strategy_skip', 'strategy_new', 'analysis_language',
-    'evaluation_focus', 'focus_balanced', 'focus_technical', 'focus_career', 'sync_frequency', 'sync_manual', 'sync_1h', 'sync_6h', 'sync_24h',
-    'data_privacy', 'mask_pii', 'privacy_hint', 'threshold_hint', 'reject_hint', 'op_analysis', 'op_info_extraction', 'op_ocr', 'op_job_generation', 'op_embedding'
+    'chat_error', 'chat_prompt_1', 'chat_prompt_2', 'chat_prompt_3', 'chat_prompt_4', 
+    'job_placeholder', 'req_placeholder', 'kanban', 'list', 'applied', 'screening', 
+    'interview', 'offered', 'hired', 'rejected', 'api_key', 'api_key_hint', 'ai_model', 
+    'ai_behavior', 'balanced', 'strict', 'balanced_desc', 'strict_desc', 'save', 
+    'reload_models', 'checking_models', 'models_found', 'account_connected', 'no_jobs', 
+    'no_candidates', 'syncing', 'saving', 'insights', 'about', 'ai_config', 
+    'analysis_language', 'evaluation_focus', 'all_jobs', 'filter', 'refresh', 
+    'ai_spending', 'token_usage', 'est_cost', 'daily_usage', 'usage_by_op', 
+    'total_monthly_cost', 'total_tokens', 'requests', 'lang_bh', 'lang_en', 'lang_ar', 
+    'notifications', 'exceptional_threshold', 'reject_threshold', 'duplicate_strategy', 
+    'strategy_update', 'strategy_skip', 'strategy_new', 'focus_balanced', 
+    'focus_technical', 'focus_career', 'sync_frequency', 'sync_manual', 'sync_1h', 
+    'sync_6h', 'sync_24h', 'data_privacy', 'mask_pii', 'privacy_hint', 'threshold_hint', 
+    'reject_hint', 'op_analysis', 'op_info_extraction', 'op_ocr', 'op_job_generation', 
+    'op_embedding', 'server_online', 'server_offline', 'server_checking', 'tokens_used', 'cvs_processed'
   ];
   
   const translations: Record<string, string> = {};

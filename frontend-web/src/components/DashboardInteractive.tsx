@@ -407,8 +407,17 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               </div>
 
               <div className="h-8 w-px bg-[#1E293B] mx-2 hidden sm:block" />
-              <LanguageSwitcher />
               
+              <Link
+                href="/about"
+                className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-[#1E293B] rounded-xl transition-all duration-200 border border-transparent hover:border-[#1E293B]"
+                title={t.about || 'About System'}
+              >
+                <Info className="w-5 h-5" />
+              </Link>
+
+              <LanguageSwitcher />
+
               <button 
                 onClick={() => setIsSettingsModalOpen(true)}
                 className="p-2 text-slate-400 hover:text-white hover:bg-[#1E293B] rounded-xl transition-all duration-200 border border-transparent hover:border-[#1E293B]"
