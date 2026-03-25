@@ -9,7 +9,21 @@ import {
 } from 'lucide-react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
+import { Suspense } from 'react';
+
 export default function AboutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white font-black tracking-widest uppercase animate-pulse">
+        Loading ARIS...
+      </div>
+    }>
+      <AboutContent />
+    </Suspense>
+  );
+}
+
+function AboutContent() {
   const t = useTranslations('About');
   const locale = useLocale();
   const searchParams = useSearchParams();
