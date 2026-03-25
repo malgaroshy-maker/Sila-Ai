@@ -16,6 +16,7 @@ import {
   Search, MessageSquare, Filter, ArrowUpRight, ShieldCheck, Download, Send,
   Cpu, LayoutTemplate, Mail, TrendingUp
 } from 'lucide-react';
+import { SyncStatus } from './SyncStatus';
 
 interface Job {
   id: string;
@@ -832,6 +833,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
       {/* AI Chat Drawer */}
       <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} t={t} userEmail={userEmail} />
+      {/* Real-time Sync Status Overlay */}
+      {userEmail && <SyncStatus userEmail={userEmail} onComplete={() => loadData(userEmail)} />}
     </div>
   );
 }

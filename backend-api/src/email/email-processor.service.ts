@@ -3,11 +3,13 @@ import { Cron } from '@nestjs/schedule';
 import { SupabaseService } from '../supabase.service';
 import { CandidatesService } from '../candidates/candidates.service';
 import { google } from 'googleapis';
+import { EventEmitter } from 'events';
 
 @Injectable()
 export class EmailProcessorService {
   private readonly logger = new Logger(EmailProcessorService.name);
   private isProcessing = false;
+  public readonly progressEmitter = new EventEmitter();
 
   constructor(
     private readonly supabaseService: SupabaseService,
@@ -24,8 +26,11 @@ export class EmailProcessorService {
     this.isProcessing = true;
     this.logger.debug(`Running email ingestion worker (force: ${force})...`);
     
+    // Clear any previous stop requests at start
+    const sb = this.supabaseService.getClient();
+    await sb.from('email_accounts').update({ stop_sync_requested: false }).eq('stop_sync_requested', true);
+
     try {
-      const sb = this.supabaseService.getClient();
       const { data: accounts, error } = await sb
         .from('email_accounts')
         .select('*');
@@ -37,11 +42,34 @@ export class EmailProcessorService {
       }
 
       for (const account of accounts) {
+        // Create/Update sync activity record
+        const { data: activity } = await sb.from('sync_activity').upsert({
+          user_email: account.user_email,
+          status: 'scanning',
+          current_action: 'Starting sync...',
+          updated_at: new Date().toISOString()
+        }).select().single();
+
+        const emitProgress = (data: any) => {
+          this.progressEmitter.emit(`progress:${account.user_email}`, data);
+          // Also update DB occasionally (don't overwhelm)
+          if (data.status === 'completed' || data.status === 'failed' || data.status === 'stopped') {
+            sb.from('sync_activity').update({ 
+               status: data.status, 
+               processed_count: data.processed, 
+               total_found: data.total,
+               current_action: data.message,
+               last_error: data.error
+            }).eq('id', activity.id).then();
+          }
+        };
+
         // Check for active Google block
         if (account.blocked_until) {
           const blockedUntil = new Date(account.blocked_until).getTime();
           if (Date.now() < blockedUntil && !force) {
             this.logger.debug(`Skipping ${account.email_address} - blocked by Google until ${account.blocked_until}`);
+            emitProgress({ status: 'failed', message: 'Blocked by Google (Rate Limit)', error: 'Rate limit' });
             continue;
           }
         }
@@ -57,7 +85,7 @@ export class EmailProcessorService {
         }
 
         if (account.provider === 'google') {
-          await this.processGoogleAccount(account);
+          await this.processGoogleAccount(account, emitProgress);
         }
 
         // Update last_synced_at IMMEDIATELY after account processing
@@ -77,7 +105,7 @@ export class EmailProcessorService {
     }
   }
 
-  private async processGoogleAccount(account: any) {
+  private async processGoogleAccount(account: any, onProgress: (data: any) => void) {
     const sb = this.supabaseService.getClient();
     try {
       this.logger.log(`Starting Gmail processing for ${account.email_address} (quotaUser isolation active)`);
@@ -108,11 +136,33 @@ export class EmailProcessorService {
       const messages = res.data.messages || [];
       if (messages.length === 0) {
         this.logger.log(`No new unread CVs found for ${account.email_address}`);
+        onProgress({ status: 'completed', total: 0, processed: 0, message: 'No new emails found' });
         return;
       }
 
+      onProgress({ status: 'analyzing', total: messages.length, processed: 0, message: `Found ${messages.length} potential emails` });
+
+      let processedCount = 0;
       for (const msg of messages) {
+        // --- CHECK STOP REQUEST ---
+        const { data: acct } = await sb.from('email_accounts').select('stop_sync_requested').eq('id', account.id).single();
+        if (acct?.stop_sync_requested) {
+            this.logger.warn(`Sync stopped by user for ${account.email_address}`);
+            onProgress({ status: 'stopped', total: messages.length, processed: processedCount, message: 'Stopped by user' });
+            return;
+        }
+
         if (!msg.id) continue;
+
+        // Heuristic filtering: skip if snippet looks like it's clearly not a CV
+        const snippet = msg.snippet || '';
+        if (snippet.length > 0 && !this.isProbablyCV('', snippet)) {
+            this.logger.debug(`Skipping email ${msg.id} - fails heuristic check: ${snippet.substring(0, 30)}...`);
+            processedCount++;
+            onProgress({ status: 'analyzing', total: messages.length, processed: processedCount, message: `Skipped non-CV email` });
+            await this.markAsRead(gmail, msg.id, qUser);
+            continue;
+        }
 
         await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -191,9 +241,14 @@ export class EmailProcessorService {
         };
 
         await extractAndIngest(payload.parts);
+        processedCount++;
+        onProgress({ status: 'analyzing', total: messages.length, processed: processedCount, message: `Processing ${processedCount}/${messages.length}...` });
+        
         await new Promise(resolve => setTimeout(resolve, 3000));
         await this.markAsRead(gmail, msg.id, qUser);
       }
+      
+      onProgress({ status: 'completed', total: messages.length, processed: processedCount, message: 'Sync completed successfully' });
 
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message || error.message;
@@ -236,16 +291,36 @@ export class EmailProcessorService {
     }
   }
 
-  private async markAsRead(gmail: any, msgId: string, qUser: string) {
-    try {
-      await gmail.users.messages.modify({
-        userId: 'me',
-        id: msgId,
-        requestBody: { removeLabelIds: ['UNREAD'] },
-        quotaUser: qUser // CRITICAL FIX
-      } as any);
-    } catch (modifyError: any) {
-      this.logger.warn(`Failed to mark email ${msgId} as read: ${modifyError.message}`);
-    }
+  private async markAsRead(gmail: any, messageId: string, quotaUser: string) {
+    await gmail.users.messages.batchModify({
+      userId: 'me',
+      quotaUser,
+      requestBody: {
+        ids: [messageId],
+        removeLabelIds: ['UNREAD'],
+      },
+    });
+  }
+
+  private isProbablyCV(filename: string, snippet: string): boolean {
+    const cvKeywords = ['cv', 'resume', 'السيرة', 'الذاتية', 'application', 'profile', 'job', 'hiring', 'recruitment'];
+    const lowerFile = filename.toLowerCase();
+    const lowerSnippet = snippet.toLowerCase();
+    
+    // If filename has CV keywords, it's very likely
+    if (filename && cvKeywords.some(kw => lowerFile.includes(kw))) return true;
+    
+    // If snippet has CV keywords
+    if (cvKeywords.some(kw => lowerSnippet.includes(kw))) return true;
+
+    // Filter out common non-CV noise (marketing, welcome emails, etc.)
+    const spamKeywords = ['unsubscribe', 'privacy policy', 'welcome to', 'subscription', 'verify your email', 'newsletter'];
+    if (spamKeywords.some(kw => lowerSnippet.includes(kw))) return false;
+
+    // If it has "Attached" and common CV extensions, it's a good candidate
+    const attachmentKeywords = ['attach', 'file', 'cv', 'pdf', 'docx'];
+    if (attachmentKeywords.some(kw => lowerSnippet.includes(kw))) return true;
+
+    return true; // Default to true to avoid missing potential CVs
   }
 }

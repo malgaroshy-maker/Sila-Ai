@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query, Res, Redirect, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Res, Redirect, Headers, Sse, MessageEvent, Param } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { EmailProcessorService } from './email-processor.service';
 import type { Response } from 'express';
+import { fromEvent, Observable, map } from 'rxjs';
 
 @Controller('email')
 export class EmailController {
@@ -9,6 +10,26 @@ export class EmailController {
     private readonly emailService: EmailService,
     private readonly emailProcessorService: EmailProcessorService
   ) {}
+
+  @Sse('sync/progress/:userEmail')
+  syncProgress(@Param('userEmail') userEmail: string): Observable<MessageEvent> {
+    return fromEvent(this.emailProcessorService.progressEmitter, `progress:${userEmail}`).pipe(
+      map((data: any) => ({ data } as MessageEvent)),
+    );
+  }
+
+  @Post('sync/stop')
+  async stopSync(@Headers('x-user-email') userEmail: string) {
+    if (!userEmail) return { success: false, message: 'User email is required' };
+    
+    const sb = this.emailService.getSupabaseClient();
+    const { error } = await sb.from('email_accounts')
+      .update({ stop_sync_requested: true })
+      .eq('user_email', userEmail);
+      
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: 'Sync stop requested' };
+  }
 
   // ---- GOOGLE ROUTES ----
   @Get('auth/google')

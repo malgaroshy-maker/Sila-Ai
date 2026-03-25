@@ -90,8 +90,17 @@
     "usage_by_op": "Cost by Operation",
     "total_monthly_cost": "Total Monthly Cost",
     "total_tokens": "Total Tokens",
-    "operation": "Operation",
-    "requests": "Total Requests"
+    "requests": "Total Requests",
+    "sync_reading": "Reading emails...",
+    "sync_analyzing": "Analyzing CVs...",
+    "sync_stopped": "Sync stopped",
+    "sync_failed": "Sync failed",
+    "sync_completed": "Sync completed",
+    "sync_stop": "Stop Sync",
+    "sync_progress": "Progress",
+    "found_emails": "Found {count} potential emails",
+    "processing_count": "Processing {current} of {total}",
+    "skipped_non_cv": "Skipped non-CV email"
   },
   "Login": {
     "welcome": "Welcome Back",

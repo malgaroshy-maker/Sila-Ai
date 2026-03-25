@@ -90,8 +90,17 @@
     "usage_by_op": "التكلفة حسب العملية",
     "total_monthly_cost": "إجمالي التكلفة الشهرية",
     "total_tokens": "إجمالي التوكينز",
-    "operation": "العملية",
-    "requests": "إجمالي الطلبات"
+    "requests": "إجمالي الطلبات",
+    "sync_reading": "جاري قراءة رسائل البريد...",
+    "sync_analyzing": "جاري تحليل السير الذاتية...",
+    "sync_stopped": "تم إيقاف المزامنة",
+    "sync_failed": "فشلت المزامنة",
+    "sync_completed": "اكتملت المزامنة",
+    "sync_stop": "إيقاف المزامنة",
+    "sync_progress": "التقدم",
+    "found_emails": "تم العثور على {count} رسالة محتملة",
+    "processing_count": "جاري معالجة {current} من {total}",
+    "skipped_non_cv": "تم تخطي رسالة ليست سيرة ذاتية"
   },
   "Login": {
     "welcome": "مرحباً بك مجدداً",
