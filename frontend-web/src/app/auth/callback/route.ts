@@ -51,6 +51,10 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to after sign in process completes
-  // In Arabic locale by default
-  return NextResponse.redirect(new URL('/ar', request.url))
+  // Detect locale from path (e.g. /en/auth/callback or /ar/auth/callback)
+  const pathname = requestUrl.pathname;
+  const localeMatch = pathname.match(/^\/([a-z]{2})\//);
+  const locale = localeMatch ? localeMatch[1] : 'ar';
+  
+  return NextResponse.redirect(new URL(`/${locale}`, request.url))
 }

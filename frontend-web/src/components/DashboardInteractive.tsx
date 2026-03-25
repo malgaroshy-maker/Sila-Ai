@@ -75,6 +75,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [selectedCandidate, setSelectedCandidate] = useState<AnalysisResult | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Form states
   const [jobTitle, setJobTitle] = useState('');
@@ -88,20 +89,40 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem('user_email');
-    if (!savedEmail) {
-      window.location.href = `/${locale}/login`;
-      return;
-    }
-    setUserEmail(savedEmail);
-    loadData(savedEmail);
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user?.email) {
+          setUserEmail(user.email);
+          localStorage.setItem('user_email', user.email);
+          await loadData(user.email);
+        } else {
+          // Fallback to localStorage for legacy or if session is weirdly missing but email exists
+          const savedEmail = localStorage.getItem('user_email');
+          if (savedEmail) {
+            setUserEmail(savedEmail);
+            await loadData(savedEmail);
+          } else {
+            // No session and no localStorage -> Definitely need to login
+            window.location.href = `/${locale}/login`;
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
 
-    supabase.auth.getSession().then(({ data }: { data: { session: any } }) => {
-      const email = data.session?.user?.email;
-      if (email) {
-        setUserEmail(email);
-        localStorage.setItem('user_email', email);
-        loadData(email);
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+        localStorage.setItem('user_email', session.user.email);
+        loadData(session.user.email);
       }
     });
 
@@ -118,6 +139,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       .subscribe();
 
     return () => {
+      subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, []);
@@ -273,6 +295,18 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     return 'bg-red-500/20 text-red-400 border-red-500/30';
   };
 
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center space-y-4">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-[#0369A1]/20 border-t-[#0EA5E9] rounded-full animate-spin"></div>
+          <Bot className="w-8 h-8 text-[#0EA5E9] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+        </div>
+        <p className="text-slate-400 font-medium animate-pulse">{t.syncing || 'Checking session...'}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#020617] text-white">
       {/* Header */}
@@ -330,7 +364,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <span className="hidden lg:inline">{t.ai_chat || 'AI Chat'}</span>
             </button>
             <button 
-              onClick={() => {
+              onClick={async () => {
+                await supabase.auth.signOut();
                 localStorage.removeItem('user_email');
                 window.location.href = `/${locale}/login`;
               }} 
