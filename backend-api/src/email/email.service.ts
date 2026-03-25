@@ -40,38 +40,57 @@ export class EmailService {
   }
 
   // ==== GOOGLE GMAIL OAUTH ====
-  getGoogleAuthUrl() {
+  getGoogleAuthUrl(userEmail?: string) {
     const scopes = [
       'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/userinfo.email'
     ];
+    
+    const state = userEmail ? Buffer.from(JSON.stringify({ userEmail })).toString('base64') : undefined;
+
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
-      prompt: 'consent'
+      prompt: 'consent',
+      state
     });
   }
 
-  async handleGoogleCallback(code: string) {
+  async handleGoogleCallback(code: string, state?: string) {
     try {
       const { tokens } = await this.oauth2Client.getToken(code);
       this.oauth2Client.setCredentials(tokens);
 
-      // Get user email
+      // Get user email from the OAuth account
       const oauth2 = google.oauth2({ auth: this.oauth2Client, version: 'v2' });
       const userInfo = await oauth2.userinfo.get();
       const emailAddress = userInfo.data.email;
 
-      // Save to Supabase
+      // Determine the overall recruiter (user_email)
+      let recruiterEmail = emailAddress; // Fallback to the account's own email if no state provided
+      if (state) {
+        try {
+          const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+          if (decoded.userEmail) {
+            recruiterEmail = decoded.userEmail;
+            this.logger.log(`Associating Gmail ${emailAddress} with recruiter ${recruiterEmail}`);
+          }
+        } catch (e) {
+          this.logger.warn('Failed to decode OAuth state', e);
+        }
+      }
+
+      // Save to Supabase with owner (user_email)
       const { data, error } = await this.supabaseService.getClient()
         .from('email_accounts')
         .upsert({
           provider: 'google',
           email_address: emailAddress,
+          user_email: recruiterEmail,
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
           updated_at: new Date().toISOString()
-        }, { onConflict: 'email_address' })
+        }, { onConflict: 'user_email, email_address' })
         .select()
         .single();
 
@@ -84,15 +103,17 @@ export class EmailService {
   }
 
   // ==== MICROSOFT OUTLOOK OAUTH ====
-  async getMicrosoftAuthUrl() {
+  async getMicrosoftAuthUrl(userEmail?: string) {
+    const state = userEmail ? Buffer.from(JSON.stringify({ userEmail })).toString('base64') : undefined;
     const authCodeUrlParameters = {
       scopes: ['user.read', 'mail.read', 'offline_access'],
       redirectUri: this.msRedirectUri,
+      state
     };
     return await this.msalClient.getAuthCodeUrl(authCodeUrlParameters);
   }
 
-  async handleMicrosoftCallback(code: string) {
+  async handleMicrosoftCallback(code: string, state?: string) {
     try {
       const tokenRequest = {
         code,
@@ -103,18 +124,31 @@ export class EmailService {
       const response = await this.msalClient.acquireTokenByCode(tokenRequest);
       const emailAddress = response.account?.username;
 
-      // Save to Supabase
+      // Determine the overall recruiter (user_email)
+      let recruiterEmail = emailAddress;
+      if (state) {
+        try {
+          const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+          if (decoded.userEmail) {
+            recruiterEmail = decoded.userEmail;
+            this.logger.log(`Associating Outlook ${emailAddress} with recruiter ${recruiterEmail}`);
+          }
+        } catch (e) {
+          this.logger.warn('Failed to decode Microsoft OAuth state', e);
+        }
+      }
+
+      // Save to Supabase with owner (user_email)
       const { data, error } = await this.supabaseService.getClient()
         .from('email_accounts')
         .upsert({
           provider: 'microsoft',
           email_address: emailAddress,
+          user_email: recruiterEmail,
           access_token: response.accessToken,
-          // refresh_token is automatically maintained by msal token cache, but we might extract it if needed for offline jobs
-          // MSAL Node abstract this away slightly if using TokenCache, but for simplicity we store what we have.
           refresh_token: 'msal_managed_cache', 
           updated_at: new Date().toISOString()
-        }, { onConflict: 'email_address' })
+        }, { onConflict: 'user_email, email_address' })
         .select()
         .single();
 
@@ -127,16 +161,17 @@ export class EmailService {
   }
 
   // ==== UNIFIED SUPABASE OAUTH STORAGE ====
-  async storeProviderToken(body: { provider: string, emailAddress: string, accessToken: string, refreshToken: string | null }) {
+  async storeProviderToken(body: { provider: string, emailAddress: string, userEmail: string, accessToken: string, refreshToken: string | null }) {
     const { data, error } = await this.supabaseService.getClient()
       .from('email_accounts')
       .upsert({
         provider: body.provider,
         email_address: body.emailAddress,
+        user_email: body.userEmail,
         access_token: body.accessToken,
         refresh_token: body.refreshToken,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'email_address' })
+      }, { onConflict: 'user_email, email_address' })
       .select()
       .single();
 

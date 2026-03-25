@@ -13,39 +13,51 @@ export class EmailController {
   // ---- GOOGLE ROUTES ----
   @Get('auth/google')
   @Redirect()
-  async googleAuth() {
-    const url = this.emailService.getGoogleAuthUrl();
+  async googleAuth(@Query('userEmail') userEmail?: string) {
+    const url = this.emailService.getGoogleAuthUrl(userEmail);
     return { url };
   }
 
   @Get('auth/google/callback')
-  async googleCallback(@Query('code') code: string, @Res() res: Response) {
+  async googleCallback(
+    @Query('code') code: string, 
+    @Query('state') state: string,
+    @Res() res: Response
+  ) {
     if (!code) return res.status(400).send('No code provided');
-    const authResult = await this.emailService.handleGoogleCallback(code);
+    const authResult = await this.emailService.handleGoogleCallback(code, state);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/en?email=${authResult.email}`);
+    // Use the recruiter's email for the redirect to keep them logged in as themselves
+    const redirectEmail = authResult.email; 
+    return res.redirect(`${frontendUrl}/en?email=${redirectEmail}`);
   }
 
   // ---- MICROSOFT ROUTES ----
   @Get('auth/microsoft')
   @Redirect()
-  async microsoftAuth() {
-    const url = await this.emailService.getMicrosoftAuthUrl();
+  async microsoftAuth(@Query('userEmail') userEmail?: string) {
+    const url = await this.emailService.getMicrosoftAuthUrl(userEmail);
     return { url };
   }
 
   @Get('auth/microsoft/callback')
-  async microsoftCallback(@Query('code') code: string, @Res() res: Response) {
+  async microsoftCallback(
+    @Query('code') code: string, 
+    @Query('state') state: string,
+    @Res() res: Response
+  ) {
     if (!code) return res.status(400).send('No code provided');
-    const authResult = await this.emailService.handleMicrosoftCallback(code);
+    const authResult = await this.emailService.handleMicrosoftCallback(code, state);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     return res.redirect(`${frontendUrl}/en?email=${authResult.email}`);
   }
 
   // ---- UNIFIED SUPABASE AUTH STORAGE ----
   @Post('store-token')
-  async storeToken(@Body() body: { provider: string, emailAddress: string, accessToken: string, refreshToken: string | null }) {
-    return this.emailService.storeProviderToken(body);
+  async storeToken(@Body() body: { provider: string, emailAddress: string, userEmail: string, accessToken: string, refreshToken: string | null }) {
+    // If userEmail is not provided, fallback to emailAddress
+    const recruiterEmail = body.userEmail || body.emailAddress;
+    return this.emailService.storeProviderToken({ ...body, userEmail: recruiterEmail });
   }
 
   @Post('sync')

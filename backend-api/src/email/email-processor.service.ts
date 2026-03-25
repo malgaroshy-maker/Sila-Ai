@@ -171,16 +171,17 @@ export class EmailProcessorService {
                 .from('candidates')
                 .select('id, name, email, cv_text')
                 .eq('email', candidateEmail)
+                .eq('user_email', account.user_email)
                 .single();
 
               let candidate;
               if (existing && existing.cv_text && existing.cv_text.length > 50) {
                 candidate = existing;
               } else {
-                candidate = await this.candidatesService.ingestCandidate(account.email_address, candidateName, candidateEmail, mockFile);
+                candidate = await this.candidatesService.ingestCandidate(account.user_email, candidateName, candidateEmail, mockFile);
               }
 
-              await this.candidatesService.analyzeForAllJobs(account.email_address, candidate, true);
+              await this.candidatesService.analyzeForAllJobs(account.user_email, candidate, true);
             }
 
             if (part.parts) {

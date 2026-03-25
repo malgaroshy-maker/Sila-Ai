@@ -109,7 +109,7 @@ export class CandidatesService {
         email: finalEmail, 
         cv_text: cvText, 
         user_email: userEmail 
-      }, { onConflict: 'email' })
+      }, { onConflict: 'user_email, email' })
       .select()
       .single();
 

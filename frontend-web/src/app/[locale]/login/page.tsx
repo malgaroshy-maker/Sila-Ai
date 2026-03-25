@@ -14,10 +14,13 @@ export default function LoginPage() {
 
   const handleLogin = (provider: 'google' | 'azure') => {
     setIsLoading(provider);
+    const existingEmail = localStorage.getItem('user_email');
+    const query = existingEmail ? `?userEmail=${encodeURIComponent(existingEmail)}` : '';
+    
     if (provider === 'google') {
-      window.location.href = `${API_URL}/email/auth/google`;
+      window.location.href = `${API_URL}/email/auth/google${query}`;
     } else {
-      window.location.href = `${API_URL}/email/auth/microsoft`;
+      window.location.href = `${API_URL}/email/auth/microsoft${query}`;
     }
   };
 
