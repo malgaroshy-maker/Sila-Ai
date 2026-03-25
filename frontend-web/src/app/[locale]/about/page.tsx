@@ -5,7 +5,7 @@ import { Link } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { 
   ChevronRight, Cpu, LayoutTemplate, ShieldCheck, 
-  Sparkles, Mail, Globe, Zap, ArrowLeft
+  Sparkles, Mail, Globe, Zap, ArrowLeft, Terminal
 } from 'lucide-react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Suspense, useState, useEffect } from 'react';
@@ -32,11 +32,12 @@ function AboutContent() {
     const fromParam = searchParams.get('from');
     if (fromParam) {
       setFromOrigin(fromParam);
-    } else if (document.referrer && document.referrer.includes(window.location.host)) {
-      // Robust fallback: Check if referrer was the dashboard root
-      if (document.referrer === window.location.origin + '/' + locale || 
-          document.referrer === window.location.origin + '/' ||
-          document.referrer === window.location.origin + '/' + locale + '/') {
+    } else if (typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host)) {
+      const isDashboard = document.referrer.endsWith('/' + locale) || 
+                          document.referrer.endsWith('/' + locale + '/') || 
+                          document.referrer === window.location.origin + '/' + locale ||
+                          document.referrer === window.location.origin + '/' + locale + '/';
+      if (isDashboard) {
         setFromOrigin('dashboard');
       }
     }
@@ -47,124 +48,183 @@ function AboutContent() {
   const backLabel = fromOrigin === 'dashboard' ? t('back_to_dashboard') : t('back_to_login');
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 overflow-x-hidden font-sans pb-20">
-      {/* Immersive Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-20%] start-[-10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[160px] animate-pulse" />
-        <div className="absolute bottom-[-10%] end-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[140px]" />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
+    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 overflow-x-hidden font-sans">
+      {/* Immersive Neural Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-15%] start-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[140px] animate-pulse" />
+        <div className="absolute bottom-[-15%] end-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[140px]" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.04]" />
       </div>
 
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-[#020617]/50 backdrop-blur-2xl border-b border-white/5 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      {/* Floating Navbar */}
+      <nav className="sticky top-0 z-50 bg-[#020617]/60 backdrop-blur-3xl border-b border-white/5 py-4 px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link 
             href={backHref} 
-            className="flex items-center gap-3 group px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all active:scale-95"
+            className="flex items-center gap-3 group px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all active:scale-95"
           >
-            <div className="p-1.5 bg-indigo-500 rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.4)]">
-              <ArrowLeft size={16} className={`transition-transform ${isRtl ? 'rotate-180 group-hover:translate-x-1' : 'group-hover:-translate-x-1'}`} />
+            <div className="p-1.5 bg-indigo-600 rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.5)]">
+              <ArrowLeft size={16} className={`text-white transition-transform ${isRtl ? 'rotate-180 group-hover:translate-x-1.5' : 'group-hover:-translate-x-1.5'}`} />
             </div>
-            <span className="font-bold text-slate-300 group-hover:text-white transition-colors">
+            <span className="font-black text-slate-300 group-hover:text-white text-xs uppercase tracking-widest hidden sm:inline">
               {backLabel}
             </span>
           </Link>
-          <LanguageSwitcher />
+
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+              <Sparkles className="text-indigo-400 h-4 w-4" />
+              <span className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Neural Intelligence</span>
+            </div>
+            <LanguageSwitcher />
+          </div>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 pt-20 lg:pt-32">
-        {/* Unified Hero */}
-        <div className="text-center space-y-8 mb-32 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-black tracking-widest uppercase">
-            <Sparkles size={14} />
+      {/* Hero: Cognitive Vision */}
+      <header className="relative pt-32 pb-48 px-6 text-center overflow-hidden">
+        <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-indigo-400 text-xs font-black tracking-[0.4em] uppercase">
+            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
             {t('title')}
           </div>
-          <h1 className="text-5xl lg:text-7xl font-black text-white leading-tight tracking-tighter">
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-[1] tracking-tighter">
             {t('subtitle')}
           </h1>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-xl md:text-3xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-medium">
             {t('description')}
           </p>
+          <div className="pt-16">
+            <div className="h-1 w-32 bg-gradient-to-r from-transparent via-indigo-500 to-transparent mx-auto opacity-50" />
+          </div>
         </div>
+      </header>
 
-        {/* Vertical Professional Info Cards */}
-        <div className="space-y-6">
-          <div className="p-8 lg:p-12 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all duration-500">
-            <h3 className="text-3xl font-black mb-8 text-white tracking-tight flex items-center gap-4">
-              <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                <Cpu className="text-indigo-400 h-6 w-6" />
+      {/* Grid: The Pulse of ARIS */}
+      <section className="py-32 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="group relative p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700">
+              <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-10 border border-indigo-500/20 group-hover:scale-110 transition-transform">
+                <Cpu className="text-indigo-400 h-8 w-8" />
               </div>
-              {t('feature_ai_title')}
-            </h3>
-            <p className="text-slate-400 leading-relaxed font-medium text-lg italic ps-4 border-s-4 border-indigo-500/30">
-              {t('feature_ai_desc')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all duration-500">
-              <ShieldCheck className="text-emerald-400 h-8 w-8 mb-6" />
-              <h4 className="text-xl font-bold mb-3">{t('feature_security_title')}</h4>
-              <p className="text-slate-400 text-sm leading-relaxed">{t('feature_security_desc')}</p>
+              <h3 className="text-3xl font-black mb-6 tracking-tight text-white">{t('feature_ai_title')}</h3>
+              <p className="text-slate-400 text-lg leading-relaxed font-medium">{t('feature_ai_desc')}</p>
             </div>
-            <div className="p-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] hover:bg-white/[0.08] transition-all duration-500">
-              <LayoutTemplate className="text-blue-400 h-8 w-8 mb-6" />
-              <h4 className="text-xl font-bold mb-3">{t('feature_pipeline_title')}</h4>
-              <p className="text-slate-400 text-sm leading-relaxed">{t('feature_pipeline_desc')}</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Team Section - Clean Stack */}
-        <div className="mt-32 space-y-12">
-          <div className="text-start space-y-4">
-            <h2 className="text-3xl font-black tracking-tight text-white">{t('footer_crafted')}</h2>
-            <div className="h-1 w-20 bg-indigo-500 rounded-full" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="group">
-              <h4 className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{t('developer_name')}</h4>
-              <p className="text-indigo-500 font-bold text-xs uppercase tracking-widest mb-4">{t('developer')}</p>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">{t('developer_desc')}</p>
+            <div className="group relative p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-10 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="text-emerald-400 h-8 w-8" />
+              </div>
+              <h3 className="text-3xl font-black mb-6 tracking-tight text-white">{t('feature_security_title')}</h3>
+              <p className="text-slate-400 text-lg leading-relaxed font-medium">{t('feature_security_desc')}</p>
             </div>
-            <div className="group">
-              <h4 className="text-2xl font-black text-white group-hover:text-emerald-400 transition-colors uppercase tracking-tight">{t('idea_name')}</h4>
-              <p className="text-emerald-500 font-bold text-xs uppercase tracking-widest mb-4">{t('idea')}</p>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">{t('idea_desc')}</p>
+
+            <div className="group relative p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700">
+              <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-10 border border-blue-500/20 group-hover:scale-110 transition-transform">
+                <LayoutTemplate className="text-blue-400 h-8 w-8" />
+              </div>
+              <h3 className="text-3xl font-black mb-6 tracking-tight text-white">{t('feature_pipeline_title')}</h3>
+              <p className="text-slate-400 text-lg leading-relaxed font-medium">{t('feature_pipeline_desc')}</p>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Tech Stack Footer */}
-        <div className="text-center pt-20 border-t border-white/5 space-y-12">
-          <div className="flex items-center justify-center gap-12 flex-wrap opacity-30 hover:opacity-100 transition-opacity duration-700 grayscale hover:grayscale-0">
-            <div className="flex items-center gap-3 font-black tracking-widest uppercase text-sm"><Globe size={20} /> {t('tech_next')}</div>
-            <div className="flex items-center gap-3 font-black tracking-widest uppercase text-sm"><Zap size={20} /> {t('tech_tailwind')}</div>
-            <div className="flex items-center gap-3 font-black tracking-widest uppercase text-sm"><Sparkles size={20} /> {t('tech_gemini')}</div>
+      {/* Section: Atmospheric Vision */}
+      <section className="py-64 px-6 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-600/5 blur-[120px] rounded-full" />
+        <div className="max-w-4xl mx-auto relative z-10 text-center lg:text-start space-y-12">
+          <div className="flex items-center gap-6 justify-center lg:justify-start">
+            <h2 className="text-5xl font-black italic text-indigo-400 tracking-tighter">{t('vision_title')}</h2>
+            <div className="flex-1 h-px bg-white/10 hidden lg:block" />
           </div>
-          
-          <div className="space-y-4">
-            <div className="flex justify-center items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-[0.3em]">
-              Crafted With Passion
-            </div>
-            <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
-              © {new Date().getFullYear()} ARIS • AI Recruitment Intelligence System • Developed by {t('developer_name')}
-            </p>
+          <p className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight">
+            {t('vision_desc')}
+          </p>
+          <div className="pt-6">
+            <div className="w-24 h-2 bg-indigo-600 rounded-full mx-auto lg:mx-0 shadow-[0_0_20px_rgba(79,70,229,0.6)]" />
           </div>
         </div>
-      </main>
+      </section>
 
-      <style jsx global>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
+      {/* Visionaries: Double Column Impact */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-24 space-y-4 text-center lg:text-start">
+            <h2 className="text-6xl md:text-8xl font-black tracking-tighter text-white">{t('footer_crafted')}</h2>
+            <p className="text-slate-500 font-black tracking-[0.5em] uppercase text-xs italic">Architects of Cognitive Recruitment</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Developer Card */}
+            <div className="group relative p-12 lg:p-20 bg-white/[0.01] border border-white/5 rounded-[4.5rem] hover:bg-white/[0.03] hover:border-white/10 transition-all duration-700 overflow-hidden">
+              <div className="absolute top-12 end-12">
+                <div className="px-5 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-widest uppercase italic shadow-lg shadow-indigo-500/10">
+                  Engineering Lead
+                </div>
+              </div>
+              <div className="space-y-12 relative z-10">
+                <div className="w-24 h-24 bg-indigo-600/20 rounded-[2.5rem] flex items-center justify-center border border-indigo-500/30 group-hover:bg-indigo-600 transition-all duration-500 shadow-2xl shadow-indigo-500/20">
+                  <Terminal size={40} className="text-white" />
+                </div>
+                <div className="space-y-4">
+                  <h4 className="text-5xl font-black text-white tracking-tight">{t('developer_name')}</h4>
+                  <p className="text-indigo-400 font-black tracking-[0.3em] uppercase text-xs">{t('developer')}</p>
+                </div>
+                <p className="text-2xl text-slate-400 leading-relaxed font-medium italic border-start-8 border-indigo-500/30 ps-10">
+                  {t('developer_desc')}
+                </p>
+              </div>
+            </div>
+
+            {/* Strategic Thinker Card */}
+            <div className="group relative p-12 lg:p-20 bg-white/[0.01] border border-white/5 rounded-[4.5rem] hover:bg-white/[0.03] hover:border-white/10 transition-all duration-700 overflow-hidden">
+              <div className="absolute top-12 end-12">
+                <div className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-widest uppercase italic shadow-lg shadow-emerald-500/10">
+                  Strategy Chief
+                </div>
+              </div>
+              <div className="space-y-12 relative z-10">
+                <div className="w-24 h-24 bg-emerald-600/20 rounded-[2.5rem] flex items-center justify-center border border-emerald-500/30 group-hover:bg-emerald-600 transition-all duration-500 shadow-2xl shadow-emerald-500/20">
+                  <Globe size={40} className="text-white" />
+                </div>
+                <div className="space-y-4">
+                  <h4 className="text-5xl font-black text-white tracking-tight">{t('idea_name')}</h4>
+                  <p className="text-emerald-400 font-black tracking-[0.3em] uppercase text-xs">{t('idea')}</p>
+                </div>
+                <p className="text-2xl text-slate-400 leading-relaxed font-medium italic border-start-8 border-emerald-500/30 ps-10">
+                  {t('idea_desc')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Immersive CTA Footer */}
+      <footer className="py-64 px-6 text-center bg-gradient-to-t from-indigo-500/[0.03] to-transparent">
+        <div className="max-w-3xl mx-auto space-y-16">
+          <div className="relative group inline-block">
+            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Link 
+              href={backHref}
+              className="relative inline-flex items-center gap-6 px-16 py-8 rounded-[2.5rem] bg-indigo-600 hover:bg-indigo-500 text-white font-black text-2xl transition-all shadow-[0_0_50px_rgba(79,70,229,0.3)] hover:scale-105 active:scale-95"
+            >
+              <span>{backLabel}</span>
+              <ChevronRight size={32} className={`transition-transform ${isRtl ? 'rotate-180 group-hover:-translate-x-2' : 'group-hover:translate-x-2'}`} />
+            </Link>
+          </div>
+
+          <div className="pt-24 flex items-center justify-center gap-10 text-slate-700 font-black text-[11px] uppercase tracking-[0.6em]">
+            <span className="hover:text-slate-400 transition-colors cursor-default">Intelligence Core</span>
+            <div className="w-1.5 h-1.5 bg-slate-800 rounded-full" />
+            <span className="hover:text-slate-400 transition-colors cursor-default">Precision Built</span>
+            <div className="w-1.5 h-1.5 bg-slate-800 rounded-full" />
+            <span className="hover:text-slate-400 transition-colors cursor-default">© {new Date().getFullYear()}</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
