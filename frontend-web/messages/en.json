@@ -153,7 +153,10 @@
     "trajectory": "Trajectory",
     "highlights": "Highlights",
     "academic_pulse": "Academic Pulse",
-    "industry_readiness": "Industry Readiness"
+    "industry_readiness": "Industry Readiness",
+    "cultural_fit_desc": "AI evaluation of professional values and communication alignment.",
+    "project_impact_desc": "Weighted score of academic projects and real-world implementation scale.",
+    "view_cv": "View Original CV"
   },
   "Login": {
     "welcome": "Welcome Back",

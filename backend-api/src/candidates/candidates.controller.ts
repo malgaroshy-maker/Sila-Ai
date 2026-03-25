@@ -1,4 +1,5 @@
-import { Controller, Post, Patch, UseInterceptors, UploadedFile, Body, BadRequestException, Headers, UnauthorizedException, Param } from '@nestjs/common';
+import { Controller, Post, Patch, UseInterceptors, UploadedFile, Body, BadRequestException, Headers, UnauthorizedException, Param, Get, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CandidatesService } from './candidates.service';
 
@@ -46,5 +47,25 @@ export class CandidatesController {
     this.requireEmail(userEmail);
     if (!stage) throw new BadRequestException('Stage is required');
     return this.candidatesService.updateApplicationStage(userEmail, applicationId, stage);
+  }
+
+  @Get(':id/cv-download')
+  async downloadCV(
+    @Headers('x-user-email') userEmail: string,
+    @Param('id') candidateId: string,
+    @Res() res: Response
+  ) {
+    this.requireEmail(userEmail);
+    const result = await this.candidatesService.downloadCV(userEmail, candidateId);
+
+    if (result.buffer) {
+      res.setHeader('Content-Type', result.mimetype);
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+      return res.send(result.buffer);
+    } else if (result.url) {
+      return res.redirect(result.url);
+    } else {
+      throw new BadRequestException('CV not available for download');
+    }
   }
 }

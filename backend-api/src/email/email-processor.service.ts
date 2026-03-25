@@ -251,7 +251,14 @@ export class EmailProcessorService {
               if (existing && existing.cv_text && existing.cv_text.length > 50) {
                 candidate = existing;
               } else {
-                candidate = await this.candidatesService.ingestCandidate(account.user_email, candidateName, candidateEmail, mockFile);
+                candidate = await this.candidatesService.ingestCandidate(
+                  account.user_email, 
+                  candidateName, 
+                  candidateEmail, 
+                  mockFile,
+                  msg.id as string,
+                  part.body.attachmentId
+                );
               }
 
               if (candidate) {

@@ -1,7 +1,8 @@
-import { Injectable, InternalServerErrorException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, Logger, StreamableFile } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
 import { WebhooksService } from './webhooks.service';
+import { google } from 'googleapis';
 
 @Injectable()
 export class CandidatesService {
@@ -17,7 +18,7 @@ export class CandidatesService {
    * Step 1: Ingest a CV — parse the PDF, store the candidate. No job analysis yet.
    * Returns the candidate record with cv_text.
    */
-  async ingestCandidate(userEmail: string, name: string, email: string, file: Express.Multer.File) {
+  async ingestCandidate(userEmail: string, name: string, email: string, file: Express.Multer.File, gmailMessageId?: string, gmailAttachmentId?: string) {
     const sb = this.supabaseService.getClient();
 
     // 1. Parse PDF buffer to text
@@ -157,7 +158,9 @@ export class CandidatesService {
         name: finalName, 
         email: finalEmail, 
         cv_text: cvText, 
-        user_email: userEmail 
+        user_email: userEmail,
+        gmail_message_id: gmailMessageId,
+        gmail_attachment_id: gmailAttachmentId
       }, { onConflict: 'user_email, email' })
       .select()
       .single();
@@ -453,5 +456,81 @@ export class CandidatesService {
 
     if (error) throw new InternalServerErrorException(error.message);
     return data;
+  }
+  async downloadCV(userEmail: string, candidateId: string) {
+    const sb = this.supabaseService.getClient();
+
+    // 1. Fetch candidate metadata
+    const { data: candidate, error: candError } = await sb
+      .from('candidates')
+      .select('*')
+      .eq('id', candidateId)
+      .eq('user_email', userEmail)
+      .single();
+
+    if (candError || !candidate) {
+      throw new NotFoundException('Candidate not found');
+    }
+
+    // 2. If it's a Gmail attachment, download from Gmail API
+    if (candidate.gmail_message_id && candidate.gmail_attachment_id) {
+      this.logger.log(`Fetching Gmail attachment for ${candidate.email} (msg: ${candidate.gmail_message_id})`);
+
+      // Get Gmail account for this user
+      const { data: accounts } = await sb
+        .from('email_accounts')
+        .select('*')
+        .eq('user_email', userEmail)
+        .eq('provider', 'google');
+
+      const account = accounts?.[0];
+      if (!account) {
+        this.logger.warn(`No Gmail account found to proxy download for ${userEmail}`);
+        // Fallback to cv_url if exists
+        return { url: candidate.cv_url };
+      }
+
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+
+      oauth2Client.setCredentials({
+        access_token: account.access_token,
+        refresh_token: account.refresh_token,
+      });
+
+      const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+      try {
+        const attachment = await gmail.users.messages.attachments.get({
+          userId: 'me',
+          messageId: candidate.gmail_message_id,
+          id: candidate.gmail_attachment_id,
+          quotaUser: account.email_address
+        } as any);
+
+        if (!attachment.data || !attachment.data.data) {
+          throw new InternalServerErrorException('No data returned from Gmail API');
+        }
+
+        const b64Data = attachment.data.data.replace(/-/g, '+').replace(/_/g, '/');
+        const buffer = Buffer.from(b64Data, 'base64');
+        
+        // Return structured object that controller can handle
+        return {
+          buffer,
+          filename: `CV_${candidate.name.replace(/\s+/g, '_')}_Original.pdf`,
+          mimetype: 'application/pdf' // Default to PDF for CVs
+        };
+      } catch (err: any) {
+        this.logger.error(`Gmail download proxy failed: ${err.message}`);
+        // Fallback to cv_url if exists
+        return { url: candidate.cv_url };
+      }
+    }
+
+    // 3. Fallback to existing URL
+    return { url: candidate.cv_url };
   }
 }

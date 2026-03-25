@@ -49,6 +49,7 @@ interface AnalysisResult {
     job_id: string;
     pipeline_stage: string;
     candidates: {
+      id: string;
       name: string;
       email: string;
       cv_url?: string;
@@ -717,11 +718,27 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                 <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
                   {/* Scores Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#0EA5E9]/30 transition-all">
+                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#0EA5E9]/30 transition-all relative">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="relative group/tooltip">
+                          <Info className="w-3 h-3 text-slate-500" />
+                          <div className="absolute bottom-full mb-2 right-0 w-48 p-2 bg-[#0F172A] border border-[#1E293B] rounded-lg text-[10px] text-slate-400 font-medium invisible group-hover/tooltip:visible z-30 shadow-xl">
+                            {t.cultural_fit_desc || 'AI evaluation of professional values and communication alignment.'}
+                          </div>
+                        </div>
+                      </div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#0EA5E9]">{t.cultural_fit || 'Cultural Fit'}</p>
                       <div className="text-3xl font-black text-white">{selectedCandidate.cultural_fit_score || 0}%</div>
                     </div>
-                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#F59E0B]/30 transition-all">
+                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#F59E0B]/30 transition-all relative">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="relative group/tooltip">
+                          <Info className="w-3 h-3 text-slate-500" />
+                          <div className="absolute bottom-full mb-2 right-0 w-48 p-2 bg-[#0F172A] border border-[#1E293B] rounded-lg text-[10px] text-slate-400 font-medium invisible group-hover/tooltip:visible z-30 shadow-xl">
+                            {t.project_impact_desc || 'Weighted score of academic projects and real-world implementation scale.'}
+                          </div>
+                        </div>
+                      </div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#F59E0B]">{t.project_impact || 'Project Impact'}</p>
                       <div className="text-3xl font-black text-white">{selectedCandidate.project_impact_score || 0}%</div>
                     </div>
@@ -841,7 +858,31 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             <div className="p-8 pt-0 border-t border-[#1E293B] bg-[#0F172A] mt-auto shrink-0 z-20">
               <div className="flex justify-between items-center mt-6">
                  <div className="flex gap-2">
-                   <button onClick={() => window.open(selectedCandidate.applications?.candidates?.cv_url, '_blank')} className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                   <button 
+                     onClick={() => {
+                       const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${selectedCandidate.applications?.candidates?.id}/cv-download`;
+                       const link = document.createElement('a');
+                       link.href = downloadUrl;
+                       // We need to pass the header, but since this is a direct download link, 
+                       // the safest way for a 'GET' file is to use fetch or just rely on the existing cv_url if 401.
+                       // However, the proxy needs the email. Let's use fetch to get it securely.
+                       fetch(downloadUrl, {
+                         headers: { 'x-user-email': userEmail }
+                       })
+                       .then(res => res.blob())
+                       .then(blob => {
+                         const url = window.URL.createObjectURL(blob);
+                         const a = document.createElement('a');
+                         a.href = url;
+                         a.download = `CV_${selectedCandidate.applications?.candidates?.name.replace(/\s+/g, '_')}.pdf`;
+                         document.body.appendChild(a);
+                         a.click();
+                         window.URL.revokeObjectURL(url);
+                       })
+                       .catch(() => window.open(selectedCandidate.applications?.candidates?.cv_url, '_blank'));
+                     }} 
+                     className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                   >
                      <FileText className="w-4 h-4" />
                      {t.view_cv || 'View Original CV'}
                    </button>
