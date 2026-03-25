@@ -151,6 +151,22 @@ export class CandidatesService {
       // If we already returned null above, this won't be reached if it was a purposeful stop
     }
 
+    // 1.7 Upload to Supabase Storage if it's a manual upload (no Gmail IDs)
+    let cvUrl = undefined;
+    if (!gmailMessageId && file && file.buffer) {
+      const fileName = `${userEmail}/${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+      const { data: uploadData, error: uploadError } = await sb.storage
+        .from('cv-backups')
+        .upload(fileName, file.buffer, { contentType: file.mimetype, upsert: true });
+
+      if (uploadError) {
+        this.logger.error(`Manual CV upload to storage failed: ${uploadError.message}`);
+      } else {
+        const { data: { publicUrl } } = sb.storage.from('cv-backups').getPublicUrl(fileName);
+        cvUrl = publicUrl;
+      }
+    }
+
     // 2. Upsert Candidate record
     const { data: candidate, error: candError } = await sb
       .from('candidates')
@@ -159,6 +175,7 @@ export class CandidatesService {
         email: finalEmail, 
         cv_text: cvText, 
         user_email: userEmail,
+        cv_url: cvUrl, // Store the public URL for manual uploads
         gmail_message_id: gmailMessageId,
         gmail_attachment_id: gmailAttachmentId
       }, { onConflict: 'user_email, email' })
@@ -511,12 +528,20 @@ export class CandidatesService {
         } as any);
 
         if (!attachment.data || !attachment.data.data) {
+          this.logger.error(`Gmail API returned no data for msg=${candidate.gmail_message_id}, att=${candidate.gmail_attachment_id}`);
           throw new InternalServerErrorException('No data returned from Gmail API');
         }
 
-        const b64Data = attachment.data.data.replace(/-/g, '+').replace(/_/g, '/');
+        // Gmail uses base64url encoding
+        let b64Data = attachment.data.data.replace(/-/g, '+').replace(/_/g, '/');
+        // Add padding if needed
+        while (b64Data.length % 4 !== 0) {
+          b64Data += '=';
+        }
         const buffer = Buffer.from(b64Data, 'base64');
         
+        this.logger.log(`Successfully proxy-downloaded ${buffer.length} bytes for ${candidate.email}`);
+
         // Return structured object that controller can handle
         return {
           buffer,
@@ -525,6 +550,7 @@ export class CandidatesService {
         };
       } catch (err: any) {
         this.logger.error(`Gmail download proxy failed: ${err.message}`);
+        if (err.response) this.logger.error(`Gmail API Response: ${JSON.stringify(err.response.data)}`);
         // Fallback to cv_url if exists
         return { url: candidate.cv_url };
       }

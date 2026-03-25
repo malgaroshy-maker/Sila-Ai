@@ -859,28 +859,53 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <div className="flex justify-between items-center mt-6">
                  <div className="flex gap-2">
                    <button 
-                     onClick={() => {
-                       const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${selectedCandidate.applications?.candidates?.id}/cv-download`;
-                       const link = document.createElement('a');
-                       link.href = downloadUrl;
-                       // We need to pass the header, but since this is a direct download link, 
-                       // the safest way for a 'GET' file is to use fetch or just rely on the existing cv_url if 401.
-                       // However, the proxy needs the email. Let's use fetch to get it securely.
-                       fetch(downloadUrl, {
-                         headers: { 'x-user-email': userEmail }
-                       })
-                       .then(res => res.blob())
-                       .then(blob => {
-                         const url = window.URL.createObjectURL(blob);
-                         const a = document.createElement('a');
-                         a.href = url;
-                         a.download = `CV_${selectedCandidate.applications?.candidates?.name.replace(/\s+/g, '_')}.pdf`;
-                         document.body.appendChild(a);
-                         a.click();
-                         window.URL.revokeObjectURL(url);
-                       })
-                       .catch(() => window.open(selectedCandidate.applications?.candidates?.cv_url, '_blank'));
-                     }} 
+                      onClick={async () => {
+                        const candidateId = selectedCandidate.applications?.candidates?.id;
+                        if (!candidateId) return;
+
+                        const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/candidates/${candidateId}/cv-download`;
+                        
+                        try {
+                          const res = await fetch(downloadUrl, {
+                            headers: { 'x-user-email': userEmail }
+                          });
+
+                          if (res.ok) {
+                            // Check if it was a redirect (for manual/fallback URLs)
+                            if (res.redirected) {
+                              window.open(res.url, '_blank');
+                              return;
+                            }
+
+                            const contentType = res.headers.get('Content-Type');
+                            if (contentType && contentType.includes('application/json')) {
+                               // It might be a JSON response with a URL (some configs)
+                               const json = await res.json();
+                               if (json.url) {
+                                 window.open(json.url, '_blank');
+                                 return;
+                               }
+                            }
+
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `CV_${selectedCandidate.applications?.candidates?.name.replace(/\s+/g, '_')}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                          } else {
+                            // Fallback to direct URL if proxy fails
+                            const fallbackUrl = selectedCandidate.applications?.candidates?.cv_url;
+                            if (fallbackUrl) window.open(fallbackUrl, '_blank');
+                          }
+                        } catch (err) {
+                          console.error('Download failed:', err);
+                          const fallbackUrl = selectedCandidate.applications?.candidates?.cv_url;
+                          if (fallbackUrl) window.open(fallbackUrl, '_blank');
+                        }
+                      }} 
                      className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
                    >
                      <FileText className="w-4 h-4" />
