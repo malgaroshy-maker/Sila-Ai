@@ -53,7 +53,7 @@ export class EmailProcessorService {
         const emitProgress = (data: any) => {
           this.progressEmitter.emit(`progress:${account.user_email}`, data);
           // Also update DB occasionally (don't overwhelm)
-          if (data.status === 'completed' || data.status === 'failed' || data.status === 'stopped') {
+          if (activity?.id && (data.status === 'completed' || data.status === 'failed' || data.status === 'stopped')) {
             sb.from('sync_activity').update({ 
                status: data.status, 
                processed_count: data.processed, 
