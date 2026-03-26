@@ -83,15 +83,14 @@ async function DashboardClient({ locale }: { locale: string }) {
     'ai_behavior', 'balanced', 'strict', 'balanced_desc', 'strict_desc', 'save', 
     'reload_models', 'checking_models', 'models_found', 'account_connected', 'no_jobs', 
     'no_candidates', 'syncing', 'saving', 'insights', 'about', 'ai_config', 
-    'analysis_language', 'evaluation_focus', 'all_jobs', 'filter', 'refresh', 
-    'ai_spending', 'token_usage', 'est_cost', 'daily_usage', 'usage_by_op', 
-    'total_monthly_cost', 'total_tokens', 'requests', 'lang_bh', 'lang_en', 'lang_ar', 
-    'notifications', 'exceptional_threshold', 'reject_threshold', 'duplicate_strategy', 
-    'strategy_update', 'strategy_skip', 'strategy_new', 'focus_balanced', 
-    'focus_technical', 'focus_career', 'sync_frequency', 'sync_manual', 'sync_1h', 
-    'sync_6h', 'sync_24h', 'data_privacy', 'mask_pii', 'privacy_hint', 'threshold_hint', 
-    'reject_hint', 'op_analysis', 'op_info_extraction', 'op_ocr', 'op_job_generation', 
-    'op_embedding', 'server_online', 'server_offline', 'server_checking', 'tokens_used', 'cvs_processed'
+    'job_details', 'requirements_title', 'job_desc_title', 'show_more', 'show_less', 
+    'neural_intelligence', 'overview', 'strategic_prep', 'cultural_fit', 'project_impact', 
+    'skills_match', 'career_trajectory_title', 'project_highlights_title', 'ai_analysis', 
+    'recommended_questions', 'industry_roadmap', 'intelligence_pulse', 'fresh_grad_badge', 
+    'fit_index', 'trajectory', 'highlights', 'academic_pulse', 'industry_readiness', 
+    'cultural_fit_desc', 'project_impact_desc', 'view_cv', 'file_no_chosen', 'choose_file', 
+    'downloading', 'downloaded', 'server_online', 'server_offline', 'server_checking', 
+    'tokens_used', 'cvs_processed', 'industry_roadmap', 'improvement_areas'
   ];
   
   const translations: Record<string, string> = {};
