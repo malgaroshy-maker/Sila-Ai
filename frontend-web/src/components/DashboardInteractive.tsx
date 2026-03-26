@@ -19,6 +19,7 @@ import { SyncStatus } from './SyncStatus';
 import OnboardingModal from './OnboardingModal';
 import { Trash2 } from 'lucide-react';
 import QuotaMonitor from './QuotaMonitor';
+import { parseAiError } from '../lib/ai-errors';
 
 interface Job {
   id: string;
@@ -104,6 +105,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isDeletingJobId, setIsDeletingJobId] = useState<string | null>(null);
   const [isDeletingCandId, setIsDeletingCandId] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [analyzingTask, setAnalyzingTask] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -205,18 +208,25 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
   const handleStageChange = async (applicationId: string, newStage: string) => {
     if (!userEmail) return;
+    setAiError(null);
     setResults((prev) => prev.map((r) => 
       r.applications?.id === applicationId 
         ? { ...r, applications: { ...r.applications, pipeline_stage: newStage } }
         : r
     ));
     try {
-      await fetch(`${API_URL}/candidates/applications/${applicationId}/stage`, {
+      const res = await fetch(`${API_URL}/candidates/applications/${applicationId}/stage`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
         body: JSON.stringify({ stage: newStage })
       });
+      if (!res.ok) {
+        const errData = await res.json();
+        setAiError(parseAiError(errData, t));
+        loadData(userEmail);
+      }
     } catch (e) {
+      setAiError(parseAiError(e, t));
       loadData(userEmail);
     }
   };
@@ -297,7 +307,12 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         setJobs([newJob, ...jobs]);
         setIsJobModalOpen(false);
         setAiJobPrompt('');
+      } else {
+        const errData = await res.json();
+        setAiError(parseAiError(errData, t));
       }
+    } catch (e) {
+      setAiError(parseAiError(e, t));
     } finally {
       setIsCreatingJob(false);
     }
@@ -319,7 +334,12 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         setIsUploadModalOpen(false);
         setCvFile(null);
         await loadData(userEmail);
+      } else {
+        const errData = await res.json();
+        setAiError(parseAiError(errData, t));
       }
+    } catch (e) {
+      setAiError(parseAiError(e, t));
     } finally {
       setIsUploading(false);
     }
@@ -328,12 +348,19 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const handleRefreshSync = async () => {
     if (!userEmail) return;
     setIsRefreshing(true);
+    setAiError(null);
     try {
-      await fetch(`${API_URL}/email/sync`, { 
+      const res = await fetch(`${API_URL}/email/sync`, { 
         method: 'POST',
         headers: { 'x-user-email': userEmail }
       });
+      if (!res.ok) {
+        const errData = await res.json();
+        setAiError(parseAiError(errData, t));
+      }
       await loadData(userEmail);
+    } catch (e) {
+      setAiError(parseAiError(e, t));
     } finally {
       setIsRefreshing(false);
     }
@@ -542,7 +569,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <div className="w-px h-6 bg-[#1E293B] mx-1 hidden lg:block" />
 
               <button 
-                onClick={() => setIsJobModalOpen(true)} 
+                onClick={() => { setAiError(null); setIsJobModalOpen(true); }} 
                 className="flex items-center gap-2 bg-[#0369A1] hover:bg-[#0EA5E9] text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-[#0369A1]/20 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
@@ -550,7 +577,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               </button>
 
               <button 
-                onClick={() => setIsUploadModalOpen(true)} 
+                onClick={() => { setAiError(null); setIsUploadModalOpen(true); }} 
                 className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-indigo-500/20 whitespace-nowrap"
               >
                 <Upload className="w-4 h-4" />
@@ -568,6 +595,20 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
           </div>
         </div>
       </header>
+      
+      {aiError && !isJobModalOpen && !isUploadModalOpen && (
+        <div className="max-w-7xl mx-auto px-6 mt-4">
+          <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-center justify-between group animate-in slide-in-from-top-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              <p className="text-sm font-medium text-rose-400">{aiError}</p>
+            </div>
+            <button onClick={() => setAiError(null)} className="p-1 hover:bg-rose-500/20 rounded-lg transition-colors">
+              <X className="w-4 h-4 text-rose-500" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className={`grid grid-cols-1 ${view === 'insights' ? '' : 'lg:grid-cols-3'} gap-6`}>
@@ -1159,6 +1200,13 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <button onClick={() => setJobMode('form')} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${jobMode === 'form' ? 'bg-[#0369A1] text-white' : 'bg-[#020617] text-slate-400'}`}>{t.create_job_form || 'Form'}</button>
               <button onClick={() => setJobMode('ai')} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${jobMode === 'ai' ? 'bg-[#22C55E] text-white' : 'bg-[#020617] text-slate-400'}`}>{t.create_job_ai || 'AI Generate'}</button>
             </div>
+
+            {aiError && (
+              <div className="mb-5 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-start gap-3">
+                <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                <p className="text-xs font-medium text-rose-400">{aiError}</p>
+              </div>
+            )}
             {jobMode === 'form' ? (
               <form onSubmit={handleCreateJob} className="space-y-4">
                 <input required value={jobTitle} onChange={e=>setJobTitle(e.target.value)} placeholder={t.job_title} className="w-full bg-[#020617] border border-[#1E293B] text-white p-2.5 rounded-lg outline-none" />
@@ -1182,6 +1230,13 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setIsUploadModalOpen(false)}>
           <div className="bg-[#0F172A] rounded-2xl border border-[#1E293B] p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><FileUp className="w-5 h-5 text-[#7C3AED]" />{t.upload_cv}</h2>
+            
+            {aiError && (
+              <div className="mt-4 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-start gap-3">
+                <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                <p className="text-xs font-medium text-rose-400">{aiError}</p>
+              </div>
+            )}
             <form onSubmit={handleUploadCV} className="space-y-6 pt-4">
               <div className="relative group">
                 <input 

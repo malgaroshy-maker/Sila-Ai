@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
 import * as crypto from 'crypto';
@@ -155,15 +155,26 @@ export class AiService {
     const result = await response.json();
     if (!response.ok) {
       if (response.status === 429) {
-        // Block the API key globally in our DB
         await this.supabaseService.getClient().from('live_api_status').upsert({
           api_key_hash: this.hashKey(settings.apiKey),
           model_id: settings.model,
           is_blocked: true,
           last_updated_at: new Date().toISOString()
         });
+
+        throw new HttpException({
+          message: 'AI Quota Exceeded. Please try a lighter model or check your API key billings.',
+          code: 'AI_QUOTA_EXCEEDED',
+          model: settings.model,
+          retryAfter: response.headers.get('retry-after') || '30s'
+        }, HttpStatus.TOO_MANY_REQUESTS);
       }
-      throw new InternalServerErrorException(result.error?.message || 'Gemini API Error');
+
+      throw new HttpException({
+        message: `AI Analysis failed: ${result?.error?.message || 'Unknown AI Error'}`,
+        code: 'AI_ERROR',
+        details: result?.error
+      }, response.status);
     }
 
     return result;

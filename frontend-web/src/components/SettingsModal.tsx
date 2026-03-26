@@ -202,7 +202,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                   className="text-[10px] text-[#0EA5E9] hover:text-[#38BDF8] flex items-center gap-1 mt-1 transition-colors w-fit"
                 >
                   <Key className="w-3 h-3" />
-                  {t.get_api_key_link || 'Get your API key from Google AI Studio'}
+                  {t.get_api_key_link || t.api_key_hint || 'Get your API key from Google AI Studio'}
                 </a>
               </div>
 
@@ -221,10 +221,10 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                     <>
                       {/* Grouping by Category */}
                       {Array.from(new Set(availableModels.map(m => m.category))).map(cat => (
-                        <optgroup key={cat} label={cat} className="bg-[#0F172A] text-[#0EA5E9] font-bold">
+                        <optgroup key={cat} label={t[`category_${cat.toLowerCase().replace(/\s+/g, '_')}`] || cat} className="bg-[#0F172A] text-[#0EA5E9] font-bold">
                           {availableModels.filter(m => m.category === cat).map(m => (
                             <option key={m.model_id} value={m.model_id} className="text-white bg-[#020617]">
-                              {m.display_name} {m.is_preview ? '(Preview)' : ''} {m.badge ? `(${m.badge})` : ''}
+                              {m.display_name} {m.is_preview ? `(${t.preview || 'Preview'})` : ''} {m.badge ? `(${t[`badge_${m.badge.toLowerCase()}`] || m.badge})` : ''}
                             </option>
                           ))}
                         </optgroup>
@@ -414,7 +414,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
               disabled={isSaving}
               className="flex-1 flex items-center justify-center gap-2 bg-[#0369A1] hover:bg-[#0369A1]/80 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg cursor-pointer transition-all shadow-lg shadow-[#0369A1]/20"
             >
-              {isSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.saving || 'Saving...'}</> : <><Save className="w-4 h-4" /> {t.save || 'Save'}</>}
+              {isSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.saving || 'Saving...'}</> : <><Save className="w-4 h-4" /> {t.save_settings || t.save || 'Save Settings'}</>}
             </button>
             <button 
               onClick={onClose}

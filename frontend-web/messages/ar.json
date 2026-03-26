@@ -185,7 +185,21 @@
     "welcome_step3": "بمجرد التهيئة، سيقوم ARIS تلقائياً بفحص بريدك الإلكتروني وتحليل السير الذاتية الواردة.",
     "next": "التالي",
     "got_it": "لنبدأ الآن",
-    "go_to_settings": "فتح الإعدادات"
+    "go_to_settings": "فتح الإعدادات",
+    "badge_fastest": "الأسرع",
+    "badge_strongest": "الأقوى",
+    "preview": "معاينة",
+    "save_settings": "حفظ الإعدادات",
+    "category_free_tier": "الفئة المجانية",
+    "category_trial": "فئة المسار التجريبي",
+    "category_experimental": "تجريبي",
+    "category_legacy": "قديم",
+    "error_quota_exceeded": "تم تجاوز الحصة المسموح بها للذكاء الاصطناعي.",
+    "error_quota_exceeded_details": "تم تجاوز الحصة لنموذج {model}. يرجى المحاولة بعد {reset}.",
+    "error_ai_failed": "فشل تحليل الذكاء الاصطناعي",
+    "error_unknown": "حدث خطأ غير متوقع.",
+    "error_download_failed": "فشل التحميل. لا توجد سيرة ذاتية أصلية متاحة.",
+    "error_connection_download": "خطأ في الاتصال أثناء التحميل."
   },
   "Login": {
     "welcome": "مرحباً بك مجدداً",

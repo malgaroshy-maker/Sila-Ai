@@ -93,7 +93,16 @@ async function DashboardClient({ locale }: { locale: string }) {
     'tokens_used', 'cvs_processed', 'industry_roadmap', 'improvement_areas',
     'welcome_title', 'welcome_step1', 'welcome_step2', 'welcome_step2_detail', 
     'welcome_step2_pro', 'welcome_step3', 'next', 'got_it', 'go_to_settings', 
-    'sync_step_title', 'delete_confirm_job', 'delete_confirm_candidate', 'delete_candidate'
+    'sync_step_title', 'delete_confirm_job', 'delete_confirm_candidate', 'delete_candidate',
+    'sync_frequency', 'analysis_language', 'chat_language', 'evaluation_focus',
+    'duplicate_strategy', 'mask_pii', 'privacy_hint', 'threshold_hint', 'reject_hint',
+    'exceptional_threshold', 'reject_threshold', 'webhook_title', 'webhook_hint',
+    'notifications', 'data_privacy', 'strategy_update', 'strategy_skip', 'strategy_new',
+    'lang_bh', 'lang_en', 'lang_ar', 'focus_balanced', 'focus_technical', 'focus_career',
+    'sync_manual', 'sync_1h', 'sync_6h', 'sync_24h', 'badge_fastest', 'badge_strongest',
+    'preview', 'save_settings', 'get_api_key_link', 'category_free_tier', 'category_trial', 
+    'category_experimental', 'category_legacy', 'error_quota_exceeded', 'error_quota_exceeded_details', 
+    'error_ai_failed', 'error_unknown', 'error_download_failed', 'error_connection_download'
   ];
   
   const translations: Record<string, string> = {};

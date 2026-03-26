@@ -185,7 +185,21 @@
     "welcome_step3": "Once configured, ARIS will automatically scan your emails and analyze incoming CVs.",
     "next": "Next",
     "got_it": "Let's Start",
-    "go_to_settings": "Open Settings"
+    "go_to_settings": "Open Settings",
+    "badge_fastest": "Fastest",
+    "badge_strongest": "Strongest",
+    "preview": "Preview",
+    "save_settings": "Save Settings",
+    "category_free_tier": "Free Tier",
+    "category_trial": "Trial Tier",
+    "category_experimental": "Experimental",
+    "category_legacy": "Legacy",
+    "error_quota_exceeded": "AI Quota exceeded.",
+    "error_quota_exceeded_details": "Quota exceeded for {model}. Please retry after {reset}.",
+    "error_ai_failed": "AI Analysis failed",
+    "error_unknown": "An unexpected error occurred.",
+    "error_download_failed": "Download failed. No original CV available.",
+    "error_connection_download": "Connection error while downloading."
   },
   "Login": {
     "welcome": "Welcome Back",
