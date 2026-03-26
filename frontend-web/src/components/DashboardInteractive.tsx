@@ -409,7 +409,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <div className="h-8 w-px bg-[#1E293B] mx-2 hidden sm:block" />
               
               <Link
-                href="/about"
+                href={`/${locale}/about?from=dashboard`}
                 className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-[#1E293B] rounded-xl transition-all duration-200 border border-transparent hover:border-[#1E293B]"
                 title={t.about || 'About System'}
               >
@@ -750,7 +750,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                   locale={locale}
                 />
               ) : (
-                <AiInsights userEmail={userEmail} t={t} />
+                <AiInsights userEmail={userEmail} t={t} onClose={() => setView('list')} />
               )}
             </div>
           </div>

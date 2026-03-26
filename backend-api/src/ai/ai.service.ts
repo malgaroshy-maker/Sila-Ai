@@ -107,10 +107,10 @@ export class AiService {
         : 'EVALUATION FOCUS: BALANCED. Value both technical mastery and professional experience equally.'}
 
       ${settings.analysisLanguage === 'EN' 
-        ? 'LANGUAGE: Return all textual fields (justification, strengths, weaknesses, recommendation, questions) exclusively in ENGLISH.' 
+        ? 'LANGUAGE: Response MUST be in professional English. All textual fields (justification, strengths, weaknesses, recommendation, questions) should be exclusively in English.' 
         : settings.analysisLanguage === 'AR'
-        ? 'LANGUAGE: Return all textual fields (justification, strengths, weaknesses, recommendation, questions) exclusively in ARABIC.'
-        : 'LANGUAGE: BILINGUAL. For the "justification" field, provide a short paragraph in English followed by a paragraph in Arabic. Other fields should be in both or English.'}
+        ? 'LANGUAGE: Response MUST be in professional Arabic. All textual fields (justification, strengths, weaknesses, recommendation, questions) should be exclusively in Arabic.'
+        : 'LANGUAGE: BILINGUAL MODE. For the "justification" field, provide a professional paragraph in English followed by a high-quality Arabic translation of the same points. For other text fields, use English as the primary language but match the candidate\'s CV language if it is primarily Arabic.'}
 
       ${settings.maskPii 
         ? 'PRIVACY: Mask PII. Do NOT include phone numbers, email addresses, or specific home addresses in the textual justification or summaries. Use placeholders like [PHONE] or [ADDRESS] if necessary.' 

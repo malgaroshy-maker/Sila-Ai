@@ -19,6 +19,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   const [rejectThreshold, setRejectThreshold] = useState(50);
   const [duplicateStrategy, setDuplicateStrategy] = useState<'update' | 'skip' | 'new'>('update');
   const [analysisLanguage, setAnalysisLanguage] = useState<'BH' | 'EN' | 'AR'>('BH');
+  const [chatLanguage, setChatLanguage] = useState<'BH' | 'EN' | 'AR'>('BH');
   const [evaluationFocus, setEvaluationFocus] = useState<'balanced' | 'technical' | 'career'>('balanced');
   const [syncFrequency, setSyncFrequency] = useState<'manual' | '1h' | '6h' | '24h'>('6h');
   const [maskPii, setMaskPii] = useState(true);
@@ -54,6 +55,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
         setRejectThreshold(parseInt(data.reject_threshold) || 50);
         setDuplicateStrategy(data.duplicate_strategy || 'update');
         setAnalysisLanguage(data.analysis_language || 'BH');
+        setChatLanguage(data.chat_language || 'BH');
         setEvaluationFocus(data.evaluation_focus || 'balanced');
         setSyncFrequency(data.sync_frequency || '6h');
         setMaskPii(data.mask_pii !== false); // Default to true
@@ -120,6 +122,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
           reject_threshold: rejectThreshold.toString(),
           duplicate_strategy: duplicateStrategy,
           analysis_language: analysisLanguage,
+          chat_language: chatLanguage,
           evaluation_focus: evaluationFocus,
           sync_frequency: syncFrequency,
           mask_pii: maskPii
@@ -226,29 +229,42 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.analysis_language || 'AI Language'}</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.analysis_language || 'Analysis Lang'}</label>
                 <select 
                   value={analysisLanguage}
                   onChange={(e) => setAnalysisLanguage(e.target.value as any)}
                   className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
                 >
                   <option value="BH">{t.lang_bh || 'Bilingual'}</option>
-                  <option value="EN">{t.lang_en || 'English Only'}</option>
-                  <option value="AR">{t.lang_ar || 'Arabic Only'}</option>
+                  <option value="EN">{t.lang_en || 'English'}</option>
+                  <option value="AR">{t.lang_ar || 'Arabic'}</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.evaluation_focus || 'AI Focus'}</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.chat_language || 'Chat Lang'}</label>
                 <select 
-                  value={evaluationFocus}
-                  onChange={(e) => setEvaluationFocus(e.target.value as any)}
+                  value={chatLanguage}
+                  onChange={(e) => setChatLanguage(e.target.value as any)}
                   className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
                 >
-                  <option value="balanced">{t.focus_balanced || 'Balanced'}</option>
-                  <option value="technical">{t.focus_technical || 'Technical'}</option>
-                  <option value="career">{t.focus_career || 'Career'}</option>
+                  <option value="BH">{t.lang_bh || 'Bilingual'}</option>
+                  <option value="EN">{t.lang_en || 'English'}</option>
+                  <option value="AR">{t.lang_ar || 'Arabic'}</option>
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.evaluation_focus || 'AI Evaluation Focus'}</label>
+              <select 
+                value={evaluationFocus}
+                onChange={(e) => setEvaluationFocus(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+              >
+                <option value="balanced">{t.focus_balanced || 'Balanced'}</option>
+                <option value="technical">{t.focus_technical || 'Technical'}</option>
+                <option value="career">{t.focus_career || 'Career'}</option>
+              </select>
             </div>
 
             <div className="space-y-2">

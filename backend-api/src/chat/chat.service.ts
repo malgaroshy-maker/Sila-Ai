@@ -19,7 +19,8 @@ export class ChatService {
     data?.forEach(s => { settings[s.key] = s.value; });
     return {
       apiKey: settings.gemini_api_key || process.env.GEMINI_API_KEY || '',
-      model: settings.gemini_model || 'gemini-1.5-flash'
+      model: settings.gemini_model || 'gemini-1.5-flash',
+      chatLanguage: settings.chat_language || 'BH'
     };
   }
 
@@ -73,25 +74,31 @@ export class ChatService {
       return `- ${name} (${isGrad}) | Job: "${job}" | Score: ${a.final_score}/100 | Fit: ${a.cultural_fit_score}/100 | Trajectory: ${a.career_trajectory} | Tags: ${a.tags?.join(', ')}`;
     }).join('\n');
 
-    const systemPrompt = `أنت مساعد ذكاء اصطناعي متخصص في التوظيف (RAG-Enabled).
-أجب بالعربية أو الإنجليزية حسب لغة السؤال. كن مختصراً ومفيداً ودقيقاً.
+    const langInstructions = {
+      'AR': 'أجب باللغة العربية حصراً. استخدم مصطلحات الموارد البشرية الاحترافية.',
+      'EN': 'Response MUST be in English exclusively. Use professional HR terminology.',
+      'BH': 'أجب بنفس لغة سؤال المستخدم (عربي/إنجليزي). إذا كان السؤال هجيناً، أجب بلغة الأغلبية أو العربية كافتراضي.'
+    };
 
-=== سياق المستندات المسترجعة (RAG) ===
-هذه نصوص من السير الذاتية الأكثر صلة بسؤال المستخدم:
-${ragContext || 'لا توجد مستندات مطابقة تماماً'}
+    const systemPrompt = `You are an AI Recruitment Specialist (RAG-Enabled) for the "AI Recruitment Intelligence System".
+${langInstructions[settings.chatLanguage as keyof typeof langInstructions] || langInstructions.BH}
 
-=== الوظائف الحالية ===
-${jobsSummary || 'لا توجد وظائف'}
+=== Retrieve Documents Context (RAG) ===
+${ragContext || 'No exact matches found in CV database.'}
 
-=== ملخص أفضل التحليلات (أعلى 20) ===
-${analysisSummary || 'لا توجد نتائج تحليل'}
+=== Current Job Openings ===
+${jobsSummary || 'No jobs currently active.'}
 
-=== تعليمات ===
-- استخدم "سياق المستندات المسترجعة" للإجابة عن تفاصيل دقيقة في السير الذاتية.
-- استخدم "ملخص أفضل التحليلات" للمقارنة السريعة والترتيب حسب الدرجات.
-- إذا لم تجد المعلومة في السياق، قل بوضوح أنك لا تملك هذه المعلومة.
-- اعتمد على البيانات والأرقام المتوفرة بدلاً من التخمين.
-- إذا سألك المستخدم "order candidates" أو "من الأفضل"، استخدم درجات التحليل (final_score).`;
+=== Top Candidate Analysis Overview ===
+${analysisSummary || 'No candidate analyses available yet.'}
+
+=== Guiding Instructions ===
+1. LANGUAGE: Follow the specific language instruction: "${langInstructions[settings.chatLanguage as keyof typeof langInstructions] || langInstructions.BH}".
+2. ACCURACY: Use the provided RAG context to answer specific CV details. If the info is missing, state it clearly.
+3. COMPARISON: Use the Analysis Overview to compare candidates based on final_score and cultural_fit_score.
+4. TONE: Maintain a professional, executive recruitment tone.
+5. FORMATTING: Use markdown (bold, lists) for readability.
+6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.`;
 
     // Gemini Conversation History
     const chatHistory = history.map(h => ({
@@ -103,7 +110,7 @@ ${analysisSummary || 'لا توجد نتائج تحليل'}
       const chat = model.startChat({
         history: [
           { role: 'user', parts: [{ text: 'System context: ' + systemPrompt }] },
-          { role: 'model', parts: [{ text: 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع. كيف يمكنني مساعدتك اليوم؟' }] },
+          { role: 'model', parts: [{ text: settings.chatLanguage === 'EN' ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?' : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟' }] },
           ...chatHistory,
         ],
       });

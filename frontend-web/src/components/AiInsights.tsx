@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
 } from 'recharts';
-import { Loader2, TrendingUp, Cpu, DollarSign, Activity } from 'lucide-react';
+import { Loader2, TrendingUp, Cpu, DollarSign, Activity, X } from 'lucide-react';
 
 interface AiUsageLog {
   created_at: string;
@@ -14,7 +14,15 @@ interface AiUsageLog {
   operation: string;
 }
 
-export default function AiInsights({ userEmail, t }: { userEmail: string, t: Record<string, string> }) {
+export default function AiInsights({ 
+  userEmail, 
+  t,
+  onClose
+}: { 
+  userEmail: string, 
+  t: Record<string, string>,
+  onClose?: () => void
+}) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AiUsageLog[]>([]);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -81,8 +89,23 @@ export default function AiInsights({ userEmail, t }: { userEmail: string, t: Rec
   const COLORS = ['#0EA5E9', '#7C3AED', '#22C55E', '#F59E0B', '#EF4444'];
 
   return (
-    <div className="p-6 space-y-8 animate-in fade-in duration-500">
-      {/* Stats Overview */}
+    <div className="p-6 space-y-8 animate-in fade-in duration-500 relative">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <Activity className="w-5 h-5 text-[#0EA5E9]" />
+          {t.ai_insights_title || 'AI Insights & Usage'}
+        </h2>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-white hover:bg-[#1E293B] rounded-xl transition-all duration-200 border border-[#1E293B]"
+            title={t.close || 'Close'}
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
+            <span className="sr-only">Close</span>
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-[#020617] p-6 rounded-2xl border border-[#1E293B] flex items-center gap-4">
           <div className="bg-[#0EA5E9]/20 p-3 rounded-xl text-[#0EA5E9]">
