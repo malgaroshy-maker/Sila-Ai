@@ -8,6 +8,7 @@ interface Model {
   display_name: string;
   category: string;
   is_preview?: boolean;
+  badge?: string;
 }
 
 export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { isOpen: boolean, onClose: () => void, userEmail: string, t?: Record<string, string> }) {
@@ -223,7 +224,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                         <optgroup key={cat} label={cat} className="bg-[#0F172A] text-[#0EA5E9] font-bold">
                           {availableModels.filter(m => m.category === cat).map(m => (
                             <option key={m.model_id} value={m.model_id} className="text-white bg-[#020617]">
-                              {m.display_name} {m.is_preview ? '(Preview)' : ''}
+                              {m.display_name} {m.is_preview ? '(Preview)' : ''} {m.badge ? `(${m.badge})` : ''}
                             </option>
                           ))}
                         </optgroup>
