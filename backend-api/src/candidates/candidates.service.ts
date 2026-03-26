@@ -1,4 +1,11 @@
-import { Injectable, InternalServerErrorException, NotFoundException, Logger, StreamableFile, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  Logger,
+  StreamableFile,
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
 import { WebhooksService } from './webhooks.service';
@@ -18,7 +25,14 @@ export class CandidatesService {
    * Step 1: Ingest a CV — parse the PDF, store the candidate. No job analysis yet.
    * Returns the candidate record with cv_text.
    */
-  async ingestCandidate(userEmail: string, name: string, email: string, file: Express.Multer.File, gmailMessageId?: string, gmailAttachmentId?: string) {
+  async ingestCandidate(
+    userEmail: string,
+    name: string,
+    email: string,
+    file: Express.Multer.File,
+    gmailMessageId?: string,
+    gmailAttachmentId?: string,
+  ) {
     const sb = this.supabaseService.getClient();
 
     // 1. Parse PDF buffer to text
@@ -27,7 +41,9 @@ export class CandidatesService {
 
     // Reject files larger than 10MB (extremely unlikely for a CV)
     if (file && file.size > 10 * 1024 * 1024) {
-      this.logger.warn(`File ${file.originalname} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Skipping.`);
+      this.logger.warn(
+        `File ${file.originalname} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Skipping.`,
+      );
       return null;
     }
 
@@ -36,7 +52,10 @@ export class CandidatesService {
       cvText = '[Missing CV Content]';
     } else if (file.mimetype === 'text/plain') {
       cvText = file.buffer.toString('utf8');
-    } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    } else if (
+      file.mimetype ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
       try {
         const mammoth = require('mammoth');
         const result = await mammoth.extractRawText({ buffer: file.buffer });
@@ -49,7 +68,11 @@ export class CandidatesService {
       try {
         this.logger.log(`Using Gemini OCR for image type: ${file.mimetype}`);
         cvBuffer = file.buffer;
-        const ocrText = await this.aiService.extractTextFromDocument(userEmail, file.buffer, file.mimetype);
+        const ocrText = await this.aiService.extractTextFromDocument(
+          userEmail,
+          file.buffer,
+          file.mimetype,
+        );
         cvText = ocrText || `[Image CV - Could not extract text]`;
       } catch (e: any) {
         this.logger.error(`Image OCR parsing error: ${e.message}`);
@@ -60,10 +83,12 @@ export class CandidatesService {
         const { PDFParse } = require('pdf-parse');
         const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
         const pdfData = await parser.getText();
-        
+
         // Reject if more than 5 pages (CVs are rarely longer)
         if (pdfData.numpages > 5) {
-          this.logger.warn(`PDF ${file.originalname} has ${pdfData.numpages} pages. Skipping (Max 5).`);
+          this.logger.warn(
+            `PDF ${file.originalname} has ${pdfData.numpages} pages. Skipping (Max 5).`,
+          );
           await parser.destroy();
           return null;
         }
@@ -72,10 +97,16 @@ export class CandidatesService {
         await parser.destroy();
 
         if (cvText.trim().length < 100 && file.mimetype === 'application/pdf') {
-          this.logger.log('PDF text too short, using Gemini multimodal OCR fallback');
+          this.logger.log(
+            'PDF text too short, using Gemini multimodal OCR fallback',
+          );
           cvBuffer = file.buffer;
           // Use AI to extract text from the scanned PDF
-          const ocrText = await this.aiService.extractTextFromDocument(userEmail, cvBuffer, 'application/pdf');
+          const ocrText = await this.aiService.extractTextFromDocument(
+            userEmail,
+            cvBuffer,
+            'application/pdf',
+          );
           if (ocrText) cvText = ocrText;
         }
       } catch (e: any) {
@@ -84,7 +115,11 @@ export class CandidatesService {
           cvBuffer = file.buffer;
           // Use AI to extract text from the scanned PDF
           try {
-            const ocrText = await this.aiService.extractTextFromDocument(userEmail, file.buffer, 'application/pdf');
+            const ocrText = await this.aiService.extractTextFromDocument(
+              userEmail,
+              file.buffer,
+              'application/pdf',
+            );
             cvText = ocrText || '[Scanned PDF - Could not extract text]';
           } catch {
             cvText = '[Scanned PDF - Could not extract text]';
@@ -94,17 +129,17 @@ export class CandidatesService {
         }
       }
     }
-    
+
     // 1.5 Extract candidate name and email from CV text using AI for better accuracy
     let finalName = name;
     let finalEmail = email;
-    
+
     // Fetch settings for duplicate strategy
     const { data: userSettings } = await sb
       .from('settings')
       .select('key, value')
       .eq('user_email', userEmail);
-    
+
     const settingsMap = (userSettings || []).reduce((acc, s) => {
       acc[s.key] = s.value;
       return acc;
@@ -115,10 +150,17 @@ export class CandidatesService {
     let aiError: string | null = null;
     try {
       this.logger.log(`Extracting candidate info from CV text for ${email}...`);
-      const extracted = await this.aiService.extractCandidateInfo(userEmail, cvText, cvBuffer, file.mimetype);
-      
+      const extracted = await this.aiService.extractCandidateInfo(
+        userEmail,
+        cvText,
+        cvBuffer,
+        file.mimetype,
+      );
+
       if (!extracted.is_cv) {
-        this.logger.warn(`Document for ${email} identified as non-CV. Skipping ingestion.`);
+        this.logger.warn(
+          `Document for ${email} identified as non-CV. Skipping ingestion.`,
+        );
         return null; // Return null so caller knows to skip
       }
 
@@ -126,11 +168,17 @@ export class CandidatesService {
       if (extracted.name && extracted.name !== 'Unknown') {
         finalName = extracted.name;
       }
-      if (extracted.email && extracted.email !== 'unknown@uploaded.cv' && extracted.email.includes('@')) {
+      if (
+        extracted.email &&
+        extracted.email !== 'unknown@uploaded.cv' &&
+        extracted.email.includes('@')
+      ) {
         finalEmail = extracted.email;
       }
-      
-      this.logger.log(`Extraction result: ${finalName} <${finalEmail}> (Original: ${name} <${email}>)`);
+
+      this.logger.log(
+        `Extraction result: ${finalName} <${finalEmail}> (Original: ${name} <${email}>)`,
+      );
 
       // Check for existing candidate BEFORE upsert if strategy is 'skip'
       if (duplicateStrategy === 'skip') {
@@ -140,15 +188,18 @@ export class CandidatesService {
           .eq('user_email', userEmail)
           .eq('email', finalEmail)
           .single();
-        
+
         if (existing) {
-          this.logger.log(`Duplicate candidate ${finalEmail} found. Strategy is "skip". Skipping upsert.`);
+          this.logger.log(
+            `Duplicate candidate ${finalEmail} found. Strategy is "skip". Skipping upsert.`,
+          );
           return existing;
         }
       }
-
     } catch (e: any) {
-      this.logger.warn(`Candidate info extraction failed or non-CV detected: ${e.message}.`);
+      this.logger.warn(
+        `Candidate info extraction failed or non-CV detected: ${e.message}.`,
+      );
       aiError = e.message;
     }
 
@@ -160,17 +211,24 @@ export class CandidatesService {
         .replace(/[^\x00-\x7F]/g, '') // Remove non-ASCII (Arabic etc)
         .replace(/[\s\(\)\[\]\{\}\%\&\$\#\@\!\^\*]/g, '_') // Replace spaces and special chars
         .replace(/_{2,}/g, '_'); // Collapse multiple underscores
-      
+
       const fileName = `${userEmail}/${Date.now()}_${safeOriginalName || 'uploaded_cv'}`;
-      
+
       const { data: uploadData, error: uploadError } = await sb.storage
         .from('cv-backups')
-        .upload(fileName, file.buffer, { contentType: file.mimetype, upsert: true });
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
 
       if (uploadError) {
-        this.logger.error(`Manual CV upload to storage failed: ${uploadError.message}`);
+        this.logger.error(
+          `Manual CV upload to storage failed: ${uploadError.message}`,
+        );
       } else {
-        const { data: { publicUrl } } = sb.storage.from('cv-backups').getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = sb.storage.from('cv-backups').getPublicUrl(fileName);
         cvUrl = publicUrl;
       }
     }
@@ -178,16 +236,19 @@ export class CandidatesService {
     // 2. Upsert Candidate record
     const { data: candidate, error: candError } = await sb
       .from('candidates')
-      .upsert({ 
-        name: finalName, 
-        email: finalEmail, 
-        cv_text: cvText, 
-        user_email: userEmail,
-        cv_url: cvUrl, // Store the public URL for manual uploads
-        gmail_message_id: gmailMessageId,
-        gmail_attachment_id: gmailAttachmentId,
-        ai_error: aiError
-      }, { onConflict: 'user_email, email' })
+      .upsert(
+        {
+          name: finalName,
+          email: finalEmail,
+          cv_text: cvText,
+          user_email: userEmail,
+          cv_url: cvUrl, // Store the public URL for manual uploads
+          gmail_message_id: gmailMessageId,
+          gmail_attachment_id: gmailAttachmentId,
+          ai_error: aiError,
+        },
+        { onConflict: 'email' },
+      )
       .select()
       .single();
 
@@ -197,21 +258,32 @@ export class CandidatesService {
     try {
       if (cvText && cvText.trim().length > 10) {
         this.logger.log(`Generating embedding for candidate: ${email}...`);
-        const embedding = await this.aiService.generateEmbedding(userEmail, cvText);
-        const { error: embedError } = await sb.from('candidate_embeddings').upsert({
-          candidate_id: candidate.id,
-          content: cvText, // Storing full text for RAG retrieval
-          embedding: embedding,
-          user_email: userEmail
-        }, { onConflict: 'candidate_id' });
-        
-        if (embedError) this.logger.error(`Embedding storage error: ${embedError.message}`);
+        const embedding = await this.aiService.generateEmbedding(
+          userEmail,
+          cvText,
+        );
+        const { error: embedError } = await sb
+          .from('candidate_embeddings')
+          .upsert(
+            {
+              candidate_id: candidate.id,
+              content: cvText, // Storing full text for RAG retrieval
+              embedding: embedding,
+              user_email: userEmail,
+            },
+            { onConflict: 'candidate_id' },
+          );
+
+        if (embedError)
+          this.logger.error(`Embedding storage error: ${embedError.message}`);
       }
     } catch (e: any) {
       this.logger.error(`Embedding process failed for ${email}: ${e.message}`);
     }
 
-    this.logger.log(`Ingested candidate: ${name} (${email}), CV length: ${cvText.length} chars`);
+    this.logger.log(
+      `Ingested candidate: ${name} (${email}), CV length: ${cvText.length} chars`,
+    );
     return candidate;
   }
 
@@ -219,7 +291,11 @@ export class CandidatesService {
    * Step 2: Analyze a candidate against ALL existing jobs for the user.
    * Skips jobs that already have an analysis for this candidate.
    */
-  async analyzeForAllJobs(userEmail: string, candidate: { id: string; name: string; email: string; cv_text: string }, skipNotifications = false) {
+  async analyzeForAllJobs(
+    userEmail: string,
+    candidate: { id: string; name: string; email: string; cv_text: string },
+    skipNotifications = false,
+  ) {
     const sb = this.supabaseService.getClient();
 
     // Fetch all jobs
@@ -234,17 +310,26 @@ export class CandidatesService {
       return [];
     }
 
-    this.logger.log(`Analyzing candidate ${candidate.name} against ${jobs.length} job(s)...`);
+    this.logger.log(
+      `Analyzing candidate ${candidate.name} against ${jobs.length} job(s)...`,
+    );
 
     const results = [];
     for (const job of jobs) {
       try {
-        const result = await this.analyzeForJob(userEmail, candidate, job, skipNotifications);
+        const result = await this.analyzeForJob(
+          userEmail,
+          candidate,
+          job,
+          skipNotifications,
+        );
         if (result) {
           results.push(result);
         }
       } catch (err: any) {
-        this.logger.error(`Error analyzing candidate ${candidate.name} for job ${job.title}: ${err.message}`);
+        this.logger.error(
+          `Error analyzing candidate ${candidate.name} for job ${job.title}: ${err.message}`,
+        );
       }
     }
 
@@ -263,7 +348,8 @@ export class CandidatesService {
       .eq('id', applicationId)
       .single();
 
-    if (appError || !app) throw new BadRequestException('Application not found');
+    if (appError || !app)
+      throw new BadRequestException('Application not found');
 
     return this.analyzeForJob(userEmail, app.candidate_id, app.job_id);
   }
@@ -272,7 +358,7 @@ export class CandidatesService {
     userEmail: string,
     candidate: { id: string; name: string; email: string; cv_text: string },
     job: { id: string; title: string; description: string; requirements: any },
-    skipNotifications = false
+    skipNotifications = false,
   ) {
     const sb = this.supabaseService.getClient();
 
@@ -285,14 +371,26 @@ export class CandidatesService {
       .single();
 
     if (existingApp?.analysis_results) {
-      this.logger.debug(`Skipping: ${candidate.name} already analyzed for "${job.title}"`);
-      return { candidate, application: existingApp, analysis: existingApp.analysis_results, skipped: true };
-    }    // Create/Update Application record to 'pending' status BEFORE AI
+      this.logger.debug(
+        `Skipping: ${candidate.name} already analyzed for "${job.title}"`,
+      );
+      return {
+        candidate,
+        application: existingApp,
+        analysis: existingApp.analysis_results,
+        skipped: true,
+      };
+    } // Create/Update Application record to 'pending' status BEFORE AI
     const { data: application, error: appError } = await sb
       .from('applications')
       .upsert(
-        { job_id: job.id, candidate_id: candidate.id, status: 'pending', ai_error: null },
-        { onConflict: 'job_id, candidate_id' }
+        {
+          job_id: job.id,
+          candidate_id: candidate.id,
+          status: 'pending',
+          ai_error: null,
+        },
+        { onConflict: 'job_id, candidate_id' },
       )
       .select()
       .single();
@@ -305,59 +403,78 @@ export class CandidatesService {
       .select('key, value')
       .eq('user_email', userEmail)
       .eq('key', 'reject_threshold');
-    
+
     const rejectThreshold = parseInt(thresholdSettings?.[0]?.value) || 0;
 
     // Analyze CV using AI
-    this.logger.log(`AI analyzing: ${candidate.name} → "${job.title}" for user ${userEmail}`);
-    
+    this.logger.log(
+      `AI analyzing: ${candidate.name} → "${job.title}" for user ${userEmail}`,
+    );
+
     let analysisResult: any;
     try {
       const aiResponse = await this.aiService.analyzeCandidate(
         userEmail,
-        { title: job.title, description: job.description, requirements: job.requirements },
-        candidate.cv_text
+        {
+          title: job.title,
+          description: job.description,
+          requirements: job.requirements,
+        },
+        candidate.cv_text,
       );
       analysisResult = aiResponse.data;
     } catch (err: any) {
-      this.logger.error(`AI Analysis failed for ${candidate.name}: ${err.message}`);
-      await sb.from('applications').update({ status: 'failed', ai_error: err.message }).eq('id', application.id);
+      this.logger.error(
+        `AI Analysis failed for ${candidate.name}: ${err.message}`,
+      );
+      await sb
+        .from('applications')
+        .update({ status: 'failed', ai_error: err.message })
+        .eq('id', application.id);
       throw err; // Re-throw so caller knows it failed
     }
 
     let status = 'analyzed';
     if (rejectThreshold > 0 && analysisResult.final_score < rejectThreshold) {
-      this.logger.log(`Candidate ${candidate.name} auto-rejected (Score ${analysisResult.final_score} < Threshold ${rejectThreshold})`);
+      this.logger.log(
+        `Candidate ${candidate.name} auto-rejected (Score ${analysisResult.final_score} < Threshold ${rejectThreshold})`,
+      );
       status = 'rejected';
     }
 
     // Update Application status
-    await sb.from('applications').update({ status, ai_error: null }).eq('id', application.id);
+    await sb
+      .from('applications')
+      .update({ status, ai_error: null })
+      .eq('id', application.id);
 
     // Store AI Analysis results
     const { data: results, error: resError } = await sb
       .from('analysis_results')
-      .upsert({
-        application_id: application.id,
-        skills_score: analysisResult.skills_score,
-        gpa_score: analysisResult.gpa_score,
-        language_score: analysisResult.language_score,
-        ind_readiness_score: analysisResult.ind_readiness_score,
-        final_score: analysisResult.final_score,
-        is_fresh_graduate: analysisResult.is_fresh_graduate || false,
-        project_impact_score: analysisResult.project_impact_score || 0,
-        cultural_fit_score: analysisResult.cultural_fit_score || 0,
-        career_trajectory: analysisResult.career_trajectory || '',
-        project_highlights: analysisResult.project_highlights || [],
-        strengths: analysisResult.strengths,
-        weaknesses: analysisResult.weaknesses,
-        recommendation: analysisResult.recommendation,
-        justification: analysisResult.justification,
-        tags: analysisResult.tags || [],
-        flags: analysisResult.flags || [],
-        interview_questions: analysisResult.interview_questions || [],
-        training_suggestions: analysisResult.training_suggestions || []
-      }, { onConflict: 'application_id' })
+      .upsert(
+        {
+          application_id: application.id,
+          skills_score: analysisResult.skills_score,
+          gpa_score: analysisResult.gpa_score,
+          language_score: analysisResult.language_score,
+          ind_readiness_score: analysisResult.ind_readiness_score,
+          final_score: analysisResult.final_score,
+          is_fresh_graduate: analysisResult.is_fresh_graduate || false,
+          project_impact_score: analysisResult.project_impact_score || 0,
+          cultural_fit_score: analysisResult.cultural_fit_score || 0,
+          career_trajectory: analysisResult.career_trajectory || '',
+          project_highlights: analysisResult.project_highlights || [],
+          strengths: analysisResult.strengths,
+          weaknesses: analysisResult.weaknesses,
+          recommendation: analysisResult.recommendation,
+          justification: analysisResult.justification,
+          tags: analysisResult.tags || [],
+          flags: analysisResult.flags || [],
+          interview_questions: analysisResult.interview_questions || [],
+          training_suggestions: analysisResult.training_suggestions || [],
+        },
+        { onConflict: 'application_id' },
+      )
       .select()
       .single();
 
@@ -365,7 +482,12 @@ export class CandidatesService {
 
     // Trigger webhook if score is high and notifications are not skipped
     if (!skipNotifications) {
-      this.webhooksService.checkAndNotify(userEmail, candidate.name, analysisResult.final_score, job.title);
+      this.webhooksService.checkAndNotify(
+        userEmail,
+        candidate.name,
+        analysisResult.final_score,
+        job.title,
+      );
     }
 
     return { candidate, application, analysis: results, skipped: false };
@@ -374,7 +496,13 @@ export class CandidatesService {
   /**
    * Legacy method for the upload controller — ingests + analyzes against one job.
    */
-  async processCandidate(userEmail: string, jobId: string, name: string, email: string, file: Express.Multer.File) {
+  async processCandidate(
+    userEmail: string,
+    jobId: string,
+    name: string,
+    email: string,
+    file: Express.Multer.File,
+  ) {
     const candidate = await this.ingestCandidate(userEmail, name, email, file);
 
     const { data: job, error: jobError } = await this.supabaseService
@@ -404,13 +532,22 @@ export class CandidatesService {
 
     // Reject files larger than 10MB (extremely unlikely for a CV)
     if (file.size > 10 * 1024 * 1024) {
-      this.logger.warn(`File ${file.originalname} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Skipping.`);
-      return { candidate: null, analyses: [], message: 'Skipped: File too large' };
+      this.logger.warn(
+        `File ${file.originalname} is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Skipping.`,
+      );
+      return {
+        candidate: null,
+        analyses: [],
+        message: 'Skipped: File too large',
+      };
     }
 
     if (file.mimetype === 'text/plain') {
       cvText = file.buffer.toString('utf8');
-    } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    } else if (
+      file.mimetype ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
       try {
         const mammoth = require('mammoth');
         const result = await mammoth.extractRawText({ buffer: file.buffer });
@@ -423,7 +560,11 @@ export class CandidatesService {
       try {
         this.logger.log(`Using Gemini OCR for image type: ${file.mimetype}`);
         cvBuffer = file.buffer;
-        const ocrText = await this.aiService.extractTextFromDocument(userEmail, file.buffer, file.mimetype);
+        const ocrText = await this.aiService.extractTextFromDocument(
+          userEmail,
+          file.buffer,
+          file.mimetype,
+        );
         cvText = ocrText || `[Image CV - Could not extract text]`;
       } catch (e: any) {
         this.logger.error(`Image OCR parsing error: ${e.message}`);
@@ -437,9 +578,15 @@ export class CandidatesService {
 
         // Reject if more than 5 pages (CVs are rarely longer)
         if (pdfData.numpages > 5) {
-          this.logger.warn(`PDF ${file.originalname} has ${pdfData.numpages} pages. Skipping (Max 5).`);
+          this.logger.warn(
+            `PDF ${file.originalname} has ${pdfData.numpages} pages. Skipping (Max 5).`,
+          );
           await parser.destroy();
-          return { candidate: null, analyses: [], message: 'Skipped: Too many pages' };
+          return {
+            candidate: null,
+            analyses: [],
+            message: 'Skipped: Too many pages',
+          };
         }
 
         cvText = pdfData.text || '';
@@ -448,7 +595,11 @@ export class CandidatesService {
         if (cvText.trim().length < 100 && file.mimetype === 'application/pdf') {
           this.logger.log('PDF text too short, using Gemini OCR');
           cvBuffer = file.buffer;
-          const ocrText = await this.aiService.extractTextFromDocument(userEmail, cvBuffer, 'application/pdf');
+          const ocrText = await this.aiService.extractTextFromDocument(
+            userEmail,
+            cvBuffer,
+            'application/pdf',
+          );
           if (ocrText) cvText = ocrText;
         }
       } catch (e: any) {
@@ -456,7 +607,11 @@ export class CandidatesService {
         if (file.mimetype === 'application/pdf' && file.buffer) {
           cvBuffer = file.buffer;
           try {
-            const ocrText = await this.aiService.extractTextFromDocument(userEmail, file.buffer, 'application/pdf');
+            const ocrText = await this.aiService.extractTextFromDocument(
+              userEmail,
+              file.buffer,
+              'application/pdf',
+            );
             cvText = ocrText || '[Scanned PDF]';
           } catch {
             cvText = '[Scanned PDF]';
@@ -468,13 +623,27 @@ export class CandidatesService {
     }
 
     // 2. Use AI to extract candidate name and email from the CV
-    const info = await this.aiService.extractCandidateInfo(userEmail, cvText, cvBuffer, file.mimetype);
+    const info = await this.aiService.extractCandidateInfo(
+      userEmail,
+      cvText,
+      cvBuffer,
+      file.mimetype,
+    );
     this.logger.log(`AI extracted: name="${info.name}", email="${info.email}"`);
 
     // 3. Ingest the candidate
-    const candidate = await this.ingestCandidate(userEmail, info.name, info.email, file);
+    const candidate = await this.ingestCandidate(
+      userEmail,
+      info.name,
+      info.email,
+      file,
+    );
     if (!candidate) {
-      return { candidate: null, analyses: [], message: 'Skipped: Not a professional CV' };
+      return {
+        candidate: null,
+        analyses: [],
+        message: 'Skipped: Not a professional CV',
+      };
     }
 
     // 4. Analyze against ALL jobs
@@ -483,7 +652,11 @@ export class CandidatesService {
     return { candidate, analyses };
   }
 
-  async updateApplicationStage(userEmail: string, applicationId: string, stage: string) {
+  async updateApplicationStage(
+    userEmail: string,
+    applicationId: string,
+    stage: string,
+  ) {
     const sb = this.supabaseService.getClient();
 
     // Verify ownership via join with jobs
@@ -494,7 +667,8 @@ export class CandidatesService {
       .eq('jobs.user_email', userEmail)
       .single();
 
-    if (fetchError || !app) throw new NotFoundException('Application not found or access denied');
+    if (fetchError || !app)
+      throw new NotFoundException('Application not found or access denied');
 
     const { data, error } = await sb
       .from('applications')
@@ -523,7 +697,9 @@ export class CandidatesService {
 
     // 2. If it's a Gmail attachment, download from Gmail API
     if (candidate.gmail_message_id && candidate.gmail_attachment_id) {
-      this.logger.log(`Fetching Gmail attachment for ${candidate.email} (msg: ${candidate.gmail_message_id})`);
+      this.logger.log(
+        `Fetching Gmail attachment for ${candidate.email} (msg: ${candidate.gmail_message_id})`,
+      );
 
       // Get Gmail account for this user
       const { data: accounts } = await sb
@@ -534,14 +710,16 @@ export class CandidatesService {
 
       const account = accounts?.[0];
       if (!account) {
-        this.logger.warn(`No Gmail account found to proxy download for ${userEmail}`);
+        this.logger.warn(
+          `No Gmail account found to proxy download for ${userEmail}`,
+        );
         // Fallback to cv_url if exists
         return { url: candidate.cv_url };
       }
 
       const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET
+        process.env.GOOGLE_CLIENT_SECRET,
       );
 
       oauth2Client.setCredentials({
@@ -556,33 +734,44 @@ export class CandidatesService {
           userId: 'me',
           messageId: candidate.gmail_message_id,
           id: candidate.gmail_attachment_id,
-          quotaUser: account.email_address
+          quotaUser: account.email_address,
         } as any);
 
         if (!attachment.data || !attachment.data.data) {
-          this.logger.error(`Gmail API returned no data for msg=${candidate.gmail_message_id}, att=${candidate.gmail_attachment_id}`);
-          throw new InternalServerErrorException('No data returned from Gmail API');
+          this.logger.error(
+            `Gmail API returned no data for msg=${candidate.gmail_message_id}, att=${candidate.gmail_attachment_id}`,
+          );
+          throw new InternalServerErrorException(
+            'No data returned from Gmail API',
+          );
         }
 
         // Gmail uses base64url encoding
-        let b64Data = attachment.data.data.replace(/-/g, '+').replace(/_/g, '/');
+        let b64Data = attachment.data.data
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
         // Add padding if needed
         while (b64Data.length % 4 !== 0) {
           b64Data += '=';
         }
         const buffer = Buffer.from(b64Data, 'base64');
-        
-        this.logger.log(`Successfully proxy-downloaded ${buffer.length} bytes for ${candidate.email}`);
+
+        this.logger.log(
+          `Successfully proxy-downloaded ${buffer.length} bytes for ${candidate.email}`,
+        );
 
         // Return structured object that controller can handle
         return {
           buffer,
           filename: `CV_${candidate.name.replace(/\s+/g, '_')}_Original.pdf`,
-          mimetype: 'application/pdf' // Default to PDF for CVs
+          mimetype: 'application/pdf', // Default to PDF for CVs
         };
       } catch (err: any) {
         this.logger.error(`Gmail download proxy failed: ${err.message}`);
-        if (err.response) this.logger.error(`Gmail API Response: ${JSON.stringify(err.response.data)}`);
+        if (err.response)
+          this.logger.error(
+            `Gmail API Response: ${JSON.stringify(err.response.data)}`,
+          );
         // Fallback to cv_url if exists
         return { url: candidate.cv_url };
       }
@@ -619,9 +808,11 @@ export class CandidatesService {
           const { error: storageError } = await sb.storage
             .from('cv-backups')
             .remove([filePath]);
-          
+
           if (storageError) {
-            this.logger.error(`Failed to delete CV from storage: ${storageError.message}`);
+            this.logger.error(
+              `Failed to delete CV from storage: ${storageError.message}`,
+            );
           }
         }
       } catch (e: any) {
@@ -631,8 +822,11 @@ export class CandidatesService {
 
     // 3. Delete related records (Cascade should handle most, but being explicit for safety/clarity)
     // Explicitly delete embeddings
-    await sb.from('candidate_embeddings').delete().eq('candidate_id', candidateId);
-    
+    await sb
+      .from('candidate_embeddings')
+      .delete()
+      .eq('candidate_id', candidateId);
+
     // Now delete the candidate record (CASCADE should handle analysis_results and applications)
     const { error: deleteError } = await sb
       .from('candidates')
@@ -642,7 +836,9 @@ export class CandidatesService {
 
     if (deleteError) {
       this.logger.error(`Database deletion error: ${deleteError.message}`);
-      throw new InternalServerErrorException(`Failed to delete candidate: ${deleteError.message}`);
+      throw new InternalServerErrorException(
+        `Failed to delete candidate: ${deleteError.message}`,
+      );
     }
 
     return { success: true };
