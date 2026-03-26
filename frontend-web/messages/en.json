@@ -180,6 +180,8 @@
     "welcome_title": "Welcome to ARIS Intelligence",
     "welcome_step1": "To start your journey, you need a Gemini API Key.",
     "welcome_step2": "Enter your key in the settings and select your preferred AI model.",
+    "welcome_step2_detail": "Free Tier: Use 3.1 Flash Lite (Fastest), 3 Flash, or 2.5 Flash.",
+    "welcome_step2_pro": "Best Results: 3.1 Pro (Requires Paid API Tier).",
     "welcome_step3": "Once configured, ARIS will automatically scan your emails and analyze incoming CVs.",
     "next": "Next",
     "got_it": "Let's Start",

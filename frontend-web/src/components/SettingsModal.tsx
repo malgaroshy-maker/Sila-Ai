@@ -90,8 +90,15 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
       console.log('Models found:', data);
       if (Array.isArray(data)) {
         setAvailableModels(data);
-        if (data.length > 0 && !selectedModel) {
-          setSelectedModel(data[0].name);
+        // Only set default if selectedModel is empty or not in the new list (to prevent overwriting saved pref)
+        const modelExists = data.some(m => m.name === selectedModel);
+        if (data.length > 0 && (!selectedModel || !modelExists)) {
+          // If we have a selectedModel but it's not in the list, we might still want to keep it 
+          // if it's currently loading from fetchSettings. 
+          // So we only set default if we really have nothing.
+          if (!selectedModel) {
+            setSelectedModel(data[0].name);
+          }
         }
       }
     } catch (e) {
