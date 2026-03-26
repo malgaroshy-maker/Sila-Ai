@@ -246,8 +246,9 @@ function CandidateCard({ result, isOverlay = false, locale = 'en' }: { result: A
               {candidate.name}
             </h4>
             {result.is_fresh_graduate && (
-              <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-[#0EA5E9]/30">
+              <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-[#0EA5E9]/30 flex items-center gap-1">
                 <GraduationCap className="w-2.5 h-2.5" />
+                {result.gpa_score ? `${result.gpa_score}%` : ''}
               </span>
             )}
           </div>

@@ -851,10 +851,16 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#F59E0B]">{t.project_impact || 'Project Impact'}</p>
                       <div className="text-3xl font-black text-white">{selectedCandidate.project_impact_score || 0}%</div>
                     </div>
-                    <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#10B981]/30 transition-all">
+                    <div className="bg-[#10B981]/5 border border-[#10B981]/20 p-5 rounded-3xl text-center group hover:border-[#10B981]/30 transition-all">
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#10B981]">{t.skills_match || 'Skills Match'}</p>
                       <div className="text-3xl font-black text-white">{selectedCandidate.skills_score || 0}%</div>
                     </div>
+                    {selectedCandidate.is_fresh_graduate && (
+                      <div className="bg-purple-500/5 border border-purple-500/20 p-5 rounded-3xl text-center group hover:border-purple-500/30 transition-all">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-purple-400">{t.gpa || 'GPA'}</p>
+                        <div className="text-3xl font-black text-white">{selectedCandidate.gpa_score || 0}%</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Career Trajectory */}
