@@ -10,6 +10,9 @@ interface QuotaStats {
     total_output: number;
     total_cost: number;
   };
+  requests_used_for_model: number;
+  model_id: string;
+  model_display_name: string;
   approx_quota: {
     rpm_limit: number;
     tpm_limit: number;
@@ -17,7 +20,7 @@ interface QuotaStats {
   };
 }
 
-export default function QuotaMonitor({ userEmail, t }: { userEmail: string; t: any }) {
+export default function QuotaMonitor({ userEmail, t }: { userEmail: string; userStats?: any; t: any }) {
   const [stats, setStats] = useState<QuotaStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -49,7 +52,9 @@ export default function QuotaMonitor({ userEmail, t }: { userEmail: string; t: a
   if (!stats) return null;
 
   const totalTokens = stats.summary.total_input + stats.summary.total_output;
-  const dailyUsagePercent = Math.min(100, (stats.logs.length / stats.approx_quota.daily_limit) * 100);
+  const requestsUsed = stats.requests_used_for_model;
+  const remainingDaily = Math.max(0, stats.approx_quota.daily_limit - requestsUsed);
+  const dailyUsagePercent = Math.min(100, (requestsUsed / stats.approx_quota.daily_limit) * 100);
 
   return (
     <div className="flex items-center gap-6">
@@ -68,35 +73,39 @@ export default function QuotaMonitor({ userEmail, t }: { userEmail: string; t: a
 
       {/* Quota Pressure / API Health */}
       <div className="flex flex-col items-end group relative cursor-help">
-        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t.api_pressure || 'API Pressure'}</span>
+        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Remaining Quota</span>
         <div className="flex items-center gap-1.5 mt-0.5">
           <div className="w-16 h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all duration-1000 ${dailyUsagePercent > 80 ? 'bg-red-500' : dailyUsagePercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-              style={{ width: `${dailyUsagePercent}%` }}
+              style={{ width: `${100 - dailyUsagePercent}%` }}
             />
           </div>
-          <span className="text-[10px] font-bold text-slate-400">{Math.round(dailyUsagePercent)}%</span>
+          <span className="text-[10px] font-bold text-slate-400">{remainingDaily} / {stats.approx_quota.daily_limit}</span>
         </div>
 
         {/* Hover Tooltip */}
-        <div className="absolute top-full right-0 mt-2 w-48 bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+        <div className="absolute top-full right-0 mt-2 w-52 bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
           <h4 className="text-[10px] font-bold text-[#0EA5E9] uppercase tracking-wider mb-2 flex items-center gap-2">
             <BarChart3 className="w-3 h-3" />
-            Quota Details
+            {stats.model_display_name}
           </h4>
           <div className="space-y-1.5">
             <div className="flex justify-between text-[10px]">
-              <span className="text-slate-500">Daily Requests</span>
-              <span className="text-slate-200 font-mono">{stats.logs.length}/{stats.approx_quota.daily_limit}</span>
+              <span className="text-slate-500">Daily Remaining</span>
+              <span className="text-slate-200 font-mono">{remainingDaily} reqs</span>
             </div>
             <div className="flex justify-between text-[10px]">
-              <span className="text-slate-500">Approx. RPM</span>
+              <span className="text-slate-500">RPM Limit</span>
               <span className="text-slate-200 font-mono">{stats.approx_quota.rpm_limit}</span>
+            </div>
+            <div className="flex justify-between text-[10px]">
+              <span className="text-slate-500">Daily Limit</span>
+              <span className="text-slate-200 font-mono">{stats.approx_quota.daily_limit}</span>
             </div>
           </div>
           <p className="text-[9px] text-slate-500 mt-2 leading-tight">
-            Estimates based on typical Gemini Free-Tier limits.
+            Limits are estimated based on Gemini Free Tier. Pro models have different limits.
           </p>
         </div>
       </div>

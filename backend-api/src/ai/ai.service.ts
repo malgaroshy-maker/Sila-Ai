@@ -31,6 +31,7 @@ export class AiService {
 
   /**
    * Fetches the curated model list from Supabase.
+   * Filters for models that support text generation (chat/analysis).
    */
   async getModelCatalog() {
     const sb = this.supabaseService.getClient();
@@ -38,19 +39,39 @@ export class AiService {
       .from('gemini_models')
       .select('*')
       .eq('is_active', true)
+      .contains('task_type', ['generateContent']) // Only models that support generation
       .order('display_name', { ascending: true });
     
     if (error) throw new InternalServerErrorException('Failed to fetch model catalog');
     return data;
   }
 
-  async logUsage(userEmail: string, operation: string, usageMetadata: any) {
+  /**
+   * Get quota limits for a specific model.
+   */
+  async getModelQuota(modelId: string) {
+    const sb = this.supabaseService.getClient();
+    const { data } = await sb
+      .from('gemini_models')
+      .select('rpm_limit, tpm_limit, rpd_limit, display_name')
+      .eq('model_id', modelId)
+      .single();
+    
+    return data || { 
+      rpm_limit: 15, 
+      tpm_limit: 1000000, 
+      rpd_limit: 1500,
+      display_name: modelId.split('/').pop() || modelId 
+    };
+  }
+
+  async logUsage(userEmail: string, operation: string, usageMetadata: any, modelName: string) {
     if (!usageMetadata) return;
     const inputTokens = usageMetadata.promptTokenCount || 0;
     const outputTokens = usageMetadata.candidatesTokenCount || 0;
     const totalTokens = usageMetadata.totalTokenCount || 0;
 
-    // gemini-2.0-flash pricing (approx): $0.10 / 1M input, $0.40 / 1M output
+    // Pricing (approx): $0.10 / 1M input, $0.40 / 1M output (average across models)
     const estCost = (inputTokens / 1_000_000) * 0.10 + (outputTokens / 1_000_000) * 0.40;
 
     try {
@@ -58,6 +79,7 @@ export class AiService {
       await sb.from('ai_usage_logs').insert({
         user_email: userEmail,
         operation,
+        model_name: modelName,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         total_tokens: totalTokens,
@@ -158,7 +180,7 @@ export class AiService {
       const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       
       // Log usage
-      await this.logUsage(userEmail, 'analysis', result.response.usageMetadata);
+      await this.logUsage(userEmail, 'analysis', result.response.usageMetadata, settings.model);
       
       return {
         data: JSON.parse(cleanedJson),
@@ -218,7 +240,7 @@ export class AiService {
       const parsed = JSON.parse(cleanedJson);
       
       // Log usage
-      await this.logUsage(userEmail, 'info_extraction', result.response.usageMetadata);
+      await this.logUsage(userEmail, 'info_extraction', result.response.usageMetadata, settings.model);
       
       // Safety check: ensure name and email are never null or empty strings
       return {
@@ -251,7 +273,7 @@ export class AiService {
         }
       ]);
 
-      await this.logUsage(userEmail, 'ocr', result.response.usageMetadata);
+      await this.logUsage(userEmail, 'ocr', result.response.usageMetadata, settings.model);
 
       return result.response.text() || null;
     } catch (error: any) {
@@ -285,7 +307,7 @@ Keep it professional and relevant. Include at least 3 requirements.`;
       const result = await model.generateContent(prompt);
       const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
       
-      await this.logUsage(userEmail, 'job_generation', result.response.usageMetadata);
+      await this.logUsage(userEmail, 'job_generation', result.response.usageMetadata, settings.model);
       
       return JSON.parse(text);
     } catch (error: any) {

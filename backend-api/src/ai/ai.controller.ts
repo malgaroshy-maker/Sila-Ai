@@ -29,6 +29,14 @@ export class AiController {
        return { logs: [], summary: { total_input: 0, total_output: 0, total_cost: 0 } };
     }
 
+    // Get current model settings to provide accurate quota info
+    const settings = await this.aiService.getSettings(userEmail);
+    const quota = await this.aiService.getModelQuota(settings.model);
+
+    // Calculate usage specifically for the current model
+    const modelLogs = logs.filter(log => log.model_name === settings.model);
+    const requestsUsed = modelLogs.length;
+
     const summary = logs.reduce((acc, log) => {
       acc.total_input += log.input_tokens || 0;
       acc.total_output += log.output_tokens || 0;
@@ -39,11 +47,13 @@ export class AiController {
     return { 
       logs,
       summary,
-      // Quota awareness - approximate based on common free-tier limits if no headers exist
+      requests_used_for_model: requestsUsed,
+      model_id: settings.model,
+      model_display_name: quota.display_name,
       approx_quota: {
-        rpm_limit: 15, // standard free tier for flash
-        tpm_limit: 1000000,
-        daily_limit: 1500
+        rpm_limit: quota.rpm_limit,
+        tpm_limit: quota.tpm_limit,
+        daily_limit: quota.rpd_limit
       }
     };
   }

@@ -6,6 +6,7 @@ import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shie
 interface Model {
   model_id: string;
   display_name: string;
+  category: string;
   is_preview?: boolean;
 }
 
@@ -214,11 +215,18 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                   className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-1 focus:ring-[#0369A1] outline-none transition-all cursor-pointer"
                 >
                   {availableModels.length > 0 ? (
-                    availableModels.map((m) => (
-                      <option key={m.model_id} value={m.model_id}>
-                        {m.display_name} {m.is_preview ? '(Preview)' : ''}
-                      </option>
-                    ))
+                    <>
+                      {/* Grouping by Category */}
+                      {Array.from(new Set(availableModels.map(m => m.category))).map(cat => (
+                        <optgroup key={cat} label={cat} className="bg-[#0F172A] text-[#0EA5E9] font-bold">
+                          {availableModels.filter(m => m.category === cat).map(m => (
+                            <option key={m.model_id} value={m.model_id} className="text-white bg-[#020617]">
+                              {m.display_name} {m.is_preview ? '(Preview)' : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </>
                   ) : (
                     <option value="models/gemini-3.1-flash-lite-preview">gemini-3.1-flash (Curating...)</option>
                   )}

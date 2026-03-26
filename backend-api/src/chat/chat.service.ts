@@ -109,7 +109,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       const responseText = result.response.text();
 
       // Log usage for the chat message (result.response.usageMetadata contains token counts)
-      await this.aiService.logUsage(userEmail, 'chat', result.response.usageMetadata);
+      await this.aiService.logUsage(userEmail, 'chat', result.response.usageMetadata, settings.model);
 
       this.logger.log(`Chat RAG: "${message.slice(0, 50)}..." → ${matchedCount} matches found`);
       return { response: responseText };
