@@ -65,13 +65,33 @@ export class EmailController {
   async microsoftCallback(
     @Query('code') code: string, 
     @Query('state') state: string,
+    @Query('error') error: string,
+    @Query('error_description') errorDescription: string,
     @Res() res: Response
   ) {
-    if (!code) return res.status(400).send('No code provided');
-    const authResult = await this.emailService.handleMicrosoftCallback(code, state);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const locale = authResult.locale || 'ar';
-    return res.redirect(`${frontendUrl}/${locale}?email=${authResult.email}`);
+    let locale = 'ar';
+    try {
+      if (state) {
+        const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+        if (decoded.locale) locale = decoded.locale;
+      }
+    } catch (e) {}
+
+    if (error) {
+       console.error(`Microsoft Auth Error: ${error} - ${errorDescription}`);
+       return res.redirect(`${frontendUrl}/${locale}/login?error=${encodeURIComponent(errorDescription || error)}`);
+    }
+
+    if (!code) return res.status(400).send('No code provided');
+    
+    try {
+      const authResult = await this.emailService.handleMicrosoftCallback(code, state);
+      return res.redirect(`${frontendUrl}/${locale}?email=${authResult.email}`);
+    } catch (err: any) {
+      console.error('Callback processing error:', err);
+      return res.redirect(`${frontendUrl}/${locale}/login?error=${encodeURIComponent(err.message || 'Unknown error')}`);
+    }
   }
 
   // ---- UNIFIED SUPABASE AUTH STORAGE ----
