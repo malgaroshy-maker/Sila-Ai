@@ -1,12 +1,18 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
   constructor(private readonly supabaseService: SupabaseService) {}
+
+  private hashKey(key: string): string {
+    if (!key) return 'anonymous';
+    return crypto.createHash('sha256').update(key).digest('hex');
+  }
 
   /**
    * Helper to get user's Gemini settings (API Key and chosen Model).
@@ -90,12 +96,124 @@ export class AiService {
     }
   }
 
+  /**
+   * UPDATED: Intercepts headers and updates live quota status in Supabase.
+   */
+  private async updateLiveQuota(apiKey: string, modelId: string, headers: Headers) {
+    const hash = this.hashKey(apiKey);
+    const remaining = headers.get('x-ratelimit-remaining-requests');
+    const limit = headers.get('x-ratelimit-limit-requests');
+    const reset = headers.get('x-ratelimit-reset-requests');
+
+    if (!remaining && !limit) return; // No headers found
+
+    const sb = this.supabaseService.getClient();
+    await sb.from('live_api_status').upsert({
+      api_key_hash: hash,
+      model_id: modelId,
+      last_seen_remaining: remaining ? parseInt(remaining) : null,
+      total_limit: limit ? parseInt(limit) : null,
+      is_blocked: false, // Reset blocked status if we have a successful remaining count
+      reset_at: reset ? new Date(reset).toISOString() : null,
+      last_updated_at: new Date().toISOString()
+    }, { onConflict: 'api_key_hash,model_id' });
+  }
+
+  /**
+   * Advanced Workaround: Native fetch to capture headers.
+   */
+  async fetchGeminiWithQuota(userEmail: string, promptOrContents: string | any[], mimeType?: string, fileBuffer?: Buffer) {
+    const settings = await this.getSettings(userEmail);
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${settings.model.replace('models/', '')}:generateContent?key=${settings.apiKey}`;
+
+    const contents = typeof promptOrContents === 'string' 
+      ? [{ parts: [{ text: promptOrContents }] }]
+      : promptOrContents;
+
+    const body: any = { contents };
+
+    if (fileBuffer && mimeType) {
+      // Add file parts to the LAST content item (usually the current user prompt)
+      const lastContent = body.contents[body.contents.length - 1];
+      lastContent.parts.push({
+        inline_data: {
+          mime_type: mimeType,
+          data: fileBuffer.toString('base64')
+        }
+      });
+    }
+
+    const response = await fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    // Capture Headers
+    await this.updateLiveQuota(settings.apiKey, settings.model, response.headers);
+
+    const result = await response.json();
+    if (!response.ok) {
+      if (response.status === 429) {
+        // Block the API key globally in our DB
+        await this.supabaseService.getClient().from('live_api_status').upsert({
+          api_key_hash: this.hashKey(settings.apiKey),
+          model_id: settings.model,
+          is_blocked: true,
+          last_updated_at: new Date().toISOString()
+        });
+      }
+      throw new InternalServerErrorException(result.error?.message || 'Gemini API Error');
+    }
+
+    return result;
+  }
+
+  /**
+   * Fetches the latest live quota from our cache (populated by fetch headers).
+   */
+  async getLiveQuota(apiKey: string, modelId: string) {
+    const hash = this.hashKey(apiKey);
+    const sb = this.supabaseService.getClient();
+    const { data } = await sb
+      .from('live_api_status')
+      .select('*')
+      .eq('api_key_hash', hash)
+      .eq('model_id', modelId)
+      .single();
+    return data;
+  }
+
   async analyzeCandidate(userEmail: string, jobParams: any, cvText: string, cvBuffer?: Buffer, mimeType?: string): Promise<any> {
     const settings = await this.getSettings(userEmail);
-    const genAI = new GoogleGenerativeAI(settings.apiKey);
-    const model = genAI.getGenerativeModel({ model: settings.model });
-    
-    const prompt = `
+    const prompt = this.constructAnalyzePrompt(jobParams, cvText, settings);
+
+    try {
+      const result = await this.fetchGeminiWithQuota(userEmail, prompt, mimeType || 'application/pdf', cvBuffer);
+      
+      const candidateResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!candidateResponse) throw new Error('Empty response from AI');
+
+      const cleanedJson = candidateResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      
+      // Log usage based on tokens returned in the raw JSON
+      await this.logUsage(userEmail, 'analysis', result.usageMetadata, settings.model);
+      
+      return {
+        data: JSON.parse(cleanedJson),
+        metadata: {
+          usage: result.usageMetadata,
+          model: settings.model
+        }
+      };
+    } catch (error: any) {
+      this.logger.error(`AI Analysis failed: ${error.message}`);
+      throw new InternalServerErrorException(`AI Error: ${error.message}`);
+    }
+  }
+
+  private constructAnalyzePrompt(jobParams: any, cvText: string, settings: any): string {
+    return `
       أنت مساعد HR خبير وتقوم بمقارنة السيرة الذاتية للمرشح مع متطلبات الوظيفة.
       
       متطلبات الوظيفة:
@@ -106,6 +224,9 @@ export class AiService {
       
       قم بتحليل السيرة الذاتية وإرجاع مخرجات JSON صارمة بالتنسيق التالي بدون أي نص إضافي:
       {
+        "name": "اسم المرشح الكامل",
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الهاتف",
         "skills_score": 0,
         "gpa_score": null,
         "language_score": 0,
@@ -126,73 +247,22 @@ export class AiService {
         "training_suggestions": ["اقتراح لسد الفجوة بين الأكاديميا والصناعة (خاصة للخريجين)", "اقتراح 2"]
       }
 
-      تعليمات مهمة:
-      - is_fresh_graduate: true إذا كان المرشح طالباً حالياً أو تخرج مؤخراً (خلال سنتين) وليس لديه خبرة مهنية كبيرة.
-      - project_impact_score: للخريجين الجدد، قم بتقييم مشاريعهم الجامعية كبديل لسنوات الخبرة (0-100). للمحترفين، استخدم 0.
-      - cultural_fit_score: مدى ملاءمة شخصية ومهارات المرشح لبيئة العمل (0-100).
-      - career_trajectory: وصف قصير لمسار نمو المرشح المتوقع.
-      - project_highlights: قائمة بأهم 2-3 مشاريع أو إنجازات تقنية/أكاديمية.
-      - skills_score, language_score, ind_readiness_score, final_score: أرقام من 0 إلى 100.
-      - gpa_score: المعدل التراكمي من 100 إذا وجد، وإلا null.
-      - tags: مصفوفة تشمل "🎓 Fresh Grad" إذا كان خريجاً جديداً، بالإضافة لمهاراته الأساسية.
-      - flags: مصفوفة تنبيهات مثل "🚩 Gap Detected", "🚩 Job Hopper", "🚩 Missing Tool", "🚩 Overqualified".
-      - interview_questions: 3 أسئلة، ركز في حالة الخريجين على مشاريعهم وقدرتهم على التعلم.
-      - training_suggestions: ركز على سد الفجوة المهنية للخريجين (Industry-Bridge).
-      
       ${settings.aiMode === 'strict' 
-        ? 'STRICT MODE ACTIVE: You must heavily penalize any missing skills or requirements. Do NOT give partial credit. If exact requirements are not met, the ind_readiness_score and final_score MUST be very low.' 
-        : 'BALANCED MODE ACTIVE: Evaluate the candidate comprehensively. Gracefully handle partial matches and transferable skills.'}
+        ? 'STRICT MODE ACTIVE: You must heavily penalize any missing skills or requirements. Do NOT give partial credit.' 
+        : 'BALANCED MODE ACTIVE: Evaluate the candidate comprehensively.'}
 
       ${settings.evaluationFocus === 'technical' 
-        ? 'EVALUATION FOCUS: PRIORITIZE TECHNICAL SKILLS. Highly value specific tools, frameworks, and hard-skills listed in the requirements.' 
+        ? 'EVALUATION FOCUS: PRIORITIZE TECHNICAL SKILLS.' 
         : settings.evaluationFocus === 'career'
-        ? 'EVALUATION FOCUS: PRIORITIZE CAREER & LEADERSHIP. Highly value years of experience, leadership roles, and professional career progression.'
-        : 'EVALUATION FOCUS: BALANCED. Value both technical mastery and professional experience equally.'}
+        ? 'EVALUATION FOCUS: PRIORITIZE CAREER & LEADERSHIP.'
+        : 'EVALUATION FOCUS: BALANCED.'}
 
       ${settings.analysisLanguage === 'EN' 
-        ? 'LANGUAGE: Response MUST be in professional English. All textual fields (justification, strengths, weaknesses, recommendation, questions) should be exclusively in English.' 
+        ? 'LANGUAGE: Response MUST be in professional English.' 
         : settings.analysisLanguage === 'AR'
-        ? 'LANGUAGE: Response MUST be in professional Arabic. All textual fields (justification, strengths, weaknesses, recommendation, questions) should be exclusively in Arabic.'
-        : 'LANGUAGE: BILINGUAL MODE. For the "justification" field, provide a professional paragraph in English followed by a high-quality Arabic translation of the same points. For other text fields, use English as the primary language but match the candidate\'s CV language if it is primarily Arabic.'}
-
-      ${settings.maskPii 
-        ? 'PRIVACY: Mask PII. Do NOT include phone numbers, email addresses, or specific home addresses in the textual justification or summaries. Use placeholders like [PHONE] or [ADDRESS] if necessary.' 
-        : ''}
+        ? 'LANGUAGE: Response MUST be in professional Arabic.'
+        : 'LANGUAGE: BILINGUAL MODE.'}
     `;
-
-    try {
-      let result;
-      if (cvBuffer) {
-        result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: cvBuffer.toString('base64'),
-              mimeType: mimeType || 'application/pdf'
-            }
-          }
-        ]);
-      } else {
-        result = await model.generateContent(prompt);
-      }
-      
-      const responseText = result.response.text();
-      const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      
-      // Log usage
-      await this.logUsage(userEmail, 'analysis', result.response.usageMetadata, settings.model);
-      
-      return {
-        data: JSON.parse(cleanedJson),
-        metadata: {
-          usage: result.response.usageMetadata,
-          model: settings.model
-        }
-      };
-    } catch (error: any) {
-      console.error('AI Analysis failed:', error);
-      throw new InternalServerErrorException(`AI Error: ${error.message}`);
-    }
   }
 
   /**
@@ -200,9 +270,6 @@ export class AiService {
    */
   async extractCandidateInfo(userEmail: string, cvText: string, cvBuffer?: Buffer, mimeType?: string): Promise<{ name: string; email: string; is_cv: boolean }> {
     const settings = await this.getSettings(userEmail);
-    const genAI = new GoogleGenerativeAI(settings.apiKey);
-    const model = genAI.getGenerativeModel({ model: settings.model });
-
     const prompt = `
       Extract the candidate's full name and email address from this text.
       Also, determine if this document is actually a Professional CV/Resume for a job candidate.
@@ -214,35 +281,19 @@ export class AiService {
         "is_cv": true 
       }
       
-      CRITICAL INSTRUCTIONS:
-      - If the document is an image that doesn't contain a clear CV (like a logo, icon, or personal photo), set "is_cv": false.
-      - If it is just a short cover letter, interview invitation, or company document, set "is_cv": false.
-      - Default to "is_cv": true only if it is clearly a professional profile or resume.
-      - If the name or email is not found, use "Unknown" for name and "unknown@uploaded.cv" for email.
-      
       Text Content:
       ${cvText}
     `;
 
     try {
-      let result;
-      if (cvBuffer) {
-        result = await model.generateContent([
-          prompt,
-          { inlineData: { data: cvBuffer.toString('base64'), mimeType: mimeType || 'application/pdf' } }
-        ]);
-      } else {
-        result = await model.generateContent(prompt);
-      }
-
-      const responseText = result.response.text();
+      const result = await this.fetchGeminiWithQuota(userEmail, prompt, mimeType || 'application/pdf', cvBuffer);
+      const parts = result.candidates?.[0]?.content?.parts;
+      const responseText = parts?.[0]?.text || '{}';
       const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(cleanedJson);
       
-      // Log usage
-      await this.logUsage(userEmail, 'info_extraction', result.response.usageMetadata, settings.model);
+      await this.logUsage(userEmail, 'info_extraction', result.usageMetadata, settings.model);
       
-      // Safety check: ensure name and email are never null or empty strings
       return {
         name: parsed.name && parsed.name.trim() !== '' ? parsed.name : 'Unknown',
         email: parsed.email && parsed.email.trim() !== '' ? parsed.email : 'unknown@uploaded.cv',
@@ -250,7 +301,7 @@ export class AiService {
       };
     } catch (error: any) {
       this.logger.error('Failed to extract candidate info:', error.message);
-      return { name: 'Unknown', email: 'unknown@uploaded.cv', is_cv: true }; // Default to true on error to avoid false positives
+      return { name: 'Unknown', email: 'unknown@uploaded.cv', is_cv: true };
     }
   }
 
@@ -260,24 +311,15 @@ export class AiService {
   async extractTextFromDocument(userEmail: string, buffer: Buffer, mimeType: string): Promise<string | null> {
     try {
       const settings = await this.getSettings(userEmail);
-      const genAI = new GoogleGenerativeAI(settings.apiKey);
-      const model = genAI.getGenerativeModel({ model: settings.model });
+      const prompt = 'Extract ALL text from this document. Return ONLY the raw text content, no formatting or commentary.';
+      
+      const result = await this.fetchGeminiWithQuota(userEmail, prompt, mimeType, buffer);
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      const result = await model.generateContent([
-        'Extract ALL text from this document. Return ONLY the raw text content, no formatting or commentary.',
-        {
-          inlineData: {
-            data: buffer.toString('base64'),
-            mimeType: mimeType
-          }
-        }
-      ]);
-
-      await this.logUsage(userEmail, 'ocr', result.response.usageMetadata, settings.model);
-
-      return result.response.text() || null;
+      await this.logUsage(userEmail, 'ocr', result.usageMetadata, settings.model);
+      return text || null;
     } catch (error: any) {
-      console.error(`OCR extraction failed for ${mimeType}:`, error.message);
+      this.logger.error(`OCR extraction failed for ${mimeType}: ${error.message}`);
       return null;
     }
   }
@@ -287,28 +329,21 @@ export class AiService {
    */
   async generateJobFromText(userEmail: string, userInput: string): Promise<{ title: string; description: string; requirements: string[] }> {
     const settings = await this.getSettings(userEmail);
-    const genAI = new GoogleGenerativeAI(settings.apiKey);
-    const model = genAI.getGenerativeModel({ model: settings.model });
-
     const prompt = `You are an HR expert. Convert this natural language job request into a structured job posting.
-
-User request: "${userInput}"
-
-Return ONLY valid JSON with no extra text:
-{
-  "title": "Job Title",
-  "description": "Detailed job description (2-3 sentences)",
-  "requirements": ["requirement 1", "requirement 2", "requirement 3"]
-}
-
-Keep it professional and relevant. Include at least 3 requirements.`;
+      User request: "${userInput}"
+      Return ONLY valid JSON:
+      {
+        "title": "Job Title",
+        "description": "Detailed job description",
+        "requirements": ["req 1", "req 2"]
+      }`;
 
     try {
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+      const result = await this.fetchGeminiWithQuota(userEmail, prompt);
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const text = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       
-      await this.logUsage(userEmail, 'job_generation', result.response.usageMetadata, settings.model);
-      
+      await this.logUsage(userEmail, 'job_generation', result.usageMetadata, settings.model);
       return JSON.parse(text);
     } catch (error: any) {
       this.logger.error('Job generation failed:', error.message);
@@ -319,11 +354,9 @@ Keep it professional and relevant. Include at least 3 requirements.`;
   async generateEmbedding(userEmail: string, text: string): Promise<number[]> {
     const settings = await this.getSettings(userEmail);
     const genAI = new GoogleGenerativeAI(settings.apiKey);
-    // Use gemini-embedding-2-preview which is available and supports custom dimensions
     const model = genAI.getGenerativeModel({ model: 'gemini-embedding-2-preview' });
     
     try {
-      // Specify outputDimensionality to match our 768-dimension pgvector schema
       const result = await (model as any).embedContent({
         content: { role: 'user', parts: [{ text }] },
         outputDimensionality: 768

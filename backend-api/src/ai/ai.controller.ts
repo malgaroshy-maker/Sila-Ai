@@ -35,7 +35,10 @@ export class AiController {
 
     // Calculate usage specifically for the current model
     const modelLogs = logs.filter(log => log.model_name === settings.model);
-    const requestsUsed = modelLogs.length;
+    const requestsUsedLocal = modelLogs.length;
+
+    // Fetch Live Quota from headers if available (Workaround for Global Quota)
+    const liveStatus = await this.aiService.getLiveQuota(settings.apiKey, settings.model);
 
     const summary = logs.reduce((acc, log) => {
       acc.total_input += log.input_tokens || 0;
@@ -44,16 +47,26 @@ export class AiController {
       return acc;
     }, { total_input: 0, total_output: 0, total_cost: 0 });
 
+    // Determine the 'Real' remaining count
+    // If liveStatus has last_seen_remaining, it's more accurate than our local logs
+    const remaining = liveStatus?.last_seen_remaining !== null && liveStatus?.last_seen_remaining !== undefined
+      ? liveStatus.last_seen_remaining 
+      : Math.max(0, quota.rpd_limit - requestsUsedLocal);
+
     return { 
       logs,
       summary,
-      requests_used_for_model: requestsUsed,
+      requests_used_for_model: requestsUsedLocal,
       model_id: settings.model,
       model_display_name: quota.display_name,
+      is_live: !!liveStatus,
+      is_blocked: liveStatus?.is_blocked || false,
       approx_quota: {
         rpm_limit: quota.rpm_limit,
         tpm_limit: quota.tpm_limit,
-        daily_limit: quota.rpd_limit
+        daily_limit: quota.rpd_limit,
+        remaining_live: remaining,
+        reset_at: liveStatus?.reset_at
       }
     };
   }

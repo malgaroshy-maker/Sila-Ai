@@ -13,10 +13,14 @@ interface QuotaStats {
   requests_used_for_model: number;
   model_id: string;
   model_display_name: string;
+  is_live?: boolean;
+  is_blocked?: boolean;
   approx_quota: {
     rpm_limit: number;
     tpm_limit: number;
     daily_limit: number;
+    remaining_live?: number;
+    reset_at?: string;
   };
 }
 
@@ -45,16 +49,29 @@ export default function QuotaMonitor({ userEmail, t }: { userEmail: string; user
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 60000); // refresh every minute
-    return () => clearInterval(interval);
+    
+    // Listen for manual refreshes (from SettingsModal)
+    const handleRefresh = () => fetchStats();
+    window.addEventListener('refresh-quota', handleRefresh);
+    
+    const interval = setInterval(fetchStats, 30000); // refresh every 30s
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refresh-quota', handleRefresh);
+    };
   }, [userEmail]);
 
   if (!stats) return null;
 
   const totalTokens = stats.summary.total_input + stats.summary.total_output;
-  const requestsUsed = stats.requests_used_for_model;
-  const remainingDaily = Math.max(0, stats.approx_quota.daily_limit - requestsUsed);
-  const dailyUsagePercent = Math.min(100, (requestsUsed / stats.approx_quota.daily_limit) * 100);
+  const requestsUsedLocal = stats.requests_used_for_model;
+  
+  // Use Live remaining if available, else local estimate
+  const remainingDaily = stats.approx_quota.remaining_live !== undefined 
+    ? stats.approx_quota.remaining_live 
+    : Math.max(0, stats.approx_quota.daily_limit - requestsUsedLocal);
+
+  const dailyUsagePercent = Math.min(100, (1 - (remainingDaily / stats.approx_quota.daily_limit)) * 100);
 
   return (
     <div className="flex items-center gap-6">
@@ -73,15 +90,23 @@ export default function QuotaMonitor({ userEmail, t }: { userEmail: string; user
 
       {/* Quota Pressure / API Health */}
       <div className="flex flex-col items-end group relative cursor-help">
-        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Remaining Quota</span>
+        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight flex items-center gap-1">
+          {stats.is_blocked ? (
+            <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-2.5 h-2.5" /> EXHAUSTED</span>
+          ) : (
+            <>Remaining Quota {stats.is_live && <span className="text-[8px] px-1 bg-emerald-500/10 text-emerald-500 rounded border border-emerald-500/20">LIVE</span>}</>
+          )}
+        </span>
         <div className="flex items-center gap-1.5 mt-0.5">
           <div className="w-16 h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all duration-1000 ${dailyUsagePercent > 80 ? 'bg-red-500' : dailyUsagePercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+              className={`h-full transition-all duration-1000 ${stats.is_blocked ? 'bg-red-500' : dailyUsagePercent > 80 ? 'bg-red-500' : dailyUsagePercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
               style={{ width: `${100 - dailyUsagePercent}%` }}
             />
           </div>
-          <span className="text-[10px] font-bold text-slate-400">{remainingDaily} / {stats.approx_quota.daily_limit}</span>
+          <span className={`text-[10px] font-bold ${stats.is_blocked ? 'text-red-400' : 'text-slate-400'}`}>
+            {remainingDaily} / {stats.approx_quota.daily_limit}
+          </span>
         </div>
 
         {/* Hover Tooltip */}

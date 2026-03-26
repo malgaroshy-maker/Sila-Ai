@@ -132,6 +132,8 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
       }
       
       setMessage('Settings saved successfully!');
+      // Trigger a refresh event for the QuotaMonitor component to update immediately
+      window.dispatchEvent(new CustomEvent('refresh-quota'));
       setTimeout(() => onClose(), 1500);
     } catch (e: any) {
       setMessage(`Save failed: ${e.message}`);

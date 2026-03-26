@@ -90,26 +90,27 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 5. FORMATTING: Use markdown (bold, lists) for readability.
 6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.`;
 
-    // Gemini Conversation History
+    // Gemini Conversation History for the fetch wrapper (stateless multi-turn)
     const chatHistory = history.map(h => ({
-      role: h.role === 'user' ? 'user' as const : 'model' as const,
+      role: h.role === 'user' ? 'user' : 'model',
       parts: [{ text: h.text }]
     }));
 
+    const fullContents = [
+      { role: 'user', parts: [{ text: 'System context: ' + systemPrompt }] },
+      { role: 'model', parts: [{ text: (chatLanguage === 'EN') ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?' : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟' }] },
+      ...chatHistory,
+      { role: 'user', parts: [{ text: message }] }
+    ];
+
     try {
-      const chat = model.startChat({
-        history: [
-          { role: 'user', parts: [{ text: 'System context: ' + systemPrompt }] },
-          { role: 'model', parts: [{ text: ((settings as any).chat_language === 'EN') ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?' : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟' }] },
-          ...chatHistory,
-        ],
-      });
+      const result = await this.aiService.fetchGeminiWithQuota(userEmail, fullContents);
+      
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!responseText) throw new Error('Empty response from AI');
 
-      const result = await chat.sendMessage(message);
-      const responseText = result.response.text();
-
-      // Log usage for the chat message (result.response.usageMetadata contains token counts)
-      await this.aiService.logUsage(userEmail, 'chat', result.response.usageMetadata, settings.model);
+      // Log usage for the chat message
+      await this.aiService.logUsage(userEmail, 'chat', result.usageMetadata, settings.model);
 
       this.logger.log(`Chat RAG: "${message.slice(0, 50)}..." → ${matchedCount} matches found`);
       return { response: responseText };
