@@ -175,7 +175,7 @@
     "delete_candidate": "Delete Candidate",
     "delete_confirm_title": "Confirm Deletion",
     "delete_confirm_job": "Are you sure you want to delete this job? This will also remove all associated candidate analysis for this job.",
-    "delete_confirm_cand": "Are you sure you want to delete this candidate? Their CV and all application records will be permanently removed from the system.",
+    "delete_confirm_candidate": "Are you sure you want to delete this candidate? Their CV and all application records will be permanently removed from the system.",
     "get_api_key_link": "Get your API key from Google AI Studio",
     "welcome_title": "Welcome to ARIS Intelligence",
     "welcome_step1": "To start your journey, you need a Gemini API Key.",

@@ -28,7 +28,7 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
       color: 'from-[#0EA5E9]/20 to-[#0369A1]/5'
     },
     {
-      title: t.welcome_step2 || 'Select Model',
+      title: t.ai_model || 'Select Model',
       description: `${t.welcome_step2_detail || 'Free Tier: Use 3.1 Flash Lite (Fastest), 3 Flash, or 2.5 Flash.'} \n\n ${t.welcome_step2_pro || 'Best Results: 3.1 Pro (Requires Paid API Tier).'}`,
       icon: <Target className="w-8 h-8 text-blue-400" />,
       color: 'from-blue-500/20 to-blue-600/5'

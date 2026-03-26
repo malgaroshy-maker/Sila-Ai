@@ -90,7 +90,10 @@ async function DashboardClient({ locale }: { locale: string }) {
     'fit_index', 'trajectory', 'highlights', 'academic_pulse', 'industry_readiness', 
     'cultural_fit_desc', 'project_impact_desc', 'view_cv', 'file_no_chosen', 'choose_file', 
     'downloading', 'downloaded', 'server_online', 'server_offline', 'server_checking', 
-    'tokens_used', 'cvs_processed', 'industry_roadmap', 'improvement_areas'
+    'tokens_used', 'cvs_processed', 'industry_roadmap', 'improvement_areas',
+    'welcome_title', 'welcome_step1', 'welcome_step2', 'welcome_step2_detail', 
+    'welcome_step2_pro', 'welcome_step3', 'next', 'got_it', 'go_to_settings', 
+    'sync_step_title', 'delete_confirm_job', 'delete_confirm_candidate', 'delete_candidate'
   ];
   
   const translations: Record<string, string> = {};

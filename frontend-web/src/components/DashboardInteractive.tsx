@@ -797,6 +797,21 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                               </svg>
                               <span className="absolute text-[13px] font-black text-white">{res.final_score}%</span>
                             </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCandidate(res.applications.candidates.id, res.applications.candidates.name);
+                              }}
+                              className="p-3 bg-[#1E293B]/60 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 rounded-2xl transition-all active:scale-95"
+                              title={t.delete_candidate || 'Delete Candidate'}
+                            >
+                              {isDeletingCandId === res.applications.candidates.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
                           </div>
                         </div>
 
@@ -1128,9 +1143,21 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                        t.view_cv || 'View Original CV'}
                     </button>
                   </div>
-                 <button onClick={() => setSelectedCandidate(null)} className="px-8 py-2.5 bg-white text-black hover:bg-slate-200 rounded-xl text-sm font-black transition-all">
-                   {t.close || 'Done'}
-                 </button>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => handleDeleteCandidate(
+                        (Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!, 
+                        (Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.name!
+                      )}
+                      className="px-6 py-2.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {t.delete_candidate || 'Delete'}
+                    </button>
+                    <button onClick={() => setSelectedCandidate(null)} className="px-8 py-2.5 bg-white text-black hover:bg-slate-200 rounded-xl text-sm font-black transition-all">
+                      {t.close || 'Done'}
+                    </button>
+                  </div>
               </div>
             </div>
           </div>
