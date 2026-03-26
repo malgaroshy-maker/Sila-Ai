@@ -28,54 +28,57 @@ interface Job {
   requirements: string[];
 }
 
-interface AnalysisResult {
+interface Application {
   id: string;
-  final_score: number;
-  skills_score: number;
-  language_score: number;
-  gpa_score?: number;
-  ind_readiness_score: number;
-  recommendation: string;
-  strengths: string[];
-  weaknesses: string[];
-  tags?: string[];
-  flags?: string[];
-  interview_questions?: string[];
-  training_suggestions?: string[];
-  justification?: string;
-  is_fresh_graduate?: boolean;
-  project_impact_score?: number;
-  cultural_fit_score?: number;
-  career_trajectory?: string;
-  project_highlights?: string[];
-  applications: {
-    id: string;
-    job_id: string;
-    pipeline_stage: string;
-    candidates: {
-      id: string;
-      name: string;
-      email: string;
-      cv_url?: string;
-    };
-    jobs?: {
-      title: string;
-      user_email: string;
-    };
-  };
+  job_id: string;
+  candidate_id: string;
+  pipeline_stage: string;
+  status: 'pending' | 'analyzed' | 'failed' | 'rejected';
+  ai_error?: string;
   created_at: string;
+  candidates: {
+    id: string;
+    name: string;
+    email: string;
+    cv_url?: string;
+  };
+  jobs?: {
+    title: string;
+    user_email: string;
+  };
+  analysis_results?: {
+    id: string;
+    final_score: number;
+    skills_score: number;
+    language_score: number;
+    gpa_score?: number;
+    ind_readiness_score: number;
+    recommendation: string;
+    strengths: string[];
+    weaknesses: string[];
+    tags?: string[];
+    flags?: string[];
+    interview_questions?: string[];
+    training_suggestions?: string[];
+    justification?: string;
+    is_fresh_graduate?: boolean;
+    project_impact_score?: number;
+    cultural_fit_score?: number;
+    career_trajectory?: string;
+    project_highlights?: string[];
+  };
 }
 
 interface DashboardProps {
   initialJobs: Job[];
-  initialResults: AnalysisResult[];
+  initialResults: Application[];
   t: Record<string, string>;
   locale: string;
 }
 
 export default function DashboardInteractive({ initialJobs, initialResults, t, locale }: DashboardProps) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs || []);
-  const [results, setResults] = useState<AnalysisResult[]>(initialResults || []);
+  const [results, setResults] = useState<Application[]>(initialResults || []);
   const [userEmail, setUserEmail] = useState('');
   const [view, setView] = useState<'list' | 'kanban' | 'insights'>('list');
   
@@ -83,7 +86,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<AnalysisResult | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Application | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -210,8 +213,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     if (!userEmail) return;
     setAiError(null);
     setResults((prev) => prev.map((r) => 
-      r.applications?.id === applicationId 
-        ? { ...r, applications: { ...r.applications, pipeline_stage: newStage } }
+      r.id === applicationId 
+        ? { ...r, pipeline_stage: newStage }
         : r
     ));
     try {
@@ -233,22 +236,16 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
   const loadData = async (email: string) => {
     const { data: jobsData } = await supabase.from('jobs').select('*').eq('user_email', email).order('created_at', { ascending: false });
-    const { data: resultsData } = await supabase
-      .from('analysis_results')
-      .select('*, applications!inner(id, job_id, candidate_id, pipeline_stage, jobs!inner(title, user_email), candidates(id, name, email, cv_url))')
-      .eq('applications.jobs.user_email', email)
+    
+    const { data: appsData } = await supabase
+      .from('applications')
+      .select('*, jobs!inner(*), candidates(*), analysis_results(*)')
+      .eq('jobs.user_email', email)
       .order('created_at', { ascending: false });
       
     if (jobsData) setJobs(jobsData as Job[]);
-    if (resultsData) {
-      const latestResults: Record<string, AnalysisResult> = {};
-      (resultsData as unknown as AnalysisResult[]).forEach((r) => {
-        const appId = r.applications?.id;
-        if (appId && (!latestResults[appId] || new Date(r.created_at) > new Date(latestResults[appId].created_at))) {
-          latestResults[appId] = r;
-        }
-      });
-      setResults(Object.values(latestResults));
+    if (appsData) {
+      setResults(appsData as unknown as Application[]);
     }
   };
 
@@ -378,7 +375,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       
       if (res.ok) {
         setJobs(jobs.filter(j => j.id !== jobId));
-        setResults(results.filter(r => r.applications.job_id !== jobId));
+        setResults(results.filter(r => r.job_id !== jobId));
         if (selectedJobId === jobId) setSelectedJobId(null);
         if (expandedJobId === jobId) setExpandedJobId(null);
       }
@@ -400,8 +397,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       });
       
       if (res.ok) {
-        setResults(results.filter(r => r.applications.candidates.id !== candidateId));
-        if (selectedCandidate?.applications.candidates.id === candidateId) {
+        setResults(results.filter(r => r.candidate_id !== candidateId));
+        if (selectedCandidate?.candidate_id === candidateId) {
           setSelectedCandidate(null);
         }
       }
@@ -414,24 +411,46 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
   const filteredResults = results
     .filter((r) => {
-      const matchJob = !selectedJobId || r.applications?.job_id === selectedJobId;
+      const matchJob = !selectedJobId || r.job_id === selectedJobId;
       const matchSearch = !searchTerm || 
-        r.applications?.candidates?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.applications?.candidates?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        r.candidates?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.candidates?.email?.toLowerCase().includes(searchTerm.toLowerCase());
       return matchJob && matchSearch;
     })
-    .sort((a, b) => (b.final_score || 0) - (a.final_score || 0));
+    .sort((a, b) => (b.analysis_results?.final_score || 0) - (a.analysis_results?.final_score || 0));
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'from-emerald-500 to-green-500 text-white';
     if (score >= 60) return 'from-amber-400 to-yellow-500 text-slate-900';
-    return 'from-red-500 to-rose-500 text-white';
+    return score > 0 ? 'from-red-500 to-rose-500 text-white' : 'from-slate-700 to-slate-800 text-slate-400';
   };
 
-  const getRecBadge = (rec: string) => {
+  const getRecBadge = (rec?: string) => {
     if (rec === 'Strong') return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
     if (rec === 'Average') return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    return 'bg-red-500/20 text-red-400 border-red-500/30';
+    if (rec === 'Weak') return 'bg-red-500/20 text-red-400 border-red-500/30';
+    return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+  };
+
+  const handleRetryAnalysis = async (appId: string) => {
+    if (!userEmail) return;
+    setAiError(null);
+    setAnalyzingTask(appId);
+    try {
+      const res = await fetch(`${API_URL}/candidates/applications/${appId}/analyze`, {
+        method: 'POST',
+        headers: { 'x-user-email': userEmail }
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        setAiError(parseAiError(errData, t));
+      }
+      await loadData(userEmail);
+    } catch (e) {
+      setAiError(parseAiError(e, t));
+    } finally {
+      setAnalyzingTask(null);
+    }
   };
 
   if (isAuthLoading) {
@@ -657,7 +676,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                               </div>
                               <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
                                 <Users className="w-3 h-3" />
-                                {results.filter((r) => r.applications?.job_id === job.id).length} {t.candidates || 'Candidates'}
+                                {results.filter((r) => r.job_id === job.id).length} {t.candidates || 'Candidates'}
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
@@ -774,84 +793,116 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         className="bg-[#020617]/40 hover:bg-[#1E293B]/60 border border-[#1E293B]/50 hover:border-[#0EA5E9]/30 rounded-2xl p-5 cursor-pointer transition-all group relative overflow-hidden"
                       >
                         {/* Status Backdrop Glow */}
-                        <div className={`absolute top-0 end-0 w-32 h-32 opacity-10 bg-gradient-to-br transition-opacity group-hover:opacity-20 ${getScoreColor(res.final_score || 0)} blur-3xl -translate-y-12 translate-x-12`} />
+                        <div className={`absolute top-0 end-0 w-32 h-32 opacity-10 bg-gradient-to-br transition-opacity group-hover:opacity-20 ${getScoreColor(res.analysis_results?.final_score || 0)} blur-3xl -translate-y-12 translate-x-12`} />
                         
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                               <h3 className="font-bold text-lg text-slate-100 group-hover:text-white truncate">
-                                {res.applications?.candidates?.name || 'Unknown'}
+                                {res.candidates?.name || 'Unknown'}
                               </h3>
-                              {res.is_fresh_graduate && (
+                              {res.status === 'failed' && (
+                                <span className="bg-rose-500/20 text-rose-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-rose-500/30 flex items-center gap-1" title={res.ai_error}>
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {t.failed || 'Failed'}
+                                </span>
+                              )}
+                              {res.status === 'pending' && (
+                                <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-amber-500/30 flex items-center gap-1">
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  {t.pending || 'Processing'}
+                                </span>
+                              )}
+                              {res.analysis_results?.is_fresh_graduate && (
                                 <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-[#0EA5E9]/30 flex items-center gap-1">
                                   <GraduationCap className="w-3 h-3" />
                                   {t.fresh_grad_badge || 'Fresh Grad'}
                                 </span>
                               )}
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${getRecBadge(res.recommendation)}`}>
-                                {res.recommendation}
-                              </span>
+                              {res.status === 'analyzed' && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${getRecBadge(res.analysis_results?.recommendation)}`}>
+                                  {res.analysis_results?.recommendation}
+                                </span>
+                              )}
                             </div>
                             <p className="text-slate-400 text-sm flex items-center gap-2">
                               <Briefcase className="w-3.5 h-3.5 text-slate-500" />
-                              {res.applications?.jobs?.title || 'Unknown Job'}
+                              {res.jobs?.title || 'Unknown Job'}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-6">
-                            {/* Score Metrics */}
-                            <div className="hidden sm:flex items-center gap-4 border-s border-[#1E293B] ps-6">
-                              <div className="text-center">
-                                <p className="text-[10px] font-bold text-slate-500 mb-0.5 uppercase tracking-tighter">{t.skills || 'Skills'}</p>
-                                <p className="text-sm font-black text-white">{res.skills_score}%</p>
-                              </div>
-                              {res.gpa_score && (
-                                <div className="text-center">
-                                  <p className="text-[10px] font-bold text-slate-500 mb-0.5 uppercase tracking-tighter">{t.gpa || 'GPA'}</p>
-                                  <p className="text-sm font-black text-[#0EA5E9]">{res.gpa_score}%</p>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Final Circle Score */}
-                            <div className="flex items-center justify-center relative">
-                              <svg className="w-14 h-14 -rotate-90">
-                                <circle cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-[#1E293B]" />
-                                <circle cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="4" fill="transparent" 
-                                  strokeDasharray={2 * Math.PI * 24}
-                                  strokeDashoffset={2 * Math.PI * 24 * (1 - (res.final_score || 0) / 100)}
-                                  className={res.final_score >= 80 ? 'text-emerald-500' : res.final_score >= 60 ? 'text-amber-500' : 'text-red-500'} 
+                          <div className="flex items-center gap-3">
+                            <div className="relative flex items-center justify-center w-14 h-14">
+                              <svg className="w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]">
+                                <circle
+                                  cx="28" cy="28" r="24"
+                                  fill="transparent"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  className="text-[#1E293B]"
+                                />
+                                <circle
+                                  cx="28" cy="28" r="24"
+                                  fill="transparent"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  strokeDasharray={150.8}
+                                  strokeDashoffset={150.8 - (150.8 * (res.analysis_results?.final_score || 0)) / 100}
+                                  strokeLinecap="round"
+                                  className={res.analysis_results?.final_score && res.analysis_results.final_score >= 80 ? 'text-emerald-500' : res.analysis_results?.final_score && res.analysis_results.final_score >= 60 ? 'text-amber-500' : 'text-rose-500'}
                                 />
                               </svg>
-                              <span className="absolute text-[13px] font-black text-white">{res.final_score}%</span>
+                              <span className="absolute text-[13px] font-black text-white">{res.analysis_results?.final_score || 0}%</span>
                             </div>
+                          </div>
+                        </div>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteCandidate(res.applications.candidates.id, res.applications.candidates.name);
-                              }}
-                              className="p-3 bg-[#1E293B]/60 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 rounded-2xl transition-all active:scale-95"
-                              title={t.delete_candidate || 'Delete Candidate'}
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mt-6 pt-6 border-t border-[#1E293B]/50 relative z-10">
+                          <div className="flex items-center gap-8">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t.score || 'Score'}</span>
+                              <div className={`text-3xl font-black bg-gradient-to-br bg-clip-text text-transparent ${getScoreColor(res.analysis_results?.final_score || 0)}`}>
+                                {res.status === 'analyzed' ? res.analysis_results?.final_score : '--'}
+                              </div>
+                            </div>
+                            <div className="w-px h-10 bg-[#1E293B]" />
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t.skills || 'Skills'}</span>
+                              <div className="text-xl font-bold text-slate-200">{res.analysis_results?.skills_score || 0}%</div>
+                            </div>
+                          </div>
+
+                          <div className="flex-1" />
+
+                          <div className="flex items-center gap-2 w-full md:w-auto">
+                            {(res.status === 'failed' || res.status === 'pending') && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleRetryAnalysis(res.id); }}
+                                disabled={analyzingTask === res.id}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                              >
+                                {analyzingTask === res.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                {t.retry_analysis || 'Retry'}
+                              </button>
+                            )}
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteCandidate(res.candidates.id, res.candidates.name); }}
+                              disabled={isDeletingCandId === res.candidates.id}
+                              className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl transition-all disabled:opacity-50"
+                              title={t.delete || 'Delete'}
                             >
-                              {isDeletingCandId === res.applications.candidates.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
+                              {isDeletingCandId === res.candidates.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#0369A1] hover:bg-[#0EA5E9] text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#0369A1]/20">
+                              {t.view_details || 'View Details'}
+                              <ArrowUpRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
 
                         {/* Tags & Flags Ribbon */}
-                        <div className="mt-4 pt-4 border-t border-[#1E293B]/50 flex flex-wrap items-center gap-2">
-                          {(res.tags || []).map((tag, i) => (
-                            <span key={i} className="flex items-center gap-1.5 bg-[#0F172A] text-slate-400 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-[#1E293B] group-hover:border-[#1E293B] transition-colors">
-                              <Tag className="w-3 h-3 text-[#0EA5E9]" />
-                              {tag}
-                            </span>
-                          ))}
-                          {(res.flags || []).map((flag, i) => (
+                        <div className="flex flex-wrap gap-2 mt-4 relative z-10">
+                          {res.analysis_results?.flags?.map((flag: string, i: number) => (
                             <span key={i} className="flex items-center gap-1.5 bg-red-500/10 text-red-400 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-red-500/20">
                               <AlertTriangle className="w-3 h-3" />
                               {flag}
@@ -863,6 +914,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                   )}
                 </div>
               ) : view === 'kanban' ? (
+                <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
                   <KanbanBoard 
                     results={filteredResults} 
                     onStageChange={handleStageChange}
@@ -870,6 +922,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                     t={t}
                     locale={locale}
                   />
+                </div>
               ) : (
                 <AiInsights userEmail={userEmail} t={t} onClose={() => setView('list')} />
               )}
@@ -885,17 +938,17 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             
             {/* Modal Header */}
             <div className="p-8 bg-[#0F172A] relative shrink-0 z-20 border-b border-[#1E293B]/30 rounded-t-[2.5rem] flex flex-col gap-6">
-               <div className={`absolute top-0 end-0 w-64 h-64 opacity-20 bg-gradient-to-br ${getScoreColor(selectedCandidate.final_score)} blur-3xl -translate-y-32 translate-x-32 pointer-events-none`} />
+               <div className={`absolute top-0 end-0 w-64 h-64 opacity-20 bg-gradient-to-br ${getScoreColor(selectedCandidate.analysis_results?.final_score || 0)} blur-3xl -translate-y-32 translate-x-32 pointer-events-none`} />
                
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                   <div className="flex items-center gap-5">
-                    <div className={`w-20 h-20 rounded-3xl flex items-center justify-center bg-gradient-to-br shadow-xl ${getScoreColor(selectedCandidate.final_score)}`}>
-                       <span className="text-3xl font-black text-white">{selectedCandidate.final_score}%</span>
+                    <div className={`w-20 h-20 rounded-3xl flex items-center justify-center bg-gradient-to-br shadow-xl ${getScoreColor(selectedCandidate.analysis_results?.final_score || 0)}`}>
+                       <span className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.final_score || 0}%</span>
                     </div>
                     <div>
                       <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                        {selectedCandidate.applications?.candidates?.name}
-                        {selectedCandidate.is_fresh_graduate && (
+                        {selectedCandidate.candidates?.name}
+                        {selectedCandidate.analysis_results?.is_fresh_graduate && (
                           <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-[#0EA5E9]/30">
                             {t.fresh_grad_badge || 'Fresh Grad'}
                           </span>
@@ -903,7 +956,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       </h2>
                       <p className="text-slate-400 font-medium flex items-center gap-2 mt-1">
                         <Briefcase className="w-4 h-4 text-[#0EA5E9]" />
-                        {selectedCandidate.applications?.jobs?.title}
+                        {selectedCandidate.jobs?.title}
                       </p>
                     </div>
                   </div>
@@ -958,7 +1011,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         </div>
                       </div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#0EA5E9]">{t.cultural_fit || 'Cultural Fit'}</p>
-                      <div className="text-3xl font-black text-white">{selectedCandidate.cultural_fit_score || 0}%</div>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.cultural_fit_score || 0}%</div>
                     </div>
                     <div className="bg-[#1E293B]/20 border border-[#1E293B] p-5 rounded-3xl text-center group hover:border-[#F59E0B]/30 transition-all relative">
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -970,16 +1023,16 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         </div>
                       </div>
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#F59E0B]">{t.project_impact || 'Project Impact'}</p>
-                      <div className="text-3xl font-black text-white">{selectedCandidate.project_impact_score || 0}%</div>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.project_impact_score || 0}%</div>
                     </div>
                     <div className="bg-[#10B981]/5 border border-[#10B981]/20 p-5 rounded-3xl text-center group hover:border-[#10B981]/30 transition-all">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#10B981]">{t.skills_match || 'Skills Match'}</p>
-                      <div className="text-3xl font-black text-white">{selectedCandidate.skills_score || 0}%</div>
+                      <p className="text-[10px) font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#10B981]">{t.skills_match || 'Skills Match'}</p>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.skills_score || 0}%</div>
                     </div>
-                    {selectedCandidate.is_fresh_graduate && (
+                    {selectedCandidate.analysis_results?.is_fresh_graduate && (
                       <div className="bg-purple-500/5 border border-purple-500/20 p-5 rounded-3xl text-center group hover:border-purple-500/30 transition-all">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-purple-400">{t.gpa || 'GPA'}</p>
-                        <div className="text-3xl font-black text-white">{selectedCandidate.gpa_score || 0}%</div>
+                        <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.gpa_score || 0}%</div>
                       </div>
                     )}
                   </div>
@@ -991,19 +1044,19 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                        {t.career_trajectory_title || 'Career Trajectory Prediction'}
                     </h3>
                     <p className="text-slate-300 text-sm italic leading-relaxed">
-                      "{selectedCandidate.career_trajectory || 'Predicting future growth path...'}"
+                      "{selectedCandidate.analysis_results?.career_trajectory || 'Predicting future growth path...'}"
                     </p>
                   </div>
 
                   {/* Project Highlights (for grads) */}
-                  {selectedCandidate.project_highlights && selectedCandidate.project_highlights.length > 0 && (
+                  {selectedCandidate.analysis_results?.project_highlights && selectedCandidate.analysis_results.project_highlights.length > 0 && (
                     <div className="bg-[#020617]/30 border border-[#1E293B] p-6 rounded-3xl">
                       <h3 className="text-slate-200 font-bold text-sm mb-4 flex items-center gap-2">
                          <Sparkles className="w-4 h-4 text-[#F59E0B]" />
                          {t.project_highlights_title || 'Academic & Research Highlights'}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {selectedCandidate.project_highlights.map((h, i) => (
+                        {selectedCandidate.analysis_results.project_highlights.map((h: string, i: number) => (
                           <div key={i} className="flex items-start gap-3 bg-[#1E293B]/40 p-3 rounded-2xl border border-[#334155]/30">
                             <div className="w-1.5 h-1.5 rounded-full bg-[#0EA5E9] mt-1.5 flex-shrink-0" />
                             <span className="text-xs text-slate-300">{h}</span>
@@ -1023,7 +1076,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                        {t.ai_analysis || 'AI Rational Analysis'}
                     </h3>
                     <p className="text-slate-300 text-sm leading-relaxed">
-                      {selectedCandidate.justification}
+                      {selectedCandidate.analysis_results?.justification}
                     </p>
                   </div>
 
@@ -1034,7 +1087,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         {t.strengths || 'Key Strengths'}
                       </h3>
                       <ul className="space-y-2">
-                        {selectedCandidate.strengths?.map((s, i) => (
+                        {selectedCandidate.analysis_results?.strengths?.map((s: string, i: number) => (
                           <li key={i} className="text-xs text-emerald-100/70 py-1 border-b border-emerald-500/10 last:border-0">• {s}</li>
                         ))}
                       </ul>
@@ -1045,7 +1098,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                         {t.improvement_areas || 'Weaknesses'}
                       </h3>
                       <ul className="space-y-2">
-                        {selectedCandidate.weaknesses?.map((w, i) => (
+                        {selectedCandidate.analysis_results?.weaknesses?.map((w: string, i: number) => (
                           <li key={i} className="text-xs text-red-100/70 py-1 border-b border-red-500/10 last:border-0">• {w}</li>
                         ))}
                       </ul>
@@ -1063,7 +1116,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                        {t.recommended_questions || 'Neural Interview Strategy'}
                     </h3>
                     <div className="space-y-3">
-                      {(selectedCandidate.interview_questions || []).map((q, i) => (
+                      {(selectedCandidate.analysis_results?.interview_questions || []).map((q: string, i: number) => (
                         <div key={i} className="bg-[#1E293B]/60 p-4 rounded-2xl border border-[#7C3AED]/10 text-xs text-slate-200 leading-relaxed shadow-sm">
                           {q}
                         </div>
@@ -1078,7 +1131,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                        {t.industry_roadmap || 'Industry-Bridge Roadmap'}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {(selectedCandidate.training_suggestions || []).map((tS, i) => (
+                      {(selectedCandidate.analysis_results?.training_suggestions || []).map((tS: string, i: number) => (
                         <div key={i} className="flex items-center gap-3 bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/20">
                           <BookOpen className="w-4 h-4 text-emerald-400" />
                           <span className="text-xs text-emerald-100/80 font-medium">{tS}</span>
@@ -1093,20 +1146,15 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             {/* Modal Footer */}
             <div className="p-8 pt-0 border-t border-[#1E293B] bg-[#0F172A] mt-auto shrink-0 z-20">
               <div className="flex justify-between items-center mt-6">
-                     <div className="flex gap-2">
+                  <div className="flex gap-2">
                     <button 
                        onClick={async () => {
-                         // selectedCandidate.applications can be an object OR an array depending on Supabase join
-                         const apps = selectedCandidate.applications;
-                         const app = Array.isArray(apps) ? apps[0] : apps;
-                         const cand = app?.candidates;
-                         const candidateId = cand?.id || app?.candidate_id || (selectedCandidate as any).candidate_id;
-                         
-                         console.log('Download Debug:', { candidateId, userEmail, app, cand });
+                         const candidateId = selectedCandidate.candidates?.id;
+                         const cvUrl = selectedCandidate.candidates?.cv_url;
+                         const candidateName = selectedCandidate.candidates?.name;
                          
                          if (!candidateId) {
-                           alert('Error: Candidate ID not found. Check console.');
-                           console.error('No candidate ID found. Structure:', selectedCandidate);
+                           alert('Error: Candidate ID not found.');
                            return;
                          }
 
@@ -1131,7 +1179,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                              const url = window.URL.createObjectURL(blob);
                              const a = document.createElement('a');
                              a.href = url;
-                             const safeName = (cand?.name || 'CV').replace(/\s+/g, '_');
+                             const safeName = (candidateName || 'CV').replace(/\s+/g, '_');
                              a.download = `CV_${safeName}.pdf`;
                              document.body.appendChild(a);
                              a.click();
@@ -1139,9 +1187,8 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                              setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
                              setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
                            } else {
-                             const fallbackUrl = cand?.cv_url;
-                             if (fallbackUrl) {
-                               window.open(fallbackUrl, '_blank');
+                             if (cvUrl) {
+                               window.open(cvUrl, '_blank');
                                setDownloadStatus(prev => ({ ...prev, [candidateId]: 'success' }));
                                setTimeout(() => setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' })), 3000);
                              } else {
@@ -1152,30 +1199,28 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                          } catch (err) {
                            setDownloadStatus(prev => ({ ...prev, [candidateId]: 'idle' }));
                            alert('Connection error while downloading.');
-                           const fallbackUrl = cand?.cv_url;
-                           if (fallbackUrl) window.open(fallbackUrl, '_blank');
+                           if (cvUrl) window.open(cvUrl, '_blank');
                          }
                        }} 
                       className="px-6 py-2.5 bg-[#1E293B] text-slate-200 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 min-w-[160px] justify-center"
                     >
-                      {/* Using optional chaining and fallback for ID check to prevent crash if undefined */}
-                      {downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'loading' ? (
+                      {downloadStatus[selectedCandidate.candidates?.id!] === 'loading' ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'success' ? (
+                      ) : downloadStatus[selectedCandidate.candidates?.id!] === 'success' ? (
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <FileText className="w-4 h-4" />
                       )}
-                      {downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'loading' ? t.downloading : 
-                       downloadStatus[(Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!] === 'success' ? t.downloaded : 
+                      {downloadStatus[selectedCandidate.candidates?.id!] === 'loading' ? t.downloading : 
+                       downloadStatus[selectedCandidate.candidates?.id!] === 'success' ? t.downloaded : 
                        t.view_cv || 'View Original CV'}
                     </button>
                   </div>
                   <div className="flex gap-3">
                     <button 
                       onClick={() => handleDeleteCandidate(
-                        (Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.id!, 
-                        (Array.isArray(selectedCandidate.applications) ? selectedCandidate.applications[0] : selectedCandidate.applications)?.candidates?.name!
+                        selectedCandidate.candidates?.id!, 
+                        selectedCandidate.candidates?.name!
                       )}
                       className="px-6 py-2.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
                     >

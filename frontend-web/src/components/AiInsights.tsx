@@ -14,6 +14,22 @@ interface AiUsageLog {
   operation: string;
 }
 
+interface Application {
+  id: string;
+  status: string;
+  candidates: {
+    id: string;
+    name: string;
+  };
+  jobs?: {
+    title: string;
+  };
+  analysis_results?: {
+    final_score: number;
+    recommendation: string;
+  };
+}
+
 export default function AiInsights({ 
   userEmail, 
   t,
@@ -23,7 +39,7 @@ export default function AiInsights({
 }: { 
   userEmail: string, 
   t: Record<string, string>,
-  results?: any[],
+  results?: Application[],
   onClose?: () => void,
   onDeleteCandidate?: (id: string, name: string) => Promise<void>
 }) {
@@ -91,6 +107,11 @@ export default function AiInsights({
   const dailyChartData = Object.values(dailyData);
   const opChartData = Object.values(opData);
   const COLORS = ['#0EA5E9', '#7C3AED', '#22C55E', '#F59E0B', '#EF4444'];
+
+  // Only rank analyzed candidates
+  const analyzedResults = results
+    .filter(r => r.status === 'analyzed' && r.analysis_results)
+    .sort((a, b) => (b.analysis_results?.final_score || 0) - (a.analysis_results?.final_score || 0));
 
   return (
     <div className="p-6 space-y-8 animate-in fade-in duration-500 relative">
@@ -202,23 +223,23 @@ export default function AiInsights({
           {t.candidate_ranking || 'Candidate Ranking'}
         </h3>
         <div className="space-y-4">
-          {results.slice(0, 5).map((result, idx) => (
+          {analyzedResults.slice(0, 5).map((result, idx) => (
             <div key={result.id} className="flex items-center justify-between p-4 bg-[#0F172A]/50 rounded-xl border border-[#1E293B] group hover:border-[#0EA5E9]/30 transition-all">
               <div className="flex items-center gap-4">
                 <span className="text-xl font-black text-slate-700 w-6">0{idx + 1}</span>
                 <div>
-                  <h4 className="font-bold text-slate-200">{result.applications.candidates.name}</h4>
-                  <p className="text-xs text-slate-500">{result.applications.jobs?.title}</p>
+                  <h4 className="font-bold text-slate-200">{result.candidates.name}</h4>
+                  <p className="text-xs text-slate-500">{result.jobs?.title}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-end">
-                  <p className="text-lg font-black text-[#0EA5E9] leading-none">{result.final_score}</p>
-                  <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter">{result.recommendation}</p>
+                  <p className="text-lg font-black text-[#0EA5E9] leading-none">{result.analysis_results?.final_score}</p>
+                  <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter">{result.analysis_results?.recommendation}</p>
                 </div>
                 {onDeleteCandidate && (
                   <button
-                    onClick={() => onDeleteCandidate(result.applications.candidates.id, result.applications.candidates.name)}
+                    onClick={() => onDeleteCandidate(result.candidates.id, result.candidates.name)}
                     className="p-2 bg-red-500/10 text-slate-600 hover:text-red-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                     title={t.delete || 'Delete'}
                   >
@@ -228,7 +249,7 @@ export default function AiInsights({
               </div>
             </div>
           ))}
-          {results.length === 0 && (
+          {analyzedResults.length === 0 && (
             <div className="text-center py-10 border border-dashed border-[#1E293B] rounded-xl text-slate-500 italic">
               {t.no_data_rank || 'No candidate data available for ranking yet.'}
             </div>

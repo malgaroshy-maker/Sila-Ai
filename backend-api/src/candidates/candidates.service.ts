@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException, Logger, StreamableFile } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, Logger, StreamableFile, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
 import { WebhooksService } from './webhooks.service';
@@ -112,6 +112,7 @@ export class CandidatesService {
 
     const duplicateStrategy = settingsMap.duplicate_strategy || 'update';
 
+    let aiError: string | null = null;
     try {
       this.logger.log(`Extracting candidate info from CV text for ${email}...`);
       const extracted = await this.aiService.extractCandidateInfo(userEmail, cvText, cvBuffer, file.mimetype);
@@ -148,7 +149,7 @@ export class CandidatesService {
 
     } catch (e: any) {
       this.logger.warn(`Candidate info extraction failed or non-CV detected: ${e.message}.`);
-      // If we already returned null above, this won't be reached if it was a purposeful stop
+      aiError = e.message;
     }
 
     // 1.7 Upload to Supabase Storage if it's a manual upload (no Gmail IDs)
@@ -184,7 +185,8 @@ export class CandidatesService {
         user_email: userEmail,
         cv_url: cvUrl, // Store the public URL for manual uploads
         gmail_message_id: gmailMessageId,
-        gmail_attachment_id: gmailAttachmentId
+        gmail_attachment_id: gmailAttachmentId,
+        ai_error: aiError
       }, { onConflict: 'user_email, email' })
       .select()
       .single();
@@ -259,6 +261,19 @@ export class CandidatesService {
    * Analyze a single candidate against a single job.
    * Skips if analysis already exists.
    */
+  async analyzeApplication(userEmail: string, applicationId: string) {
+    const sb = this.supabaseService.getClient();
+    const { data: app, error: appError } = await sb
+      .from('applications')
+      .select('candidate_id, job_id')
+      .eq('id', applicationId)
+      .single();
+
+    if (appError || !app) throw new BadRequestException('Application not found');
+
+    return this.analyzeForJob(userEmail, app.candidate_id, app.job_id);
+  }
+
   async analyzeForJob(
     userEmail: string,
     candidate: { id: string; name: string; email: string; cv_text: string },
@@ -277,11 +292,19 @@ export class CandidatesService {
     if (existingApp?.analysis_results) {
       this.logger.debug(`Skipping: ${candidate.name} already analyzed for "${job.title}"`);
       return { candidate, application: existingApp, analysis: existingApp.analysis_results, skipped: true };
-    }
+    }    // Create/Update Application record to 'pending' status BEFORE AI
+    const { data: application, error: appError } = await sb
+      .from('applications')
+      .upsert(
+        { job_id: job.id, candidate_id: candidate.id, status: 'pending', ai_error: null },
+        { onConflict: 'job_id, candidate_id' }
+      )
+      .select()
+      .single();
 
-    // Analyze CV using AI
-    this.logger.log(`AI analyzing: ${candidate.name} → "${job.title}" for user ${userEmail}`);
-    
+    if (appError) throw new InternalServerErrorException(appError.message);
+
+    // Get reject threshold for auto-rejection
     const { data: thresholdSettings } = await sb
       .from('settings')
       .select('key, value')
@@ -290,11 +313,22 @@ export class CandidatesService {
     
     const rejectThreshold = parseInt(thresholdSettings?.[0]?.value) || 0;
 
-    const { data: analysisResult, metadata } = await this.aiService.analyzeCandidate(
-      userEmail,
-      { title: job.title, description: job.description, requirements: job.requirements },
-      candidate.cv_text
-    );
+    // Analyze CV using AI
+    this.logger.log(`AI analyzing: ${candidate.name} → "${job.title}" for user ${userEmail}`);
+    
+    let analysisResult: any;
+    try {
+      const aiResponse = await this.aiService.analyzeCandidate(
+        userEmail,
+        { title: job.title, description: job.description, requirements: job.requirements },
+        candidate.cv_text
+      );
+      analysisResult = aiResponse.data;
+    } catch (err: any) {
+      this.logger.error(`AI Analysis failed for ${candidate.name}: ${err.message}`);
+      await sb.from('applications').update({ status: 'failed', ai_error: err.message }).eq('id', application.id);
+      throw err; // Re-throw so caller knows it failed
+    }
 
     let status = 'analyzed';
     if (rejectThreshold > 0 && analysisResult.final_score < rejectThreshold) {
@@ -302,17 +336,8 @@ export class CandidatesService {
       status = 'rejected';
     }
 
-    // Create Application record
-    const { data: application, error: appError } = await sb
-      .from('applications')
-      .upsert(
-        { job_id: job.id, candidate_id: candidate.id, status },
-        { onConflict: 'job_id, candidate_id' }
-      )
-      .select()
-      .single();
-
-    if (appError) throw new InternalServerErrorException(appError.message);
+    // Update Application status
+    await sb.from('applications').update({ status, ai_error: null }).eq('id', application.id);
 
     // Store AI Analysis results
     const { data: results, error: resError } = await sb

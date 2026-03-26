@@ -274,11 +274,25 @@ export class EmailProcessorService {
           }
         };
 
-        await extractAndIngest(payload.parts);
+        let stopSync = false;
+        try {
+          await extractAndIngest(payload.parts);
+        } catch (err: any) {
+          this.logger.error(`Error processing email ${msg.id}: ${err.message}`);
+          // If it's a quota error or something that should stop the sync, set flag
+          if (err.status === 429 || err.message.includes('Quota')) {
+            stopSync = true;
+          }
+          // Do NOT mark as read if it failed
+          if (stopSync) throw err; 
+        }
+
+        if (stopSync) break;
+
         processedCount++;
         onProgress({ status: 'analyzing', total: messages.length, processed: processedCount, message: `Processing ${processedCount}/${messages.length}...` });
         
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         await this.markAsRead(gmail, msg.id, qUser);
       }
       

@@ -13,7 +13,6 @@ import {
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -21,9 +20,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { 
-  GripVertical, User, Mail, Star, 
-  CheckCircle2, XCircle, Clock, 
-  MessageSquare, Award, Loader2, GraduationCap, Trash2
+  Mail, Clock, 
+  Loader2, GraduationCap, Trash2, AlertTriangle
 } from 'lucide-react';
 
 const STAGES = [
@@ -35,37 +33,30 @@ const STAGES = [
   { id: 'Rejected', label: 'Rejected', color: 'rose' },
 ];
 
-interface AnalysisResult {
+interface Application {
   id: string;
-  final_score: number;
-  skills_score: number;
-  language_score: number;
-  gpa_score?: number;
-  ind_readiness_score: number;
-  recommendation: string;
-  strengths: string[];
-  weaknesses: string[];
-  tags?: string[];
-  flags?: string[];
-  interview_questions?: string[];
-  training_suggestions?: string[];
-  justification?: string;
-  is_fresh_graduate?: boolean;
-  applications: {
-    id: string;
-    job_id: string;
-    pipeline_stage: string;
-    candidates: {
-      id: string;
-      name: string;
-      email: string;
-    };
-  };
+  job_id: string;
+  candidate_id: string;
+  pipeline_stage: string;
+  status: 'pending' | 'analyzed' | 'failed' | 'rejected';
+  ai_error?: string;
   created_at: string;
+  candidates: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  analysis_results?: {
+    final_score: number;
+    recommendation: string;
+    is_fresh_graduate?: boolean;
+    gpa_score?: number;
+    tags?: string[];
+  };
 }
 
 interface KanbanProps {
-  results: AnalysisResult[];
+  results: Application[];
   onStageChange: (applicationId: string, newStage: string) => Promise<void>;
   onDelete?: (candidateId: string, name: string) => Promise<void>;
   t: Record<string, string>;
@@ -80,10 +71,10 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
   );
 
   const grouped = useMemo(() => {
-    const map: Record<string, AnalysisResult[]> = {};
+    const map: Record<string, Application[]> = {};
     STAGES.forEach(s => map[s.id] = []);
     results.forEach(r => {
-      const stage = r.applications.pipeline_stage || 'Applied';
+      const stage = r.pipeline_stage || 'Applied';
       if (map[stage]) map[stage].push(r);
       else map['Applied'].push(r);
     });
@@ -97,24 +88,21 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
   const handleDragEnd = (event: { active: { id: string | number }, over: { id: string | number } | null }) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      // Find where we dropped
       let newStage: string | null = null;
       
       if (STAGES.find(s => s.id === over.id)) {
-        // Dropped directly on a column
         newStage = over.id as string;
       } else {
-        // Dropped on another item, find its column
         const overResult = results.find(r => r.id === over.id);
         if (overResult) {
-          newStage = overResult.applications.pipeline_stage || 'Applied';
+          newStage = overResult.pipeline_stage || 'Applied';
         }
       }
 
       if (newStage) {
         const activeResult = results.find(r => r.id === active.id);
-        if (activeResult && activeResult.applications.pipeline_stage !== newStage) {
-          onStageChange(activeResult.applications.id, newStage);
+        if (activeResult && activeResult.pipeline_stage !== newStage) {
+          onStageChange(activeResult.id, newStage);
         }
       }
     }
@@ -160,22 +148,10 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
   );
 }
 
-function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: string, label: string, color: string }, items: AnalysisResult[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
+function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
   });
-
-  const getStageColor = (color: string) => {
-    const colors: Record<string, string> = {
-      slate: 'text-slate-400 bg-slate-400/10 border-slate-400/20',
-      blue: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-      indigo: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
-      amber: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-      emerald: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-      rose: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
-    };
-    return colors[color] || colors.slate;
-  };
 
   return (
     <div className="flex-shrink-0 w-[300px] flex flex-col gap-3">
@@ -209,7 +185,7 @@ function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: stri
   );
 }
 
-function SortableCandidateCard({ result, onDelete, locale }: { result: AnalysisResult, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
+function SortableCandidateCard({ result, onDelete, locale }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
   const {
     attributes,
     listeners,
@@ -232,16 +208,20 @@ function SortableCandidateCard({ result, onDelete, locale }: { result: AnalysisR
   );
 }
 
-function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: { result: AnalysisResult | undefined, onDelete?: (id: string, name: string) => Promise<void>, isOverlay?: boolean, locale?: string }) {
+function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, isOverlay?: boolean, locale?: string }) {
   if (!result) return null;
-  const candidate = result.applications.candidates;
-  const score = result.final_score;
+  const candidate = result.candidates;
+  const score = result.analysis_results?.final_score || 0;
+  const status = result.status;
+  
   const scoreColor = score >= 80 ? 'text-[#22C55E]' : score >= 60 ? 'text-[#EAB308]' : 'text-[#EF4444]';
 
   return (
     <div className={`bg-[#020617]/40 border border-[#1E293B]/50 rounded-xl p-4 transition-all hover:border-[#0EA5E9]/30 hover:shadow-lg hover:shadow-[#0EA5E9]/5 cursor-grab active:cursor-grabbing group relative overflow-hidden ${isOverlay ? 'scale-105 rotate-2 shadow-2xl bg-[#1E293B]' : ''}`}>
       {/* Background Score Glow */}
-      <div className={`absolute top-0 end-0 w-16 h-16 opacity-5 bg-gradient-to-br ${score >= 80 ? 'from-emerald-500' : score >= 60 ? 'from-amber-500' : 'from-red-500'} blur-2xl -translate-y-8 translate-x-8`} />
+      {status === 'analyzed' && (
+        <div className={`absolute top-0 end-0 w-16 h-16 opacity-5 bg-gradient-to-br ${score >= 80 ? 'from-emerald-500' : score >= 60 ? 'from-amber-500' : 'from-red-500'} blur-2xl -translate-y-8 translate-x-8`} />
+      )}
 
       <div className="flex items-start justify-between gap-3 mb-2 relative z-10">
         <div className="flex-1 min-w-0">
@@ -249,10 +229,21 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: {
             <h4 className="font-bold text-slate-100 text-sm truncate group-hover:text-white transition-colors">
               {candidate.name}
             </h4>
-            {result.is_fresh_graduate && (
+            {result.analysis_results?.is_fresh_graduate && (
               <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-[#0EA5E9]/30 flex items-center gap-1">
                 <GraduationCap className="w-2.5 h-2.5" />
-                {result.gpa_score ? `${result.gpa_score}%` : ''}
+                {result.analysis_results.gpa_score ? `${result.analysis_results.gpa_score}%` : ''}
+              </span>
+            )}
+            {status === 'failed' && (
+              <span className="bg-rose-500/20 text-rose-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-rose-500/30 flex items-center gap-1" title={result.ai_error}>
+                <AlertTriangle className="w-2.5 h-2.5" />
+                !
+              </span>
+            )}
+            {status === 'pending' && (
+              <span className="bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md border border-amber-500/30 flex items-center gap-1">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" />
               </span>
             )}
           </div>
@@ -262,13 +253,13 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: {
           </p>
         </div>
         <div className={`text-base font-black ${scoreColor} leading-none flex items-center gap-2`}>
-          {score}
+          {status === 'analyzed' ? score : '--'}
           {onDelete && !isOverlay && (
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onDelete(result.applications.candidates.id, candidate.name);
+                onDelete(candidate.id, candidate.name);
               }}
               className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-600 hover:text-red-500 transition-colors pointer-events-auto"
               title="Delete Candidate"
@@ -280,7 +271,7 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: {
       </div>
 
       <div className="flex flex-wrap gap-1 mb-3 relative z-10">
-        {result.tags?.slice(0, 2).map((tag: string, i: number) => (
+        {result.analysis_results?.tags?.slice(0, 2).map((tag: string, i: number) => (
           <span key={i} className="px-1.5 py-0.5 bg-[#0F172A] text-slate-400 text-[9px] font-medium rounded-md border border-[#1E293B] uppercase group-hover:border-[#334155]">
             {tag}
           </span>
@@ -289,13 +280,23 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: {
 
       <div className="flex items-center justify-between pt-3 border-t border-[#1E293B]/50 relative z-10">
         <div className="flex items-center gap-1">
-          <div className={`ps-2.5 pe-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
-            result.recommendation === 'Strong' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-            result.recommendation === 'Average' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 
-            'bg-red-500/10 text-red-400 border border-red-500/20'
-          }`}>
-            {result.recommendation}
-          </div>
+          {status === 'failed' ? (
+            <div className="text-rose-400 text-[9px] font-bold truncate max-w-[150px]">
+               Critical AI Error
+            </div>
+          ) : status === 'pending' ? (
+            <div className="text-amber-400 text-[9px] font-bold">
+               AI Processing...
+            </div>
+          ) : (
+            <div className={`ps-2.5 pe-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+              result.analysis_results?.recommendation === 'Strong' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+              result.analysis_results?.recommendation === 'Average' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 
+              'bg-red-500/10 text-red-400 border border-red-500/20'
+            }`}>
+              {result.analysis_results?.recommendation || 'N/A'}
+            </div>
+          )}
         </div>
         <div className="text-[9px] font-medium text-slate-600 group-hover:text-slate-400 transition-colors">
           {new Date(result.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })}

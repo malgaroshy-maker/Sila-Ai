@@ -69,6 +69,15 @@ export class CandidatesController {
     }
   }
 
+  @Post('applications/:id/analyze')
+  async retryAnalysis(
+    @Headers('x-user-email') userEmail: string,
+    @Param('id') applicationId: string
+  ) {
+    this.requireEmail(userEmail);
+    return this.candidatesService.analyzeApplication(userEmail, applicationId);
+  }
+
   @Delete(':id')
   async deleteCandidate(
     @Headers('x-user-email') userEmail: string,
