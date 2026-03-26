@@ -28,7 +28,7 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
       color: 'from-[#0EA5E9]/20 to-[#0369A1]/5'
     },
     {
-      title: t.syncing || 'Automated Sync',
+      title: t.sync_step_title || 'Automated Sync',
       description: t.welcome_step3 || 'Once configured, ARIS will automatically scan your emails and analyze incoming CVs.',
       icon: <Mail className="w-8 h-8 text-emerald-400" />,
       color: 'from-emerald-500/20 to-emerald-600/5'
@@ -43,6 +43,8 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
       onOpenSettings();
     }
   };
+
+  const isRtl = document.documentElement.dir === 'rtl';
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
@@ -84,8 +86,8 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
               onClick={handleNext}
               className="flex items-center gap-2 bg-[#0EA5E9] hover:bg-[#0EA5E9]/80 text-white font-bold py-3 px-8 rounded-2xl transition-all shadow-lg shadow-[#0EA5E9]/20 hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
-              {step === steps.length ? (t.go_to_settings || 'Open Settings') : (t.got_it || 'Next')}
-              <ArrowRight className="w-5 h-5" />
+              {step === steps.length ? (t.go_to_settings || 'Open Settings') : (t.next || 'Next')}
+              {isRtl ? <ArrowRight className="w-5 h-5 rotate-180" /> : <ArrowRight className="w-5 h-5" />}
             </button>
           </div>
         </div>

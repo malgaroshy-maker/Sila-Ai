@@ -69,6 +69,7 @@
     "no_jobs": "No jobs created yet",
     "ai_config": "AI Algorithm Configuration",
     "syncing": "Syncing...",
+    "sync_step_title": "Automated Sync",
     "saving": "Saving...",
     "webhook_title": "Webhook URL for Notifications",
     "webhook_hint": "Optional: We will send candidates with 90%+ score to this URL.",
@@ -180,6 +181,7 @@
     "welcome_step1": "To start your journey, you need a Gemini API Key.",
     "welcome_step2": "Enter your key in the settings and select your preferred AI model.",
     "welcome_step3": "Once configured, ARIS will automatically scan your emails and analyze incoming CVs.",
+    "next": "Next",
     "got_it": "Let's Start",
     "go_to_settings": "Open Settings"
   },
