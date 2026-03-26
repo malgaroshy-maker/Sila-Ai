@@ -262,7 +262,7 @@ export class EmailProcessorService {
               }
 
               if (candidate) {
-                await this.candidatesService.analyzeForAllJobs(account.user_email, candidate, true);
+                await this.candidatesService.analyzeForAllJobs(account.user_email, candidate, false);
               } else {
                 this.logger.warn(`File ${part.filename} from ${candidateEmail} was not a CV. Skipping.`);
               }

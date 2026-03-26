@@ -239,14 +239,8 @@ export class CandidatesService {
     const results = [];
     for (const job of jobs) {
       try {
-        const result = await this.analyzeForJob(userEmail, candidate, job);
-        if (result && !result.skipped) {
-          // Trigger webhook if score is high and notifications are not skipped
-          if (!skipNotifications) {
-            this.webhooksService.checkAndNotify(userEmail, candidate.name, result.analysis.final_score, job.title);
-          }
-          results.push(result);
-        } else if (result) {
+        const result = await this.analyzeForJob(userEmail, candidate, job, skipNotifications);
+        if (result) {
           results.push(result);
         }
       } catch (err: any) {
@@ -277,7 +271,8 @@ export class CandidatesService {
   async analyzeForJob(
     userEmail: string,
     candidate: { id: string; name: string; email: string; cv_text: string },
-    job: { id: string; title: string; description: string; requirements: any }
+    job: { id: string; title: string; description: string; requirements: any },
+    skipNotifications = false
   ) {
     const sb = this.supabaseService.getClient();
 
@@ -367,6 +362,11 @@ export class CandidatesService {
       .single();
 
     if (resError) throw new InternalServerErrorException(resError.message);
+
+    // Trigger webhook if score is high and notifications are not skipped
+    if (!skipNotifications) {
+      this.webhooksService.checkAndNotify(userEmail, candidate.name, analysisResult.final_score, job.title);
+    }
 
     return { candidate, application, analysis: results, skipped: false };
   }
