@@ -12,6 +12,14 @@ export class SettingsService {
     
     const settings: any = {};
     data?.forEach(s => { settings[s.key] = s.value; });
+
+    // Also fetch the provider info
+    const { data: accounts } = await sb.from('email_accounts').select('provider, email_address').eq('user_email', userEmail).limit(1);
+    if (accounts && accounts.length > 0) {
+      settings.email_provider = accounts[0].provider;
+      settings.connected_email = accounts[0].email_address;
+    }
+
     return settings;
   }
 

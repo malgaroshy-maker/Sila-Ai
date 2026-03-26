@@ -109,24 +109,41 @@ export class EmailService {
   // ==== MICROSOFT OUTLOOK OAUTH ====
   async getMicrosoftAuthUrl(userEmail?: string, locale: string = 'ar') {
     const state = Buffer.from(JSON.stringify({ userEmail, locale })).toString('base64');
-    const authCodeUrlParameters = {
-      scopes: ['user.read', 'mail.read', 'offline_access'],
-      redirectUri: this.msRedirectUri,
-      state
-    };
-    return await this.msalClient.getAuthCodeUrl(authCodeUrlParameters);
+    const tenant = 'common';
+    const clientId = process.env.MS_CLIENT_ID || '';
+    const scopes = encodeURIComponent('offline_access user.read mail.read mail.readwrite');
+    const redirectUri = encodeURIComponent(this.msRedirectUri);
+    return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&response_mode=query&scope=${scopes}&state=${state}`;
   }
 
   async handleMicrosoftCallback(code: string, state?: string) {
     try {
-      const tokenRequest = {
-        code,
-        scopes: ['user.read', 'mail.read', 'offline_access'],
-        redirectUri: this.msRedirectUri,
-      };
+      const tenant = 'common';
+      const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
       
-      const response = await this.msalClient.acquireTokenByCode(tokenRequest);
-      const emailAddress = response.account?.username;
+      const params = new URLSearchParams();
+      params.append('client_id', process.env.MS_CLIENT_ID || '');
+      params.append('client_secret', process.env.MS_CLIENT_SECRET || '');
+      params.append('code', code);
+      params.append('redirect_uri', this.msRedirectUri);
+      params.append('grant_type', 'authorization_code');
+
+      const tokenRes = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+      const tokenData = await tokenRes.json();
+      
+      if (!tokenData.access_token) {
+        throw new Error('Failed to get access token from Microsoft: ' + JSON.stringify(tokenData));
+      }
+
+      const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
+         headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+      const graphData = await graphRes.json();
+      const emailAddress = graphData.userPrincipalName || graphData.mail;
 
       // Determine the overall recruiter (user_email) and locale
       let recruiterEmail = emailAddress;
@@ -153,8 +170,8 @@ export class EmailService {
           provider: 'microsoft',
           email_address: emailAddress,
           user_email: recruiterEmail,
-          access_token: response.accessToken,
-          refresh_token: 'msal_managed_cache', 
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token, 
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_email, email_address' })
         .select()

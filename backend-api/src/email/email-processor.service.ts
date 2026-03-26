@@ -109,6 +109,8 @@ export class EmailProcessorService {
 
         if (account.provider === 'google') {
           await this.processGoogleAccount(account, emitProgress);
+        } else if (account.provider === 'microsoft') {
+          await this.processMicrosoftAccount(account, emitProgress);
         }
 
         // Update last_synced_at IMMEDIATELY after account processing
@@ -347,6 +349,195 @@ export class EmailProcessorService {
         ids: [messageId],
         removeLabelIds: ['UNREAD'],
       },
+    });
+  }
+
+  private async refreshMicrosoftToken(account: any): Promise<string> {
+    const tenant = 'common';
+    const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+    const params = new URLSearchParams();
+    params.append('client_id', process.env.MS_CLIENT_ID || '');
+    params.append('client_secret', process.env.MS_CLIENT_SECRET || '');
+    params.append('refresh_token', account.refresh_token);
+    params.append('grant_type', 'refresh_token');
+
+    const res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+    const data = await res.json();
+    if (!data.access_token) {
+      throw new Error('Failed to refresh Microsoft token: ' + JSON.stringify(data));
+    }
+    
+    const sb = this.supabaseService.getClient();
+    await sb.from('email_accounts').update({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || account.refresh_token,
+      updated_at: new Date().toISOString()
+    }).eq('id', account.id);
+
+    return data.access_token;
+  }
+
+  private async processMicrosoftAccount(account: any, onProgress: (data: any) => void) {
+    const sb = this.supabaseService.getClient();
+    try {
+      this.logger.log(`Starting Microsoft processing for ${account.email_address}`);
+      let accessToken = account.access_token;
+      
+      try {
+        accessToken = await this.refreshMicrosoftToken(account);
+      } catch (e: any) {
+        this.logger.error(`Failed to refresh MS token for ${account.email_address}: ${e.message}`);
+        // fallback to old token
+      }
+
+      // Graph API: fetch unread messages with attachments
+      const graphApiUrl = `https://graph.microsoft.com/v1.0/me/messages?$filter=isRead eq false and hasAttachments eq true&$top=20`;
+      const msgesRes = await fetch(graphApiUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      
+      if (!msgesRes.ok) {
+        throw new Error(`Graph API error: ${msgesRes.status} ${await msgesRes.text()}`);
+      }
+
+      const msgData = await msgesRes.json();
+      const messages = msgData.value || [];
+      
+      if (messages.length === 0) {
+        this.logger.log(`No new unread CVs found for ${account.email_address}`);
+        onProgress({ status: 'completed', total: 0, processed: 0, message: 'No new emails found' });
+        return;
+      }
+
+      onProgress({ status: 'analyzing', total: messages.length, processed: 0, message: `Found ${messages.length} potential emails` });
+
+      let processedCount = 0;
+      for (const msg of messages) {
+        // --- CHECK STOP REQUEST ---
+        const { data: acct } = await sb.from('email_accounts').select('stop_sync_requested').eq('id', account.id).single();
+        if (acct?.stop_sync_requested) {
+            this.logger.warn(`Sync stopped by user for ${account.email_address}`);
+            onProgress({ status: 'stopped', total: messages.length, processed: processedCount, message: 'Stopped by user' });
+            return;
+        }
+
+        const snippet = msg.bodyPreview || '';
+        if (snippet.length > 0 && !this.isProbablyCV('', snippet)) {
+            this.logger.debug(`Skipping email ${msg.id} - fails heuristic check`);
+            processedCount++;
+            onProgress({ status: 'analyzing', total: messages.length, processed: processedCount, message: `Skipped non-CV email` });
+            await this.markMicrosoftAsRead(accessToken, msg.id);
+            continue;
+        }
+
+        const candidateName = msg.from?.emailAddress?.name || 'Unknown';
+        const candidateEmail = msg.from?.emailAddress?.address || 'unknown@example.com';
+
+        // Fetch attachments
+        const attachmentsRes = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${msg.id}/attachments`, {
+           headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        
+        if (!attachmentsRes.ok) {
+           this.logger.error(`Failed to fetch attachments for msg ${msg.id}`);
+           continue;
+        }
+        
+        const attachData = await attachmentsRes.json();
+        const attachments = attachData.value || [];
+        
+        let stopSync = false;
+        
+        for (const attachment of attachments) {
+           if (attachment['@odata.type'] !== '#microsoft.graph.fileAttachment') continue;
+           
+           const filename = (attachment.name || '').toLowerCase();
+           const isSupported = 
+                filename.endsWith('.pdf') || 
+                filename.endsWith('.docx') || 
+                filename.endsWith('.doc') || 
+                filename.endsWith('.png') || 
+                filename.endsWith('.jpg') || 
+                filename.endsWith('.jpeg');
+              
+           if (!isSupported) continue;
+           
+           const b64Data = attachment.contentBytes;
+           if (!b64Data) continue;
+           
+           const buffer = Buffer.from(b64Data, 'base64');
+           const mockFile = {
+             originalname: attachment.name,
+             mimetype: attachment.contentType,
+             buffer: buffer,
+             size: buffer.length
+           } as Express.Multer.File;
+
+           const { data: existing } = await sb
+                .from('candidates')
+                .select('id, name, email, cv_text')
+                .eq('email', candidateEmail)
+                .eq('user_email', account.user_email)
+                .single();
+
+           let candidate;
+           try {
+             if (existing && existing.cv_text && existing.cv_text.length > 50) {
+               candidate = existing;
+             } else {
+               candidate = await this.candidatesService.ingestCandidate(
+                 account.user_email, 
+                 candidateName, 
+                 candidateEmail, 
+                 mockFile,
+                 msg.id,
+                 attachment.id
+               );
+             }
+
+             if (candidate) {
+               await this.candidatesService.analyzeForAllJobs(account.user_email, candidate, false);
+             }
+           } catch (err: any) {
+              this.logger.error(`Error processing MS email ${msg.id}: ${err.message}`);
+              if (err.status === 429 || err.message.includes('Quota')) {
+                 stopSync = true;
+                 break;
+              }
+           }
+        }
+
+        if (stopSync) break;
+
+        processedCount++;
+        onProgress({ status: 'analyzing', total: messages.length, processed: processedCount, message: `Processing ${processedCount}/${messages.length}...` });
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await this.markMicrosoftAsRead(accessToken, msg.id);
+      }
+      
+      onProgress({ status: 'completed', total: messages.length, processed: processedCount, message: 'Sync completed successfully' });
+
+    } catch (error: any) {
+      this.logger.error(`Microsoft Graph API Error for ${account.email_address}: ${error.message}`);
+      await sb.from('email_accounts')
+        .update({ last_error_message: error.message })
+        .eq('id', account.id);
+    }
+  }
+
+  private async markMicrosoftAsRead(accessToken: string, messageId: string) {
+    await fetch(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+      method: 'PATCH',
+      headers: { 
+         Authorization: `Bearer ${accessToken}`,
+         'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ isRead: true })
     });
   }
 
