@@ -290,7 +290,7 @@ export class CandidatesService {
     
     const rejectThreshold = parseInt(thresholdSettings?.[0]?.value) || 0;
 
-    const analysisResult = await this.aiService.analyzeCandidate(
+    const { data: analysisResult, metadata } = await this.aiService.analyzeCandidate(
       userEmail,
       { title: job.title, description: job.description, requirements: job.requirements },
       candidate.cv_text

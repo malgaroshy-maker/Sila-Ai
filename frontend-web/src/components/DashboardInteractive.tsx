@@ -18,6 +18,7 @@ import {
 import { SyncStatus } from './SyncStatus';
 import OnboardingModal from './OnboardingModal';
 import { Trash2 } from 'lucide-react';
+import QuotaMonitor from './QuotaMonitor';
 
 interface Job {
   id: string;
@@ -457,21 +458,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             <div className="flex items-center gap-4">
               {/* Consumption Indicators */}
               <div className="hidden lg:flex items-center gap-6 me-4">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t.tokens_used}</span>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <Zap className="w-3 h-3 text-amber-500 fill-amber-500/20" />
-                    <span className="text-xs font-mono font-bold text-slate-300">12.4k</span>
-                  </div>
-                </div>
-                <div className="w-px h-8 bg-[#1E293B]" />
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{t.cvs_processed}</span>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <FileText className="w-3 h-3 text-[#0EA5E9] fill-[#0EA5E9]/20" />
-                    <span className="text-xs font-mono font-bold text-slate-300">142</span>
-                  </div>
-                </div>
+                <QuotaMonitor userEmail={userEmail} t={t} />
               </div>
 
               <div className="h-8 w-px bg-[#1E293B] mx-2 hidden sm:block" />

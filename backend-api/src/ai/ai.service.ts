@@ -8,19 +8,40 @@ export class AiService {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  private async getSettings(userEmail: string) {
+  /**
+   * Helper to get user's Gemini settings (API Key and chosen Model).
+   * Defaults to Gemini 3.1 Flash Lite (March 2026 standard) if not configured.
+   */
+  public async getSettings(userEmail: string) {
     const sb = this.supabaseService.getClient();
     const { data } = await sb.from('settings').select('*').eq('user_email', userEmail);
     const settings: any = {};
     data?.forEach(s => { settings[s.key] = s.value; });
+    
+    // Default to gemini-3.1-flash-lite-preview for 2026 standards
     return {
       apiKey: settings.gemini_api_key || process.env.GEMINI_API_KEY || '',
-      model: settings.gemini_model || 'gemini-1.5-flash',
+      model: settings.gemini_model || 'models/gemini-3.1-flash-lite-preview',
       aiMode: settings.ai_mode || 'balanced',
       analysisLanguage: settings.analysis_language || 'BH',
       evaluationFocus: settings.evaluation_focus || 'balanced',
       maskPii: settings.mask_pii !== false
     };
+  }
+
+  /**
+   * Fetches the curated model list from Supabase.
+   */
+  async getModelCatalog() {
+    const sb = this.supabaseService.getClient();
+    const { data, error } = await sb
+      .from('gemini_models')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_name', { ascending: true });
+    
+    if (error) throw new InternalServerErrorException('Failed to fetch model catalog');
+    return data;
   }
 
   async logUsage(userEmail: string, operation: string, usageMetadata: any) {
@@ -139,7 +160,13 @@ export class AiService {
       // Log usage
       await this.logUsage(userEmail, 'analysis', result.response.usageMetadata);
       
-      return JSON.parse(cleanedJson);
+      return {
+        data: JSON.parse(cleanedJson),
+        metadata: {
+          usage: result.response.usageMetadata,
+          model: settings.model
+        }
+      };
     } catch (error: any) {
       console.error('AI Analysis failed:', error);
       throw new InternalServerErrorException(`AI Error: ${error.message}`);

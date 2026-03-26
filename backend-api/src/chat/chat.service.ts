@@ -12,21 +12,10 @@ export class ChatService {
     private readonly aiService: AiService,
   ) {}
 
-  private async getSettings(userEmail: string) {
-    const sb = this.supabaseService.getClient();
-    const { data } = await sb.from('settings').select('*').eq('user_email', userEmail);
-    const settings: any = {};
-    data?.forEach(s => { settings[s.key] = s.value; });
-    return {
-      apiKey: settings.gemini_api_key || process.env.GEMINI_API_KEY || '',
-      model: settings.gemini_model || 'gemini-1.5-flash',
-      chatLanguage: settings.chat_language || 'BH'
-    };
-  }
 
   async chat(userEmail: string, message: string, history: { role: string; text: string }[]) {
     const sb = this.supabaseService.getClient();
-    const settings = await this.getSettings(userEmail);
+    const settings = await this.aiService.getSettings(userEmail);
     const genAI = new GoogleGenerativeAI(settings.apiKey);
     const model = genAI.getGenerativeModel({ model: settings.model });
 
@@ -80,8 +69,9 @@ export class ChatService {
       'BH': 'أجب بنفس لغة سؤال المستخدم (عربي/إنجليزي). إذا كان السؤال هجيناً، أجب بلغة الأغلبية أو العربية كافتراضي.'
     };
 
+    const chatLanguage = (settings as any).chat_language || 'BH';
     const systemPrompt = `You are an AI Recruitment Specialist (RAG-Enabled) for the "AI Recruitment Intelligence System".
-${langInstructions[settings.chatLanguage as keyof typeof langInstructions] || langInstructions.BH}
+${langInstructions[chatLanguage as keyof typeof langInstructions] || langInstructions.BH}
 
 === Retrieve Documents Context (RAG) ===
 ${ragContext || 'No exact matches found in CV database.'}
@@ -93,7 +83,7 @@ ${jobsSummary || 'No jobs currently active.'}
 ${analysisSummary || 'No candidate analyses available yet.'}
 
 === Guiding Instructions ===
-1. LANGUAGE: Follow the specific language instruction: "${langInstructions[settings.chatLanguage as keyof typeof langInstructions] || langInstructions.BH}".
+1. LANGUAGE: Follow the specific language instruction: "${langInstructions[chatLanguage as keyof typeof langInstructions] || langInstructions.BH}".
 2. ACCURACY: Use the provided RAG context to answer specific CV details. If the info is missing, state it clearly.
 3. COMPARISON: Use the Analysis Overview to compare candidates based on final_score and cultural_fit_score.
 4. TONE: Maintain a professional, executive recruitment tone.
@@ -110,7 +100,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       const chat = model.startChat({
         history: [
           { role: 'user', parts: [{ text: 'System context: ' + systemPrompt }] },
-          { role: 'model', parts: [{ text: settings.chatLanguage === 'EN' ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?' : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟' }] },
+          { role: 'model', parts: [{ text: ((settings as any).chat_language === 'EN') ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?' : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟' }] },
           ...chatHistory,
         ],
       });

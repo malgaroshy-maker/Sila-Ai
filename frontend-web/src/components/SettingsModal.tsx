@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History } from 'lucide-react';
 
 interface Model {
-  name: string;
-  displayName?: string;
+  model_id: string;
+  display_name: string;
+  is_preview?: boolean;
 }
 
 export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { isOpen: boolean, onClose: () => void, userEmail: string, t?: Record<string, string> }) {
@@ -72,38 +73,26 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   };
 
   const fetchModels = async (key: string) => {
-    if (!key || !userEmail) {
-      setAvailableModels([]);
-      return;
-    }
-    console.log('Fetching models for:', userEmail, 'with key:', key);
+    // We now fetch the curated catalog from our own backend
     setIsModelsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/settings/models?apiKey=${key}`, {
+      const res = await fetch(`${API_URL}/ai/models`, {
         headers: { 'x-user-email': userEmail }
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Invalid API key or network error');
-      }
+      if (!res.ok) throw new Error('Failed to fetch model catalog');
       const data = await res.json();
-      console.log('Models found:', data);
+      
       if (Array.isArray(data)) {
         setAvailableModels(data);
-        // Only set default if selectedModel is empty or not in the new list (to prevent overwriting saved pref)
-        const modelExists = data.some(m => m.name === selectedModel);
+        const modelExists = data.some(m => m.model_id === selectedModel);
         if (data.length > 0 && (!selectedModel || !modelExists)) {
-          // If we have a selectedModel but it's not in the list, we might still want to keep it 
-          // if it's currently loading from fetchSettings. 
-          // So we only set default if we really have nothing.
           if (!selectedModel) {
-            setSelectedModel(data[0].name);
+            setSelectedModel(data[0].model_id);
           }
         }
       }
     } catch (e) {
       console.error('Failed to fetch models', e);
-      setAvailableModels([]);
     } finally {
       setIsModelsLoading(false);
     }
@@ -226,10 +215,12 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                 >
                   {availableModels.length > 0 ? (
                     availableModels.map((m) => (
-                      <option key={m.name} value={m.name}>{m.displayName || m.name}</option>
+                      <option key={m.model_id} value={m.model_id}>
+                        {m.display_name} {m.is_preview ? '(Preview)' : ''}
+                      </option>
                     ))
                   ) : (
-                    <option value="gemini-1.5-flash">gemini-1.5-flash (Default)</option>
+                    <option value="models/gemini-3.1-flash-lite-preview">gemini-3.1-flash (Curating...)</option>
                   )}
                 </select>
               </div>
