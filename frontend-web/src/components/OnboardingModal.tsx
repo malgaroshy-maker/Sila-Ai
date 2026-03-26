@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Settings, ArrowRight, X, Cpu, Key, Mail } from 'lucide-react';
+import { Sparkles, Settings, ArrowRight, X, Cpu, Key, Mail, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {} }: { 
