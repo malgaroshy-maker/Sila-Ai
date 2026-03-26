@@ -129,6 +129,13 @@
 - [x] **Full Localization Fix**: Resolved all translation gaps in Arabic for charts, tooltips, and settings.
 - [x] **PII Masking**: Added privacy controls to hide candidate-sensitive data from AI prompts.
 
+### 6.6 Reliability & Quota Resilience ✅
+- [x] **Atomic Ingestion**: Create application record *before* AI analysis to ensure visibility even if Gemini fails.
+- [x] **AI Error Persistence**: Store `ai_error` and `failed` status in the database for UI feedback (error badges + tooltips).
+- [x] **Quota-Aware Sync**: Defer Gmail "Mark as Read" until AI success; gracefully halt sync on AI 429 quota errors.
+- [x] **Manual Retry UI**: Added "Retry AI Analysis" button to re-process candidates after quota reset.
+- [x] **Unified Webhooks**: Centralized alerts in `analyzeForJob` to trigger for Email, Manual, and Retry paths consistently.
+
 ---
 
 ## Deployment Verification Status

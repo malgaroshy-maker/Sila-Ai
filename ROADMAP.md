@@ -1,6 +1,6 @@
 # AI Recruitment Intelligence — Roadmap
 
-> Last updated: 2026-03-24
+> Last updated: 2026-03-26
 
 ---
 
@@ -78,6 +78,8 @@
 | 33 | **UI Refactor: Full-Width AI Insights Analytics** | - | ✅ |
 | 34 | **Advanced Settings (Thresholds, Strategies, PII Masking)** | - | ✅ |
 | 35 | **Full Arabic Localization (Charts, Tooltips, Settings Keys)** | - | ✅ |
+| 36 | **AI Quota Resilience (429 handling, sync retry, background persistence)** | - | ✅ |
+| 37 | **Unified Webhook Alerting (Email, Manual, & Retry consistency)** | - | ✅ |
 
 ---
 

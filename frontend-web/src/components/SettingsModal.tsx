@@ -26,6 +26,8 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   const [evaluationFocus, setEvaluationFocus] = useState<'balanced' | 'technical' | 'career'>('balanced');
   const [syncFrequency, setSyncFrequency] = useState<'manual' | '1h' | '6h' | '24h'>('6h');
   const [maskPii, setMaskPii] = useState(true);
+  const [provider, setProvider] = useState<string>('google');
+  const [connectedEmail, setConnectedEmail] = useState<string>('');
   
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isModelsLoading, setIsModelsLoading] = useState(false);
@@ -62,6 +64,8 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
         setEvaluationFocus(data.evaluation_focus || 'balanced');
         setSyncFrequency(data.sync_frequency || '6h');
         setMaskPii(data.mask_pii !== false); // Default to true
+        setProvider(data.email_provider || 'google');
+        setConnectedEmail(data.connected_email || userEmail);
       }
       
       if (data.gemini_api_key) {
@@ -161,15 +165,19 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
         </div>
         
         <div className="p-6 space-y-5">
-          {userEmail && (
-            <div className="bg-[#0369A1]/10 rounded-xl p-4 border border-[#0369A1]/20 flex items-center justify-between">
+          {connectedEmail && (
+            <div className={`bg-[#0369A1]/10 rounded-xl p-4 border border-[#0369A1]/20 flex items-center justify-between ${provider === 'microsoft' ? 'border-blue-500/30 bg-blue-500/5' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="bg-[#0369A1]/20 p-2 rounded-lg">
-                  <Mail className="w-5 h-5 text-[#0EA5E9]" />
+                <div className={`p-2 rounded-lg ${provider === 'microsoft' ? 'bg-blue-500/10' : 'bg-[#0369A1]/20'}`}>
+                  {provider === 'microsoft' ? (
+                    <img src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft" className="w-5 h-5" />
+                  ) : (
+                    <Mail className="w-5 h-5 text-[#0EA5E9]" />
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-medium tracking-wider uppercase mb-0.5">{t.account_connected || 'Connected Account'}</p>
-                  <p className="text-sm font-bold text-white">{userEmail}</p>
+                  <p className="text-sm font-bold text-white">{connectedEmail}</p>
                 </div>
               </div>
             </div>

@@ -79,20 +79,17 @@ export default function LoginPage() {
             </button>
 
             <button 
-              disabled
-              className="w-full h-16 group relative flex items-center justify-between bg-white/[0.02] border border-white/5 text-slate-500 px-8 rounded-2xl font-bold text-lg grayscale opacity-50 cursor-not-allowed"
+              onClick={() => handleLogin('azure')} 
+              disabled={!!isLoading}
+              className="w-full h-16 group relative flex items-center justify-between bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-white/[0.08] text-white px-8 rounded-2xl font-black text-lg transition-all duration-300 cursor-pointer disabled:opacity-50 overflow-hidden active:scale-[0.98]"
             >
-              <div className="flex items-center gap-4 text-start">
-                <div className="p-2 bg-slate-800 rounded-xl">
-                  <img src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft" className="w-6 h-6 opacity-50" />
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-white rounded-xl shadow-lg transform group-hover:scale-110 transition-transform">
+                  <img src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft" className="w-6 h-6" />
                 </div>
-                <div className="flex flex-col leading-none">
-                  <span>{t('microsoft')}</span>
-                  <span className="text-[10px] font-black tracking-widest uppercase mt-1 text-slate-600">
-                    {t('coming_soon')}
-                  </span>
-                </div>
+                <span>{isLoading === 'azure' ? t('connecting') : t('microsoft')}</span>
               </div>
+              <ChevronRight className={`w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors ${locale === 'ar' ? 'rotate-180' : ''}`} />
             </button>
           </div>
 
