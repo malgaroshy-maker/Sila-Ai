@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, UseInterceptors, UploadedFile, Body, BadRequestException, Headers, UnauthorizedException, Param, Get, Res } from '@nestjs/common';
+import { Controller, Post, Patch, UseInterceptors, UploadedFile, Body, BadRequestException, Headers, UnauthorizedException, Param, Get, Res, Delete } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CandidatesService } from './candidates.service';
@@ -67,5 +67,14 @@ export class CandidatesController {
     } else {
       throw new BadRequestException('CV not available for download');
     }
+  }
+
+  @Delete(':id')
+  async deleteCandidate(
+    @Headers('x-user-email') userEmail: string,
+    @Param('id') candidateId: string
+  ) {
+    this.requireEmail(userEmail);
+    return this.candidatesService.deleteCandidate(userEmail, candidateId);
   }
 }

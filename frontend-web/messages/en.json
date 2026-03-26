@@ -169,7 +169,19 @@
     "server_offline": "Offline",
     "server_checking": "Checking...",
     "tokens_used": "AI Tokens",
-    "cvs_processed": "CVs Scanned"
+    "cvs_processed": "CVs Scanned",
+    "delete_job": "Delete Job",
+    "delete_candidate": "Delete Candidate",
+    "delete_confirm_title": "Confirm Deletion",
+    "delete_confirm_job": "Are you sure you want to delete this job? This will also remove all associated candidate analysis for this job.",
+    "delete_confirm_cand": "Are you sure you want to delete this candidate? Their CV and all application records will be permanently removed from the system.",
+    "get_api_key_link": "Get your API key from Google AI Studio",
+    "welcome_title": "Welcome to ARIS Intelligence",
+    "welcome_step1": "To start your journey, you need a Gemini API Key.",
+    "welcome_step2": "Enter your key in the settings and select your preferred AI model.",
+    "welcome_step3": "Once configured, ARIS will automatically scan your emails and analyze incoming CVs.",
+    "got_it": "Let's Start",
+    "go_to_settings": "Open Settings"
   },
   "Login": {
     "welcome": "Welcome Back",

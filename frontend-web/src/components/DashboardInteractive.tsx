@@ -16,6 +16,8 @@ import {
   Cpu, LayoutTemplate, Mail, TrendingUp, GraduationCap, Info
 } from 'lucide-react';
 import { SyncStatus } from './SyncStatus';
+import OnboardingModal from './OnboardingModal';
+import { Trash2 } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -95,10 +97,12 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [jobMode, setJobMode] = useState<'form' | 'ai'>('form');
   const [aiJobPrompt, setAiJobPrompt] = useState('');
   const [isCreatingJob, setIsCreatingJob] = useState(false);
-  
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isDeletingJobId, setIsDeletingJobId] = useState<string | null>(null);
+  const [isDeletingCandId, setIsDeletingCandId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -238,7 +242,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   };
 
   useEffect(() => {
-    const checkStatus = async () => {
+    const checkServerStatus = async () => {
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         const res = await fetch(`${apiBase}/health`, { signal: AbortSignal.timeout(5000) });
@@ -248,10 +252,18 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         setServerStatus('offline');
       }
     };
-    checkStatus();
-    const interval = setInterval(checkStatus, 30000); // Check every 30s
+    checkServerStatus();
+    
+    // Check if onboarding is needed
+    const hasSeenOnboarding = localStorage.getItem('aris_onboarding_seen');
+    if (!hasSeenOnboarding) {
+      // Small delay for better UX
+      setTimeout(() => setIsOnboardingOpen(true), 1500);
+    }
+
+    const interval = setInterval(checkServerStatus, 30000); // Check every 30s
     return () => clearInterval(interval);
-  }, []);
+  }, [userEmail]);
 
   const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,6 +338,52 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     }
   };
 
+  const handleDeleteJob = async (jobId: string) => {
+    if (!confirm(t.delete_confirm_job || 'Are you sure you want to delete this job?')) return;
+    
+    setIsDeletingJobId(jobId);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail }
+      });
+      
+      if (res.ok) {
+        setJobs(jobs.filter(j => j.id !== jobId));
+        setResults(results.filter(r => r.applications.job_id !== jobId));
+        if (selectedJobId === jobId) setSelectedJobId(null);
+        if (expandedJobId === jobId) setExpandedJobId(null);
+      }
+    } catch (e) {
+      console.error('Delete job failed', e);
+    } finally {
+      setIsDeletingJobId(null);
+    }
+  };
+
+  const handleDeleteCandidate = async (candidateId: string, name: string) => {
+    if (!confirm(`${t.delete_confirm_candidate || 'Are you sure you want to delete candidate'} ${name}?`)) return;
+    
+    setIsDeletingCandId(candidateId);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/candidates/${candidateId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-email': userEmail }
+      });
+      
+      if (res.ok) {
+        setResults(results.filter(r => r.applications.candidates.id !== candidateId));
+        if (selectedCandidate?.applications.candidates.id === candidateId) {
+          setSelectedCandidate(null);
+        }
+      }
+    } catch (e) {
+      console.error('Delete candidate failed', e);
+    } finally {
+      setIsDeletingCandId(null);
+    }
+  };
+
   const filteredResults = results
     .filter((r) => {
       const matchJob = !selectedJobId || r.applications?.job_id === selectedJobId;
@@ -362,8 +420,18 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
   return (
     <div className="min-h-screen bg-[#020617] text-white font-sans selection:bg-[#0EA5E9]/30">
+      <OnboardingModal 
+        isOpen={isOnboardingOpen} 
+        onClose={() => {
+          setIsOnboardingOpen(false);
+          localStorage.setItem('aris_onboarding_seen', 'true');
+        }}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        t={t}
+      />
+
       {/* Premium Header */}
-      <header className="bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#1E293B] sticky top-0 z-40 transition-all duration-300">
+      <header className="bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#1E293B] sticky top-0 z-40 transition-all duration-300 overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-6">
           {/* Top Row: Brand & Status */}
           <div className="flex justify-between items-center py-4 border-b border-[#1E293B]/50">
@@ -578,8 +646,17 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                               <button 
                                 onClick={(e) => { e.stopPropagation(); handleExportPDF(job.id); }}
                                 className="p-2 hover:bg-[#1E293B] rounded-lg text-slate-500 hover:text-[#0EA5E9] transition-colors"
+                                title={t.export_pdf || 'Export PDF'}
                               >
                                 <FileText className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }}
+                                disabled={isDeletingJobId === job.id}
+                                className="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-500 transition-colors disabled:opacity-50"
+                                title={t.delete || 'Delete'}
+                              >
+                                {isDeletingJobId === job.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                               </button>
                               <ChevronRight className={`w-4 h-4 transition-all ${selectedJobId === job.id ? 'rotate-90 text-[#0EA5E9]' : 'text-slate-600 group-hover:translate-x-0.5'}`} />
                             </div>
@@ -743,12 +820,13 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                   )}
                 </div>
               ) : view === 'kanban' ? (
-                <KanbanBoard 
-                  results={results.filter((r) => !selectedJobId || r.applications.job_id === selectedJobId)} 
-                  onStageChange={handleStageChange}
-                  t={t}
-                  locale={locale}
-                />
+                  <KanbanBoard 
+                    results={filteredResults} 
+                    onStageChange={handleStageChange}
+                    onDelete={handleDeleteCandidate}
+                    t={t}
+                    locale={locale}
+                  />
               ) : (
                 <AiInsights userEmail={userEmail} t={t} onClose={() => setView('list')} />
               )}

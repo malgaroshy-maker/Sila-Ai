@@ -187,15 +187,24 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                 <Key className="w-4 h-4 text-slate-400" />
                 {t.api_key || 'Gemini API Key'}
               </label>
-              <input 
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                onBlur={() => fetchModels(apiKey)}
-                placeholder="AIzaSy..."
-                className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-2 focus:ring-[#0369A1] outline-none transition-all placeholder-slate-500"
-              />
-            </div>
+                <input 
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  onBlur={() => fetchModels(apiKey)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-2 focus:ring-[#0369A1] outline-none transition-all placeholder-slate-500"
+                />
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-[#0EA5E9] hover:text-[#38BDF8] flex items-center gap-1 mt-1 transition-colors w-fit"
+                >
+                  <Key className="w-3 h-3" />
+                  {t.get_api_key_link || 'Get your API key from Google AI Studio'}
+                </a>
+              </div>
 
             <div className="flex items-end gap-2">
               <div className="flex-1 space-y-2">

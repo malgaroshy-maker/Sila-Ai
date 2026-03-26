@@ -23,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { 
   GripVertical, User, Mail, Star, 
   CheckCircle2, XCircle, Clock, 
-  MessageSquare, Award, Loader2, GraduationCap
+  MessageSquare, Award, Loader2, GraduationCap, Trash2
 } from 'lucide-react';
 
 const STAGES = [
@@ -56,6 +56,7 @@ interface AnalysisResult {
     job_id: string;
     pipeline_stage: string;
     candidates: {
+      id: string;
       name: string;
       email: string;
     };
@@ -66,11 +67,12 @@ interface AnalysisResult {
 interface KanbanProps {
   results: AnalysisResult[];
   onStageChange: (applicationId: string, newStage: string) => Promise<void>;
+  onDelete?: (candidateId: string, name: string) => Promise<void>;
   t: Record<string, string>;
   locale?: string;
 }
 
-export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }: KanbanProps) {
+export default function KanbanBoard({ results, onStageChange, onDelete, t, locale = 'en' }: KanbanProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -133,6 +135,7 @@ export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }
             stage={stage} 
             items={grouped[stage.id]} 
             t={t}
+            onDelete={onDelete}
             locale={locale}
           />
         ))}
@@ -147,6 +150,7 @@ export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }
           <div className="w-[280px] bg-[#1E293B] border border-[#0369A1]/50 rounded-xl p-4 shadow-2xl scale-105 rotate-2">
             <CandidateCard 
               result={results.find(r => r.id === activeId)} 
+              onDelete={onDelete}
               isOverlay 
             />
           </div>
@@ -156,7 +160,7 @@ export default function KanbanBoard({ results, onStageChange, t, locale = 'en' }
   );
 }
 
-function KanbanColumn({ stage, items, t, locale }: { stage: { id: string, label: string, color: string }, items: AnalysisResult[], t: Record<string, string>, locale?: string }) {
+function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: string, label: string, color: string }, items: AnalysisResult[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
   });
@@ -196,7 +200,7 @@ function KanbanColumn({ stage, items, t, locale }: { stage: { id: string, label:
         >
           <div className="space-y-3">
             {items.map(item => (
-              <SortableCandidateCard key={item.id} result={item} locale={locale} />
+              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} locale={locale} />
             ))}
           </div>
         </SortableContext>
@@ -205,7 +209,7 @@ function KanbanColumn({ stage, items, t, locale }: { stage: { id: string, label:
   );
 }
 
-function SortableCandidateCard({ result, locale }: { result: AnalysisResult, locale?: string }) {
+function SortableCandidateCard({ result, onDelete, locale }: { result: AnalysisResult, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
   const {
     attributes,
     listeners,
@@ -223,12 +227,12 @@ function SortableCandidateCard({ result, locale }: { result: AnalysisResult, loc
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CandidateCard result={result} locale={locale} />
+      <CandidateCard result={result} onDelete={onDelete} locale={locale} />
     </div>
   );
 }
 
-function CandidateCard({ result, isOverlay = false, locale = 'en' }: { result: AnalysisResult | undefined, isOverlay?: boolean, locale?: string }) {
+function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: { result: AnalysisResult | undefined, onDelete?: (id: string, name: string) => Promise<void>, isOverlay?: boolean, locale?: string }) {
   if (!result) return null;
   const candidate = result.applications.candidates;
   const score = result.final_score;
@@ -257,8 +261,21 @@ function CandidateCard({ result, isOverlay = false, locale = 'en' }: { result: A
             {candidate.email}
           </p>
         </div>
-        <div className={`text-base font-black ${scoreColor} leading-none`}>
+        <div className={`text-base font-black ${scoreColor} leading-none flex items-center gap-2`}>
           {score}
+          {onDelete && !isOverlay && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(result.applications.candidates.id, candidate.name);
+              }}
+              className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-600 hover:text-red-500 transition-colors pointer-events-auto"
+              title="Delete Candidate"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

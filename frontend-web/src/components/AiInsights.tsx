@@ -17,11 +17,15 @@ interface AiUsageLog {
 export default function AiInsights({ 
   userEmail, 
   t,
-  onClose
+  results = [],
+  onClose,
+  onDeleteCandidate
 }: { 
   userEmail: string, 
   t: Record<string, string>,
-  onClose?: () => void
+  results?: any[],
+  onClose?: () => void,
+  onDeleteCandidate?: (id: string, name: string) => Promise<void>
 }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AiUsageLog[]>([]);
@@ -188,6 +192,47 @@ export default function AiInsights({
               </PieChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Candidate Ranking with Delete */}
+      <div className="bg-[#020617] p-6 rounded-2xl border border-[#1E293B]">
+        <h3 className="text-lg font-semibold text-slate-100 mb-6 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-emerald-400" />
+          {t.candidate_ranking || 'Candidate Ranking'}
+        </h3>
+        <div className="space-y-4">
+          {results.slice(0, 5).map((result, idx) => (
+            <div key={result.id} className="flex items-center justify-between p-4 bg-[#0F172A]/50 rounded-xl border border-[#1E293B] group hover:border-[#0EA5E9]/30 transition-all">
+              <div className="flex items-center gap-4">
+                <span className="text-xl font-black text-slate-700 w-6">0{idx + 1}</span>
+                <div>
+                  <h4 className="font-bold text-slate-200">{result.applications.candidates.name}</h4>
+                  <p className="text-xs text-slate-500">{result.applications.jobs?.title}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-end">
+                  <p className="text-lg font-black text-[#0EA5E9] leading-none">{result.final_score}</p>
+                  <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter">{result.recommendation}</p>
+                </div>
+                {onDeleteCandidate && (
+                  <button
+                    onClick={() => onDeleteCandidate(result.applications.candidates.id, result.applications.candidates.name)}
+                    className="p-2 bg-red-500/10 text-slate-600 hover:text-red-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title={t.delete || 'Delete'}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {results.length === 0 && (
+            <div className="text-center py-10 border border-dashed border-[#1E293B] rounded-xl text-slate-500 italic">
+              {t.no_data_rank || 'No candidate data available for ranking yet.'}
+            </div>
+          )}
         </div>
       </div>
     </div>

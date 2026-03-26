@@ -566,4 +566,60 @@ export class CandidatesService {
     // 3. Fallback to existing URL
     return { url: candidate.cv_url };
   }
+
+  async deleteCandidate(userEmail: string, candidateId: string) {
+    const sb = this.supabaseService.getClient();
+    this.logger.log(`Deleting candidate ${candidateId} for user ${userEmail}`);
+
+    // 1. Fetch candidate to get CV URL for storage cleanup
+    const { data: candidate, error: fetchError } = await sb
+      .from('candidates')
+      .select('cv_url')
+      .eq('id', candidateId)
+      .eq('user_email', userEmail)
+      .single();
+
+    if (fetchError || !candidate) {
+      throw new NotFoundException('Candidate not found or unauthorized');
+    }
+
+    // 2. Delete CV from storage if it exists
+    if (candidate.cv_url) {
+      try {
+        // Extract filename from URL - URL format: .../storage/v1/object/public/cv-backups/user@email.com/123456_file.pdf
+        const urlParts = candidate.cv_url.split('/cv-backups/');
+        if (urlParts.length > 1) {
+          const filePath = decodeURIComponent(urlParts[1]);
+          this.logger.log(`Deleting CV file from storage: ${filePath}`);
+          const { error: storageError } = await sb.storage
+            .from('cv-backups')
+            .remove([filePath]);
+          
+          if (storageError) {
+            this.logger.error(`Failed to delete CV from storage: ${storageError.message}`);
+          }
+        }
+      } catch (e: any) {
+        this.logger.error(`Error parsing CV URL for deletion: ${e.message}`);
+      }
+    }
+
+    // 3. Delete related records (Cascade should handle most, but being explicit for safety/clarity)
+    // Explicitly delete embeddings
+    await sb.from('candidate_embeddings').delete().eq('candidate_id', candidateId);
+    
+    // Now delete the candidate record (CASCADE should handle analysis_results and applications)
+    const { error: deleteError } = await sb
+      .from('candidates')
+      .delete()
+      .eq('id', candidateId)
+      .eq('user_email', userEmail);
+
+    if (deleteError) {
+      this.logger.error(`Database deletion error: ${deleteError.message}`);
+      throw new InternalServerErrorException(`Failed to delete candidate: ${deleteError.message}`);
+    }
+
+    return { success: true };
+  }
 }
