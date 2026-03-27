@@ -226,31 +226,34 @@ export class AiService {
       return cached.result;
     }
 
+    const bodyStr = JSON.stringify(body);
+    this.logger.log(`Gemini request size for ${modelId}: ${(bodyStr.length / 1024 / 1024).toFixed(2)} MB`);
+    
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: bodyStr,
     });
 
     await this.updateLiveQuota(settings.apiKey, modelId, response.headers);
 
     const responseText = await response.text();
+    
+    if (!response.ok) {
+      this.logger.error(`Gemini API Error (Status ${response.status}): ${responseText}`);
+      throw new Error(`AI Analysis failed (Status ${response.status}): ${responseText || 'No error message provided'}`);
+    }
+
     if (!responseText) {
       throw new Error('Empty response from AI API');
     }
-    
+
     let result;
     try {
       result = JSON.parse(responseText);
     } catch (e) {
       this.logger.error('Failed to parse Gemini response:', responseText);
       throw new Error('Failed to parse Gemini response as JSON');
-    }
-
-    if (!response.ok) {
-        const error = new Error(`AI Analysis failed: ${result?.error?.message || 'Unknown Error'}`);
-        (error as any).status = response.status;
-        throw error;
     }
 
     this.responseCache.set(cacheKey, {
