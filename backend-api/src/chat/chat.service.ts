@@ -1,12 +1,12 @@
 import {
   Injectable,
   Logger,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
 import { EmailService } from '../email/email.service';
+import { generateBilingualEmail } from '../email/email-templates';
 
 @Injectable()
 export class ChatService {
@@ -215,7 +215,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           {
             name: 'send_rejection_email',
             description:
-              'Drafts and sends a personalized rejection email for a candidate based on their AI analysis.',
+              'Drafts and sends a personalized bilingual rejection email for a candidate based on their AI analysis.',
             parameters: {
               type: 'object',
               properties: {
@@ -229,7 +229,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           },
           {
             name: 'send_interview_email',
-            description: 'Sends an interview invitation email to a candidate.',
+            description:
+              'Sends a professional bilingual interview invitation email to a candidate.',
             parameters: {
               type: 'object',
               properties: {
@@ -239,20 +240,24 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                 },
                 interview_date: {
                   type: 'string',
-                  description:
-                    'The date and time of the interview (e.g., "Monday at 2 PM").',
+                  description: 'The date and time of the interview (e.g., "Monday at 2 PM").',
+                },
+                interview_location: {
+                  type: 'string',
+                  description: 'The location or mode of the interview (e.g., "Office HQ", "Microsoft Teams", "Zoom").',
                 },
                 interview_link: {
                   type: 'string',
                   description: 'Optional video call link.',
                 },
               },
-              required: ['application_id', 'interview_date'],
+              required: ['application_id', 'interview_date', 'interview_location'],
             },
           },
           {
             name: 'send_offer_email',
-            description: 'Sends a formal job offer email to a candidate.',
+            description:
+              'Sends a formal bilingual job offer email to a candidate.',
             parameters: {
               type: 'object',
               properties: {
@@ -452,13 +457,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     }
   }
 
-  private async resolveApplicationId(
-    sb: any,
-    id: string,
-    userEmail: string,
-  ): Promise<string | null> {
+  private async resolveApplicationId(sb: any, id: string, userEmail: string): Promise<string | null> {
     this.logger.log(`Attempting to resolve ID: ${id} for user: ${userEmail}`);
-
+    
     // 1. Try directly as application_id
     const { data: appDirect } = await sb
       .from('applications')
@@ -466,7 +467,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       .eq('id', id)
       .eq('jobs.user_email', userEmail)
       .maybeSingle();
-
+    
     if (appDirect) return appDirect.id;
 
     // 2. Try as analysis_result_id
@@ -500,16 +501,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     try {
       if (call.name === 'update_candidate_stage') {
         const { application_id, stage } = call.args;
-        const resolvedId = await this.resolveApplicationId(
-          sb,
-          application_id,
-          userEmail,
-        );
-
-        if (!resolvedId)
-          throw new Error(
-            `Could not find application record for ID: ${application_id}`,
-          );
+        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
+        
+        if (!resolvedId) throw new Error(`Could not find application record for ID: ${application_id}`);
 
         this.logger.log(`Moving application ${resolvedId} to ${stage}`);
         const { data, error } = await sb
@@ -518,7 +512,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .eq('id', resolvedId)
           .select()
           .maybeSingle();
-
+        
         if (error) throw new Error(error.message);
         if (!data) throw new Error(`Application ${resolvedId} not found.`);
 
@@ -541,7 +535,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 
         if (error) throw new Error(error.message);
         if (!data) throw new Error(`Job ${job_id} not found or access denied.`);
-
+        
         return {
           status: 'success',
           message: `Job requirements updated.`,
@@ -560,25 +554,15 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         call.name === 'export_candidate_report'
       ) {
         const { application_id } = call.args;
-        const resolvedId = await this.resolveApplicationId(
-          sb,
-          application_id,
-          userEmail,
-        );
+        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
 
         if (!resolvedId) {
-          this.logger.warn(
-            `App not found for ${application_id} (User: ${userEmail})`,
-          );
-          throw new Error(
-            'Could not find application data for this ID or access denied.',
-          );
+          this.logger.warn(`App not found for ${application_id} (User: ${userEmail})`);
+          throw new Error('Could not find application data for this ID or access denied.');
         }
 
-        this.logger.log(
-          `Function: ${call.name} called for resolved application: ${resolvedId} (User: ${userEmail})`,
-        );
-
+        this.logger.log(`Function: ${call.name} called for resolved application: ${resolvedId} (User: ${userEmail})`);
+        
         // Fetch full candidate analysis and job details
         const { data: app, error } = await sb
           .from('analysis_results')
@@ -589,9 +573,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .maybeSingle();
 
         if (error) {
-          this.logger.error(
-            `Database error for ${resolvedId}: ${error.message}`,
-          );
+          this.logger.error(`Database error for ${resolvedId}: ${error.message}`);
           throw new Error(`Database error: ${error.message}`);
         }
         if (!app) {
@@ -614,64 +596,71 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         }
 
         if (call.name === 'send_rejection_email') {
-          const draft = {
-            to: app.applications.candidates.email,
-            subject: `Update on your application for ${app.applications.jobs.title}`,
-            body: `Dear ${app.applications.candidates.name}, thank you for your interest in the ${app.applications.jobs.title} role. While we were impressed with your ${app.tags?.slice(0, 2).join(' and ')}, we've decided to move forward with other candidates whose profiles more closely align with our current focus on ${app.applications.jobs.requirements?.slice(0, 2).join(' and ')}.`,
-          };
+          const { subject, html } = generateBilingualEmail('rejection', {
+            candidateName: app.applications.candidates.name,
+            jobTitle: app.applications.jobs.title,
+            strengths: app.tags,
+            requirements: app.applications.jobs.requirements,
+          });
 
-          this.logger.log(`Actually sending rejection email to ${draft.to}`);
+          this.logger.log(`Actually sending rejection email to ${app.applications.candidates.email}`);
           await this.emailService.sendEmail(
             userEmail,
-            draft.to,
-            draft.subject,
-            draft.body,
+            app.applications.candidates.email,
+            subject,
+            html,
           );
 
           return {
             status: 'success',
-            draft,
-            message: `Rejection email successfully sent to ${app.applications.candidates.name}.`,
+            message: `Bilingual rejection email successfully sent to ${app.applications.candidates.name}.`,
           };
         }
 
         if (call.name === 'send_interview_email') {
-          const { interview_date, interview_link } = call.args;
-          const draft = {
-            to: app.applications.candidates.email,
-            subject: `Interview Invitation: ${app.applications.jobs.title}`,
-            body: `Dear ${app.applications.candidates.name},<br><br>We are excited to invite you for an interview for the <b>${app.applications.jobs.title}</b> position. Your profile stood out based on our AI analysis.<br><br><b>Scheduled Date:</b> ${interview_date}${interview_link ? `<br><b>Meeting Link:</b> <a href="${interview_link}">${interview_link}</a>` : ''}<br><br>We look forward to speaking with you!`,
-          };
+          const { interview_date, interview_location, interview_link } = call.args;
+          const { subject, html } = generateBilingualEmail('interview', {
+            candidateName: app.applications.candidates.name,
+            jobTitle: app.applications.jobs.title,
+            details: {
+              date: interview_date,
+              location: interview_location,
+              link: interview_link,
+            },
+          });
 
           await this.emailService.sendEmail(
             userEmail,
-            draft.to,
-            draft.subject,
-            draft.body,
+            app.applications.candidates.email,
+            subject,
+            html,
           );
           return {
             status: 'success',
-            message: `Interview invitation sent to ${app.applications.candidates.name} for ${interview_date}.`,
+            message: `Bilingual interview invitation sent to ${app.applications.candidates.name} for ${interview_date} at ${interview_location}.`,
           };
         }
 
         if (call.name === 'send_offer_email') {
           const { salary, start_date } = call.args;
-          const draft = {
-            to: app.applications.candidates.email,
-            subject: `Job Offer: ${app.applications.jobs.title} at our Company`,
-            body: `Dear ${app.applications.candidates.name},<br><br>Congratulations! Based on your exceptional performance and our analysis (Match Score: ${app.final_score}%), we are thrilled to offer you the position of <b>${app.applications.jobs.title}</b>.<br><br><b>Salary Offer:</b> ${salary}<br><b>Start Date:</b> ${start_date}<br><br>Welcome to the team!`,
-          };
+          const { subject, html } = generateBilingualEmail('offer', {
+            candidateName: app.applications.candidates.name,
+            jobTitle: app.applications.jobs.title,
+            details: {
+              salary,
+              start_date,
+            },
+          });
 
           await this.emailService.sendEmail(
             userEmail,
-            draft.to,
-            draft.subject,
-            draft.body,
+            app.applications.candidates.email,
+            subject,
+            html,
           );
           return {
             status: 'success',
-            message: `Offer letter sent to ${app.applications.candidates.name} with salary ${salary}.`,
+            message: `Bilingual offer letter sent to ${app.applications.candidates.name} with salary ${salary}.`,
           };
         }
 
