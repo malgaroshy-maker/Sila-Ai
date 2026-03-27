@@ -1,45 +1,36 @@
-# Build stage
-FROM node:20-slim AS builder
+# syntax=docker/dockerfile:1
 
+# Stage 1: Base & Dependencies
+FROM node:20-slim AS base
 WORKDIR /app
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN npm install -g npm@latest
 
-# Copy package files and install all dependencies (including devDependencies)
+# Stage 2: Install ALL dependencies
+FROM base AS deps
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund --loglevel=error
 
-# Copy application code and build
+# Stage 3: Build the app
+FROM deps AS builder
 COPY . .
 RUN npm run build
 
-# Prune devDependencies to keep the image small
-RUN npm prune --production
+# Stage 4: Install only production dependencies
+FROM base AS prod-deps
+COPY package*.json ./
+RUN npm ci --omit=dev --no-audit --no-fund --loglevel=error
 
-# Production stage
+# Stage 5: Final Production Image
 FROM node:20-slim
-
 WORKDIR /app
-
-# Copy only production artifacts and node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
 
-# Verify build output
-RUN ls -R ./dist
-
-# Chromium for Puppeteer (using Sparticuz)
+# Chromium settings
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
 EXPOSE 5000
-
 CMD ["node", "dist/main.js"]

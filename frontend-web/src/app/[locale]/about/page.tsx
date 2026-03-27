@@ -35,11 +35,18 @@ function AboutContent() {
     }
   }, [searchParams]);
 
-  const isRtl = locale === 'ar';
-  const backLabel = fromOrigin === 'dashboard' ? t('back_to_dashboard') : t('back_to_login');
+  const handleBack = () => {
+    if (fromOrigin === 'dashboard') {
+      router.push('/');
+    } else if (fromOrigin === 'login') {
+      router.push('/login');
+    } else {
+      router.back();
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 font-sans">
+    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 font-sans overflow-x-hidden">
       {/* Immersive Neural Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-15%] start-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[140px] animate-pulse" />
@@ -48,10 +55,10 @@ function AboutContent() {
       </div>
 
       {/* Floating Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#020617]/60 backdrop-blur-3xl border-b border-white/5 py-4 px-6 shadow-sm">
+      <nav className="sticky top-0 z-50 bg-[#020617]/60 backdrop-blur-3xl border-b border-white/5 py-4 px-6 shadow-sm no-scrollbar overflow-x-hidden">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button 
-            onClick={() => router.back()} 
+            onClick={handleBack} 
             className="flex items-center gap-3 group px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all active:scale-95 shadow-sm hover:shadow-md"
           >
             <div className="p-1.5 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 transition-colors shadow-inner">

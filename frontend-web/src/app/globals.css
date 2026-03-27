@@ -43,22 +43,27 @@ main, .min-h-screen {
 }
 
 /* Global Hide Scrollbars */
-html, body {
-  overflow-x: hidden;
-  margin: 0;
-  padding: 0;
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .no-scrollbar::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 /* Ensure the body itself doesn't have a horizontal scrollbar */
 body {
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   width: 100vw;
 }
 
