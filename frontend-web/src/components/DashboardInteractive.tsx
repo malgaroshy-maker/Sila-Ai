@@ -547,9 +547,9 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <div className="relative group flex-1 md:flex-none">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-[#0EA5E9] transition-colors" />
                 <input 
-                  autoComplete="off" 
+                  autoComplete="new-password" 
                   spellCheck="false" 
-                  name="candidate-search"
+                  name="candidate_search_random_str"
                   type="text" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -793,114 +793,120 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       <div 
                         key={res.id} 
                         onClick={() => setSelectedCandidate(res)} 
-                        className="bg-[#020617]/40 hover:bg-[#1E293B]/60 border border-[#1E293B]/50 hover:border-[#0EA5E9]/30 rounded-2xl p-5 cursor-pointer transition-all group relative overflow-hidden"
+                        className="bg-[#0F172A]/40 backdrop-blur-md hover:bg-[#1E293B]/60 border border-white/5 hover:border-white/10 shadow-inner rounded-[2rem] p-6 cursor-pointer transition-all duration-300 group relative overflow-hidden active:scale-[0.99]"
                       >
                         {/* Status Backdrop Glow */}
-                        <div className={`absolute top-0 end-0 w-32 h-32 opacity-10 bg-gradient-to-br transition-opacity group-hover:opacity-20 ${getScoreColor(res.analysis_results?.final_score || 0)} blur-3xl -translate-y-12 translate-x-12`} />
+                        <div className={`absolute top-0 end-0 w-48 h-48 opacity-10 bg-gradient-to-br transition-opacity duration-500 group-hover:opacity-30 ${getScoreColor(res.analysis_results?.final_score || 0)} blur-[60px] -translate-y-12 translate-x-12`} />
                         
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                              <h3 className="font-bold text-lg text-slate-100 group-hover:text-white truncate">
+                            <div className="flex items-center gap-3 mb-2 flex-wrap">
+                              <h3 className="font-black text-xl text-white tracking-tight truncate drop-shadow-sm">
                                 {res.candidates?.name || 'Unknown'}
                               </h3>
                               {res.status === 'failed' && (
-                                <span className="bg-rose-500/20 text-rose-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-rose-500/30 flex items-center gap-1" title={res.ai_error}>
-                                  <AlertTriangle className="w-3 h-3" />
+                                <span className="bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-rose-500/20 flex items-center gap-1 shadow-inner" title={res.ai_error}>
+                                  <AlertTriangle className="w-3.5 h-3.5" />
                                   {t.failed || 'Failed'}
                                 </span>
                               )}
                               {res.status === 'pending' && (
-                                <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-amber-500/30 flex items-center gap-1">
-                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-indigo-500/20 flex items-center gap-1 shadow-inner">
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                   {t.pending || 'Processing'}
                                 </span>
                               )}
                               {res.analysis_results?.is_fresh_graduate && (
-                                <span className="bg-[#0EA5E9]/20 text-[#0EA5E9] text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-[#0EA5E9]/30 flex items-center gap-1">
-                                  <GraduationCap className="w-3 h-3" />
+                                <span className="bg-[#0EA5E9]/10 text-[#0EA5E9] text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-[#0EA5E9]/20 flex items-center gap-1 shadow-inner">
+                                  <GraduationCap className="w-3.5 h-3.5" />
                                   {t.fresh_grad_badge || 'Fresh Grad'}
                                 </span>
                               )}
                               {res.status === 'analyzed' && (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${getRecBadge(res.analysis_results?.recommendation)}`}>
+                                <span className={`text-[10px] font-black tracking-widest uppercase px-2.5 py-1 rounded-lg border shadow-inner ${getRecBadge(res.analysis_results?.recommendation)}`}>
                                   {res.analysis_results?.recommendation}
                                 </span>
                               )}
                             </div>
-                            <p className="text-slate-400 text-sm flex items-center gap-2 mt-2">
-                              <Mail className="w-3.5 h-3.5 text-slate-500" />
-                              {res.candidates?.email || 'No email'}
-                            </p>
-                            <p className="text-slate-400 text-sm flex items-center gap-2 mt-1">
-                              <Briefcase className="w-3.5 h-3.5 text-slate-500" />
-                              {res.jobs?.title || 'Unknown Job'}
-                            </p>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-3">
+                              <p className="text-slate-400 text-sm font-medium flex items-center gap-2 group-hover:text-slate-300 transition-colors">
+                                <Mail className="w-4 h-4 text-slate-500" />
+                                {res.candidates?.email || 'No email'}
+                              </p>
+                              <div className="hidden sm:block w-1 h-1 rounded-full bg-slate-700" />
+                              <p className="text-slate-400 text-sm font-medium flex items-center gap-2 group-hover:text-slate-300 transition-colors">
+                                <Briefcase className="w-4 h-4 text-slate-500" />
+                                {res.jobs?.title || 'Unknown Job'}
+                              </p>
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <div className="relative flex items-center justify-center w-16 h-16">
-                              <svg className="w-full h-full -rotate-90 drop-shadow-md">
+                            <div className="relative flex items-center justify-center w-20 h-20 group-hover:scale-105 transition-transform duration-500">
+                              <svg className="w-full h-full -rotate-90 drop-shadow-xl">
                                 <circle
-                                  cx="32" cy="32" r="28"
+                                  cx="40" cy="40" r="36"
                                   fill="transparent"
                                   stroke="currentColor"
                                   strokeWidth="6"
-                                  className="text-[#1E293B]"
+                                  className="text-white/5"
                                 />
                                 <circle
-                                  cx="32" cy="32" r="28"
+                                  cx="40" cy="40" r="36"
                                   fill="transparent"
                                   stroke="currentColor"
                                   strokeWidth="6"
-                                  strokeDasharray={175.9}
-                                  strokeDashoffset={175.9 - (175.9 * (res.analysis_results?.final_score || 0)) / 100}
+                                  strokeDasharray={226.2}
+                                  strokeDashoffset={226.2 - (226.2 * (res.analysis_results?.final_score || 0)) / 100}
                                   strokeLinecap="round"
-                                  className={res.analysis_results?.final_score && res.analysis_results.final_score >= 80 ? 'text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]' : res.analysis_results?.final_score && res.analysis_results.final_score >= 60 ? 'text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]'}
+                                  className={`transition-all duration-1000 ease-out ${res.analysis_results?.final_score && res.analysis_results.final_score >= 80 ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : res.analysis_results?.final_score && res.analysis_results.final_score >= 60 ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]' : 'text-rose-400 drop-shadow-[0_0_12px_rgba(251,113,133,0.5)]'}`}
                                 />
                               </svg>
-                              <span className="absolute text-base font-black text-white">{res.analysis_results?.final_score || 0}%</span>
+                              <span className="absolute text-xl font-black text-white drop-shadow-md">{res.analysis_results?.final_score || 0}<span className="text-xs text-slate-400 font-bold">%</span></span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mt-6 pt-6 border-t border-[#1E293B]/50 relative z-10">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mt-6 pt-6 border-t border-white/5 relative z-10">
                           <div className="flex items-center gap-8">
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t.score || 'Score'}</span>
-                              <div className={`text-3xl font-black bg-gradient-to-br bg-clip-text text-transparent ${getScoreColor(res.analysis_results?.final_score || 0)}`}>
-                                {res.status === 'analyzed' ? res.analysis_results?.final_score : '--'}
-                              </div>
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.skills || 'Skills Match'}</span>
+                              <div className="text-xl font-black text-white">{res.analysis_results?.skills_score || 0}%</div>
                             </div>
-                            <div className="w-px h-10 bg-[#1E293B]" />
+                            <div className="w-px h-10 bg-white/10" />
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{t.skills || 'Skills'}</span>
-                              <div className="text-xl font-bold text-slate-200">{res.analysis_results?.skills_score || 0}%</div>
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.project_impact || 'Impact'}</span>
+                              <div className="text-xl font-black text-white">{res.analysis_results?.project_impact_score || 0}%</div>
+                            </div>
+                            <div className="w-px h-10 bg-white/10 hidden sm:block" />
+                            <div className="flex flex-col hidden sm:flex">
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{t.cultural_fit || 'Cultural Fit'}</span>
+                              <div className="text-xl font-black text-white">{res.analysis_results?.cultural_fit_score || 0}%</div>
                             </div>
                           </div>
 
                           <div className="flex-1" />
 
-                          <div className="flex items-center gap-2 w-full md:w-auto">
+                          <div className="flex items-center gap-3 w-full md:w-auto">
                             {(res.status === 'failed' || res.status === 'pending') && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleRetryAnalysis(res.id); }}
                                 disabled={analyzingTask === res.id}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-inner active:scale-95"
                               >
-                                {analyzingTask === res.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                {analyzingTask === res.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                                 {t.retry_analysis || 'Retry'}
                               </button>
                             )}
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleDeleteCandidate(res.candidates.id, res.candidates.name); }}
                               disabled={isDeletingCandId === res.candidates.id}
-                              className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl transition-all disabled:opacity-50"
+                              className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-xl transition-all disabled:opacity-50 shadow-inner active:scale-95"
                               title={t.delete || 'Delete'}
                             >
                               {isDeletingCandId === res.candidates.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                             </button>
-                            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#0369A1] hover:bg-[#0EA5E9] text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-[#0369A1]/20">
+                            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] active:scale-95">
                               {t.view_details || 'View Details'}
                               <ArrowUpRight className="w-3.5 h-3.5" />
                             </button>

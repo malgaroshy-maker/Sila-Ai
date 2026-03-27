@@ -29,10 +29,9 @@ export class ReportsService {
     
     const executablePath = await chromium.executablePath();
     const browser = await puppeteer.launch({
-      headless: chromium.headless,
+      headless: true,
       executablePath: executablePath || process.env.PUPPETEER_EXECUTABLE_PATH,
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport
     });
     
     const page = await browser.newPage();
