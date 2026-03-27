@@ -164,20 +164,30 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
           </button>
         </div>
         
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-6">
           {connectedEmail && (
-            <div className={`bg-[#0369A1]/10 rounded-xl p-4 border border-[#0369A1]/20 flex items-center justify-between ${provider === 'microsoft' ? 'border-blue-500/30 bg-blue-500/5' : ''}`}>
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${provider === 'microsoft' ? 'bg-blue-500/10' : 'bg-[#0369A1]/20'}`}>
+            <div className={`rounded-2xl p-4 border flex items-center justify-between shadow-sm transition-all ${provider === 'microsoft' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
+              <div className="flex items-center gap-4">
+                <div className={`p-2.5 rounded-xl shadow-inner ${provider === 'microsoft' ? 'bg-white/10' : 'bg-indigo-500/20'}`}>
                   {provider === 'microsoft' ? (
-                    <img src="https://www.svgrepo.com/show/448234/microsoft.svg" alt="Microsoft" className="w-5 h-5" />
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 23 23" className="w-5 h-5 drop-shadow-sm">
+                        <path fill="#f35325" d="M1 1h10v10H1z"/>
+                        <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                        <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                        <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                     </svg>
                   ) : (
-                    <Mail className="w-5 h-5 text-[#0EA5E9]" />
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 drop-shadow-sm">
+                        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                        <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/>
+                        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+                     </svg>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 font-medium tracking-wider uppercase mb-0.5">{t.account_connected || 'Connected Account'}</p>
-                  <p className="text-sm font-bold text-white">{connectedEmail}</p>
+                  <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mb-0.5">{t.account_connected || 'Connected Account'}</p>
+                  <p className="text-sm font-black text-slate-200">{connectedEmail}</p>
                 </div>
               </div>
             </div>
@@ -322,30 +332,30 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-slate-300">{t.exceptional_threshold || 'Exceptional Score'}</label>
-                  <span className="text-xs font-bold text-[#0EA5E9] bg-[#0EA5E9]/10 px-2 py-0.5 rounded">{exceptionalThreshold}%</span>
+                  <label className="text-sm font-bold text-slate-300">{t.exceptional_threshold || 'Exceptional Score'}</label>
+                  <span className="text-xs font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-lg shadow-inner">{exceptionalThreshold}%</span>
                 </div>
                 <input 
                   type="range" min="70" max="100" step="1"
                   value={exceptionalThreshold}
                   onChange={(e) => setExceptionalThreshold(parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-[#1E293B] rounded-lg appearance-none cursor-pointer accent-[#0EA5E9]"
+                  className="w-full h-1.5 bg-[#1E293B] rounded-lg appearance-none cursor-pointer accent-indigo-500 shadow-inner"
                 />
-                <p className="text-[10px] text-slate-500 italic">{t.threshold_hint || 'Triggers email alerts for candidates scoring above this.'}</p>
+                <p className="text-[10px] font-medium text-slate-500 italic">{t.threshold_hint || 'Triggers email alerts for candidates scoring above this.'}</p>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-slate-300">{t.reject_threshold || 'Auto-Reject Below'}</label>
-                  <span className="text-xs font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded">{rejectThreshold}%</span>
+                  <label className="text-sm font-bold text-slate-300">{t.reject_threshold || 'Auto-Reject Below'}</label>
+                  <span className="text-xs font-black text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg shadow-inner">{rejectThreshold}%</span>
                 </div>
                 <input 
                   type="range" min="0" max="60" step="1"
                   value={rejectThreshold}
                   onChange={(e) => setRejectThreshold(parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-[#1E293B] rounded-lg appearance-none cursor-pointer accent-rose-500"
+                  className="w-full h-1.5 bg-[#1E293B] rounded-lg appearance-none cursor-pointer accent-rose-500 shadow-inner"
                 />
-                <p className="text-[10px] text-slate-500 italic">{t.reject_hint || 'Moves candidates below this score to rejected status.'}</p>
+                <p className="text-[10px] font-medium text-slate-500 italic">{t.reject_hint || 'Moves candidates below this score to rejected status.'}</p>
               </div>
 
               <div className="space-y-2">
@@ -416,17 +426,17 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
             </p>
           )}
 
-          <div className="pt-4 border-t border-[#1E293B] flex gap-3">
+          <div className="p-6 border-t border-white/5 bg-[#020617]/50 rounded-b-[2rem] flex gap-3">
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#0369A1] hover:bg-[#0369A1]/80 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg cursor-pointer transition-all shadow-lg shadow-[#0369A1]/20"
+              className="flex-[2] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-3.5 px-4 rounded-xl cursor-pointer transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] active:scale-[0.98]"
             >
-              {isSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.saving || 'Saving...'}</> : <><Save className="w-4 h-4" /> {t.save_settings || t.save || 'Save Settings'}</>}
+              {isSaving ? <><Loader2 className="w-5 h-5 animate-spin" /> {t.saving || 'Saving...'}</> : <><Save className="w-5 h-5" /> {t.save_settings || t.save || 'Save Settings'}</>}
             </button>
             <button 
               onClick={onClose}
-              className="flex-1 bg-[#020617] hover:bg-[#1E293B] text-slate-300 font-semibold py-2.5 px-4 rounded-lg cursor-pointer transition-all"
+              className="flex-1 bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 font-bold py-3.5 px-4 rounded-xl cursor-pointer transition-all active:scale-[0.98]"
             >
               {t.cancel || 'Cancel'}
             </button>

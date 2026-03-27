@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { JobsService } from '../jobs/jobs.service';
-import * as puppeteer from 'puppeteer';
+import * as puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
 @Injectable()
 export class ReportsService {
@@ -26,10 +27,12 @@ export class ReportsService {
 
     const html = this.buildHtmlTemplate(job, results || []);
     
+    const executablePath = await chromium.executablePath();
     const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      headless: chromium.headless,
+      executablePath: executablePath || process.env.PUPPETEER_EXECUTABLE_PATH,
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport
     });
     
     const page = await browser.newPage();

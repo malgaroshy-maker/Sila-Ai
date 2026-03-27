@@ -10,8 +10,10 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
+RUN npm install -g npm@latest
+
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund --loglevel=error
 
 COPY . .
 RUN npm run build
@@ -21,45 +23,8 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install Puppeteer dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    lsb-release \
-    wget \
-    xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
+# We no longer need the massive OS apt-get install block 
+# because we will use @sparticuz/chromium which brings its own binary
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
@@ -67,10 +32,6 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Verify build output
 RUN ls -R ./dist
-
-# Ensure Puppeteer downloads Chrome
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
-RUN npx puppeteer browsers install chrome
 
 EXPOSE 5000
 

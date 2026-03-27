@@ -547,6 +547,9 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
               <div className="relative group flex-1 md:flex-none">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-[#0EA5E9] transition-colors" />
                 <input 
+                  autoComplete="off" 
+                  spellCheck="false" 
+                  name="candidate-search"
                   type="text" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -825,34 +828,38 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                                 </span>
                               )}
                             </div>
-                            <p className="text-slate-400 text-sm flex items-center gap-2">
+                            <p className="text-slate-400 text-sm flex items-center gap-2 mt-2">
+                              <Mail className="w-3.5 h-3.5 text-slate-500" />
+                              {res.candidates?.email || 'No email'}
+                            </p>
+                            <p className="text-slate-400 text-sm flex items-center gap-2 mt-1">
                               <Briefcase className="w-3.5 h-3.5 text-slate-500" />
                               {res.jobs?.title || 'Unknown Job'}
                             </p>
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <div className="relative flex items-center justify-center w-14 h-14">
-                              <svg className="w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]">
+                            <div className="relative flex items-center justify-center w-16 h-16">
+                              <svg className="w-full h-full -rotate-90 drop-shadow-md">
                                 <circle
-                                  cx="28" cy="28" r="24"
+                                  cx="32" cy="32" r="28"
                                   fill="transparent"
                                   stroke="currentColor"
-                                  strokeWidth="4"
+                                  strokeWidth="6"
                                   className="text-[#1E293B]"
                                 />
                                 <circle
-                                  cx="28" cy="28" r="24"
+                                  cx="32" cy="32" r="28"
                                   fill="transparent"
                                   stroke="currentColor"
-                                  strokeWidth="4"
-                                  strokeDasharray={150.8}
-                                  strokeDashoffset={150.8 - (150.8 * (res.analysis_results?.final_score || 0)) / 100}
+                                  strokeWidth="6"
+                                  strokeDasharray={175.9}
+                                  strokeDashoffset={175.9 - (175.9 * (res.analysis_results?.final_score || 0)) / 100}
                                   strokeLinecap="round"
-                                  className={res.analysis_results?.final_score && res.analysis_results.final_score >= 80 ? 'text-emerald-500' : res.analysis_results?.final_score && res.analysis_results.final_score >= 60 ? 'text-amber-500' : 'text-rose-500'}
+                                  className={res.analysis_results?.final_score && res.analysis_results.final_score >= 80 ? 'text-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]' : res.analysis_results?.final_score && res.analysis_results.final_score >= 60 ? 'text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]'}
                                 />
                               </svg>
-                              <span className="absolute text-[13px] font-black text-white">{res.analysis_results?.final_score || 0}%</span>
+                              <span className="absolute text-base font-black text-white">{res.analysis_results?.final_score || 0}%</span>
                             </div>
                           </div>
                         </div>
