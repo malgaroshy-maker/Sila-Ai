@@ -64,7 +64,7 @@ export class ChatService {
         ragContext = matched
           .map(
             (m: any) =>
-              `[Candidate: ${nameMap.get(m.candidate_id) || 'Unknown'} - ID: ${m.candidate_id}]\n${m.content}`,
+              `[Candidate: ${nameMap.get(m.candidate_id) || 'Unknown'}]\n${m.content}`,
           )
           .join('\n---\n');
       }
