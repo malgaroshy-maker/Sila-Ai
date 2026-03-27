@@ -6,6 +6,7 @@ import {
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class ChatService {
@@ -14,6 +15,7 @@ export class ChatService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly aiService: AiService,
+    private readonly emailService: EmailService,
   ) {}
 
   async chat(
@@ -416,17 +418,16 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .from('applications')
           .update({ pipeline_stage: stage })
           .eq('id', application_id)
-          .select();
+          .select()
+          .maybeSingle();
         
-        this.logger.log(`Update result data: ${JSON.stringify(data)}`);
-        
-        const updatedApp = Array.isArray(data) ? data[0] : data;
-
         if (error) throw new Error(error.message);
+        if (!data) throw new Error(`Application ${application_id} not found.`);
+
         return {
           status: 'success',
           message: `Candidate moved to ${stage}.`,
-          data: updatedApp,
+          data: data,
         };
       }
 
@@ -437,14 +438,16 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .update({ requirements })
           .eq('id', job_id)
           .eq('user_email', userEmail)
-          .select();
+          .select()
+          .maybeSingle();
 
         if (error) throw new Error(error.message);
-        const updatedJob = Array.isArray(data) ? data[0] : data;
+        if (!data) throw new Error(`Job ${job_id} not found or access denied.`);
+        
         return {
           status: 'success',
           message: `Job requirements updated.`,
-          data: updatedJob,
+          data: data,
         };
       }
 
@@ -453,9 +456,12 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         call.name === 'send_rejection_email' ||
         call.name === 'cross_match_candidate' ||
         call.name === 'salary_benchmarking' ||
-        call.name === 'hiring_risk_assessment'
+        call.name === 'hiring_risk_assessment' ||
+        call.name === 'export_candidate_report'
       ) {
         const { application_id } = call.args;
+        this.logger.log(`Function: ${call.name} called for application: ${application_id} (User: ${userEmail})`);
+        
         // Fetch full candidate analysis and job details
         const { data: app, error } = await sb
           .from('analysis_results')
@@ -466,8 +472,14 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .eq('applications.jobs.user_email', userEmail)
           .maybeSingle();
 
-        if (error) throw new Error(`Database error: ${error.message}`);
-        if (!app) throw new Error('Could not find analysis data for this candidate or access denied.');
+        if (error) {
+          this.logger.error(`Database error for ${application_id}: ${error.message}`);
+          throw new Error(`Database error: ${error.message}`);
+        }
+        if (!app) {
+          this.logger.warn(`App not found for ${application_id} (User: ${userEmail})`);
+          throw new Error('Could not find analysis data for this candidate or access denied.');
+        }
 
         if (call.name === 'generate_interview_guide') {
           return {
@@ -484,16 +496,141 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         }
 
         if (call.name === 'send_rejection_email') {
+          const draft = {
+            to: app.applications.candidates.email,
+            subject: `Update on your application for ${app.applications.jobs.title}`,
+            body: `Dear ${app.applications.candidates.name}, thank you for your interest in the ${app.applications.jobs.title} role. While we were impressed with your ${app.tags?.slice(0, 2).join(' and ')}, we've decided to move forward with other candidates whose profiles more closely align with our current focus on ${app.applications.jobs.requirements?.slice(0, 2).join(' and ')}.`,
+          };
+
+          this.logger.log(`Actually sending rejection email to ${draft.to}`);
+          await this.emailService.sendEmail(
+            userEmail,
+            draft.to,
+            draft.subject,
+            draft.body,
+          );
+
           return {
             status: 'success',
-            draft: {
-              to: app.applications.candidates.email,
-              subject: `Update on your application for ${app.applications.jobs.title}`,
-              body: `Dear ${app.applications.candidates.name}, thank you for your interest in the ${app.applications.jobs.title} role. While we were impressed with your ${app.tags?.slice(0, 2).join(' and ')}, we've decided to move forward with other candidates whose profiles more closely align with our current focus on ${app.applications.jobs.requirements?.slice(0, 2).join(' and ')}.`,
-            },
-            message: `Rejection draft prepared for ${app.applications.candidates.name}.`,
+            draft,
+            message: `Rejection email successfully sent to ${app.applications.candidates.name}.`,
           };
         }
+
+        if (call.name === 'cross_match_candidate') {
+          const { data: otherJobs } = await sb
+            .from('jobs')
+            .select('title, description, requirements')
+            .eq('user_email', userEmail)
+            .neq('id', app.applications.job_id);
+
+          return {
+            status: 'success',
+            candidate: {
+              name: app.applications.candidates.name,
+              skills: app.tags,
+              score: app.final_score,
+            },
+            other_positions: otherJobs || [],
+            message: `Found ${otherJobs?.length || 0} other potential roles for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'salary_benchmarking') {
+          return {
+            status: 'success',
+            candidate_stats: {
+              name: app.applications.candidates.name,
+              role: app.applications.jobs.title,
+              skills: app.tags,
+              is_fresh_grad: app.is_fresh_graduate,
+              score: app.final_score,
+            },
+            message: `Salary benchmark data retrieved for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'hiring_risk_assessment') {
+          return {
+            status: 'success',
+            candidate: app.applications.candidates.name,
+            weaknesses: app.weaknesses,
+            flags: app.flags,
+            trajectory: app.career_trajectory,
+            message: `Risk assessment data compiled for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'export_candidate_report') {
+          const backendUrl =
+            process.env.BACKEND_URL ||
+            process.env.RENDER_EXTERNAL_URL ||
+            'https://ai-cv-scan.onrender.com';
+
+          return {
+            status: 'success',
+            application_id: application_id,
+            download_url: `${backendUrl}/reports/application/${application_id}/pdf`,
+            message: `Candidate report for ${app.applications.candidates.name} has been successfully generated. You can download it using the link provided.`,
+          };
+        }
+      }
+        if (!app) {
+          this.logger.warn(`App not found for ${application_id} (User: ${userEmail})`);
+          throw new Error('Could not find analysis data for this candidate or access denied.');
+        }
+
+        if (call.name === 'generate_interview_guide') {
+          return {
+            status: 'success',
+            guide_data: {
+              candidate: app.applications.candidates.name,
+              job: app.applications.jobs.title,
+              rubric: app.interview_questions,
+              weaknesses_to_probe: app.weaknesses,
+              focus_areas: app.tags,
+            },
+            message: `Interview guide generated for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'send_rejection_email') {
+          const draft = {
+            to: app.applications.candidates.email,
+            subject: `Update on your application for ${app.applications.jobs.title}`,
+            body: `Dear ${app.applications.candidates.name}, thank you for your interest in the ${app.applications.jobs.title} role. While we were impressed with your ${app.tags?.slice(0, 2).join(' and ')}, we've decided to move forward with other candidates whose profiles more closely align with our current focus on ${app.applications.jobs.requirements?.slice(0, 2).join(' and ')}.`,
+          };
+
+          this.logger.log(`Actually sending rejection email to ${draft.to}`);
+          await this.emailService.sendEmail(
+            userEmail,
+            draft.to,
+            draft.subject,
+            draft.body,
+          );
+
+          return {
+            status: 'success',
+            draft,
+            message: `Rejection email successfully sent to ${app.applications.candidates.name}.`,
+          };
+        }
+...
+      if (call.name === 'export_candidate_report') {
+        const { application_id } = call.args;
+        const backendUrl =
+          process.env.BACKEND_URL ||
+          process.env.RENDER_EXTERNAL_URL ||
+          'https://ai-cv-scan.onrender.com'; // Fallback to common production URL if available
+
+        return {
+          status: 'success',
+          application_id: application_id,
+          download_url: `${backendUrl}/reports/application/${application_id}/pdf`,
+          message:
+            'Candidate report generation initiated. You can download it using the link provided.',
+        };
+      }
 
         if (call.name === 'cross_match_candidate') {
           const { data: otherJobs } = await sb

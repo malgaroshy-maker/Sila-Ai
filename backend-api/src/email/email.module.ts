@@ -9,6 +9,6 @@ import { CandidatesModule } from '../candidates/candidates.module';
   imports: [CandidatesModule],
   providers: [EmailService, EmailProcessorService],
   controllers: [EmailController],
-  exports: [EmailProcessorService],
+  exports: [EmailProcessorService, EmailService],
 })
 export class EmailModule {}

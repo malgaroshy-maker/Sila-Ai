@@ -52,6 +52,115 @@ export class ReportsService {
     return Buffer.from(pdf);
   }
 
+  async generateCandidateReportPdf(
+    userEmail: string,
+    applicationId: string,
+  ): Promise<Buffer> {
+    const sb = this.supabaseService.getClient();
+    const { data: res, error } = await sb
+      .from('analysis_results')
+      .select(
+        '*, applications!inner(job_id, candidate_id, candidates(name, email), jobs!inner(title, description, requirements, user_email))',
+      )
+      .eq('application_id', applicationId)
+      .eq('applications.jobs.user_email', userEmail)
+      .maybeSingle();
+
+    if (error || !res)
+      throw new NotFoundException('Analysis result not found or access denied');
+
+    const html = this.buildCandidateHtmlTemplate(res);
+
+    const executablePath = await chromium.executablePath();
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: executablePath || process.env.PUPPETEER_EXECUTABLE_PATH,
+      args: chromium.args,
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
+    });
+
+    await browser.close();
+    return Buffer.from(pdf);
+  }
+
+  private buildCandidateHtmlTemplate(res: any) {
+    const isArabic = true;
+    const direction = isArabic ? 'rtl' : 'ltr';
+    const candidate = res.applications.candidates;
+    const job = res.applications.jobs;
+
+    return `
+      <!DOCTYPE html>
+      <html dir="${direction}" lang="${isArabic ? 'ar' : 'en'}">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+          body { font-family: 'Tajawal', sans-serif; padding: 40px; color: #1E293B; line-height: 1.6; }
+          .header { border-bottom: 2px solid #6366F1; padding-bottom: 20px; margin-bottom: 30px; }
+          .header h1 { color: #6366F1; margin: 0; font-size: 24px; }
+          .score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; }
+          .score-card { background: #F8FAFC; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0; text-align: center; }
+          .score-value { font-size: 24px; font-weight: bold; color: #6366F1; }
+          .section { margin-bottom: 30px; }
+          .section-title { font-weight: bold; font-size: 18px; color: #475569; margin-bottom: 10px; border-bottom: 1px solid #CBD5E1; }
+          ul { padding-right: 20px; }
+          .tag { display: inline-block; background: #E0E7FF; color: #4338CA; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin: 2px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>تقرير تقييم المرشح: ${candidate.name}</h1>
+          <p>الوظيفة المستهدفة: ${job.title}</p>
+        </div>
+
+        <div class="score-grid">
+          <div class="score-card">
+            <div>الدرجة النهائية</div>
+            <div class="score-value">${res.final_score}%</div>
+          </div>
+          <div class="score-card">
+            <div>الملاءمة الثقافية</div>
+            <div class="score-value">${res.cultural_fit_score}%</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">التوصية</div>
+          <p>${res.recommendation}</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">نقاط القوة</div>
+          <ul>${res.strengths.map((s: string) => `<li>${s}</li>`).join('')}</ul>
+        </div>
+
+        <div class="section">
+          <div class="section-title">نقاط الضعف</div>
+          <ul>${res.weaknesses.map((w: string) => `<li>${w}</li>`).join('')}</ul>
+        </div>
+
+        <div class="section">
+          <div class="section-title">المهارات والكلمات المفتاحية</div>
+          <div>${res.tags.map((t: string) => `<span class="tag">${t}</span>`).join('')}</div>
+        </div>
+
+        <div style="margin-top: 40px; font-size: 12px; color: #94A3B8; text-align: center;">
+          تم إنشاء هذا التقرير التفصيلي بواسطة نظام SILA للذكاء الاصطناعي
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
   private buildHtmlTemplate(job: any, results: any[]) {
     const isArabic = true; // Defaulting to Arabic for this project as requested
     const direction = isArabic ? 'rtl' : 'ltr';

@@ -258,10 +258,119 @@ export class EmailService {
       .select()
       .single();
 
-    if (error) {
-      this.logger.error('Store Provider Token Error:', error);
-      throw new InternalServerErrorException(error.message);
-    }
     return { success: true, email: body.emailAddress };
+  }
+
+  async sendEmail(
+    userEmail: string,
+    to: string,
+    subject: string,
+    body: string,
+  ): Promise<any> {
+    const sb = this.supabaseService.getClient();
+    // Find a connected email account for this user
+    const { data: account, error: accountError } = await sb
+      .from('email_accounts')
+      .select('*')
+      .eq('user_email', userEmail)
+      .limit(1)
+      .maybeSingle();
+
+    if (accountError || !account) {
+      throw new Error('No connected email account found for this user.');
+    }
+
+    if (account.provider === 'google') {
+      return this.sendGmail(account, to, subject, body);
+    } else if (account.provider === 'microsoft') {
+      return this.sendOutlook(account, to, subject, body);
+    }
+  }
+
+  private async sendGmail(
+    account: any,
+    to: string,
+    subject: string,
+    body: string,
+  ) {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+    oauth2Client.setCredentials({
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+    const messageParts = [
+      `To: ${to}`,
+      'Content-Type: text/html; charset=utf-8',
+      'MIME-Version: 1.0',
+      `Subject: ${utf8Subject}`,
+      '',
+      body,
+    ];
+    const message = messageParts.join('\n');
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw: encodedMessage },
+    });
+    return { success: true };
+  }
+
+  private async sendOutlook(
+    account: any,
+    to: string,
+    subject: string,
+    body: string,
+  ) {
+    let accessToken = account.access_token;
+    try {
+      accessToken = await this.refreshMicrosoftToken(account);
+    } catch (e) {
+      this.logger.warn('Failed to refresh MS token for sending', e);
+    }
+
+    const response = await fetch(
+      'https://graph.microsoft.com/v1.0/me/sendMail',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            subject: subject,
+            body: {
+              contentType: 'HTML',
+              content: body,
+            },
+            toRecipients: [
+              {
+                emailAddress: {
+                  address: to,
+                },
+              },
+            ],
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Outlook Send Error: ${response.status} ${await response.text()}`,
+      );
+    }
+    return { success: true };
   }
 }
