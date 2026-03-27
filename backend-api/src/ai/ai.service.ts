@@ -161,9 +161,6 @@ export class AiService {
     responseSchema?: any,
     tools?: any[],
   ) {
-    const settings = await this.getSettings(userEmail);
-    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${settings.model.replace('models/', '')}:generateContent?key=${settings.apiKey}`;
-
     const contents =
       typeof promptOrContents === 'string'
         ? [{ parts: [{ text: promptOrContents }] }]
@@ -193,16 +190,39 @@ export class AiService {
       });
     }
 
-    // Phase 8.4: AI Context Caching (TTL-based)
-    // Cache Key: Hash of (Model + Body + userEmail)
+    const settings = await this.getSettings(userEmail);
+    const fallbackModel = 'models/gemini-3.1-flash-lite-preview';
+    
+    // Attempt primary model, fallback if 429
+    try {
+      return await this.executeGeminiCall(settings.model, userEmail, settings, body, tools);
+    } catch (error: any) {
+      if (error.status === 429 && settings.model !== fallbackModel) {
+        this.logger.warn(`Quota exceeded for ${settings.model}, retrying with ${fallbackModel}`);
+        return await this.executeGeminiCall(fallbackModel, userEmail, settings, body, tools);
+      }
+      throw error;
+    }
+  }
+
+  private async executeGeminiCall(
+    modelId: string,
+    userEmail: string,
+    settings: any,
+    body: any,
+    tools?: any[],
+  ) {
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/${modelId.replace('models/', '')}:generateContent?key=${settings.apiKey}`;
+    
+    // Phase 8.4: AI Context Caching
     const cacheKey = crypto
       .createHash('sha256')
-      .update(JSON.stringify({ model: settings.model, body, userEmail }))
+      .update(JSON.stringify({ model: modelId, body, userEmail }))
       .digest('hex');
 
     const cached = this.responseCache.get(cacheKey);
     if (cached && cached.expiry > Date.now()) {
-      this.logger.log(`AI Cache Hit for ${userEmail} [${settings.model}]`);
+      this.logger.log(`AI Cache Hit for ${userEmail} [${modelId}]`);
       return cached.result;
     }
 
@@ -212,23 +232,15 @@ export class AiService {
       body: JSON.stringify(body),
     });
 
-    // Capture Headers
-    await this.updateLiveQuota(
-      settings.apiKey,
-      settings.model,
-      response.headers,
-    );
+    await this.updateLiveQuota(settings.apiKey, modelId, response.headers);
 
     const result = await response.json();
     if (!response.ok) {
-      // (Error handling remains the same...)
-      if (response.status === 429) {
-        // ...
-      }
-      // ...
+        const error = new Error(`AI Analysis failed: ${result?.error?.message || 'Unknown Error'}`);
+        (error as any).status = response.status;
+        throw error;
     }
 
-    // Cache the successful result for 15 minutes (900,000 ms)
     this.responseCache.set(cacheKey, {
       result,
       expiry: Date.now() + 15 * 60 * 1000,
