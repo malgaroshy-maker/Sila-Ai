@@ -398,11 +398,18 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       });
       
       if (res.ok) {
-        setResults(results.filter(r => r.candidate_id !== candidateId));
+        // Success: Update local state to remove applications of this candidate
+        setResults(prev => prev.filter(r => r.candidate_id !== candidateId));
+        
         if (selectedCandidate?.candidate_id === candidateId) {
           setSelectedCandidate(null);
         }
+      } else {
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('Delete candidate failed on server', errorData);
+        alert(`Failed to delete candidate: ${errorData.message || 'Server error'}`);
       }
+
     } catch (e) {
       console.error('Delete candidate failed', e);
     } finally {
@@ -904,7 +911,14 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                               </button>
                             )}
                             <button 
-                              onClick={(e) => { e.stopPropagation(); handleDeleteCandidate(res.candidates.id, res.candidates.name); }}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (res.candidates?.id) {
+                                  handleDeleteCandidate(res.candidates.id, res.candidates.name); 
+                                } else {
+                                  alert('Candidate data is missing or corrupted.');
+                                }
+                              }}
                               disabled={isDeletingCandId === res.candidates.id}
                               className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-xl transition-all disabled:opacity-50 shadow-inner active:scale-95"
                               title={t.delete || 'Delete'}
@@ -1254,10 +1268,16 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                   </div>
                   <div className="flex gap-3">
                     <button 
-                      onClick={() => handleDeleteCandidate(
-                        selectedCandidate.candidates?.id!, 
-                        selectedCandidate.candidates?.name!
-                      )}
+                      onClick={() => {
+                        if (selectedCandidate.candidates?.id) {
+                          handleDeleteCandidate(
+                            selectedCandidate.candidates.id, 
+                            selectedCandidate.candidates.name
+                          );
+                        } else {
+                          alert('Candidate data is missing or corrupted.');
+                        }
+                      }}
                       className="px-6 py-2.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />

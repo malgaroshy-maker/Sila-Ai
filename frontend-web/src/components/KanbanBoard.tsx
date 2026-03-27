@@ -257,9 +257,10 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: {
           {onDelete && !isOverlay && (
             <button
               onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(candidate.id, candidate.name);
+                e.stopPropagation(); 
+                if (candidate.id) {
+                  onDelete(candidate.id, candidate.name); 
+                }
               }}
               className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-600 hover:text-red-500 transition-colors pointer-events-auto"
               title="Delete Candidate"

@@ -838,6 +838,7 @@ export class CandidatesService {
       .single();
 
     if (fetchError || !candidate) {
+      this.logger.error(`Candidate fetch error for ${candidateId} (User: ${userEmail}): ${fetchError?.message || 'Not Found'}`);
       throw new NotFoundException('Candidate not found or unauthorized');
     }
 
@@ -872,18 +873,24 @@ export class CandidatesService {
       .eq('candidate_id', candidateId);
 
     // Now delete the candidate record (CASCADE should handle analysis_results and applications)
-    const { error: deleteError } = await sb
+    const { error: deleteError, count: deletedRows } = await sb
       .from('candidates')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('id', candidateId)
       .eq('user_email', userEmail);
 
     if (deleteError) {
-      this.logger.error(`Database deletion error: ${deleteError.message}`);
+      this.logger.error(`Database deletion error for candidate ${candidateId}: ${deleteError.message}`);
       throw new InternalServerErrorException(
         `Failed to delete candidate: ${deleteError.message}`,
       );
     }
+
+    if (deletedRows === 0) {
+      this.logger.warn(`No rows deleted for candidate ${candidateId} (User: ${userEmail})`);
+    }
+
+    this.logger.log(`Successfully deleted candidate ${candidateId} and its associated records.`);
 
     return { success: true };
   }
