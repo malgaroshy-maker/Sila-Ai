@@ -695,28 +695,63 @@ export class CandidatesService {
       throw new NotFoundException('Candidate not found');
     }
 
-    // 2. If it's a Gmail attachment, download from Gmail API
+    // 2. If it's an email attachment, download from API
     if (candidate.gmail_message_id && candidate.gmail_attachment_id) {
       this.logger.log(
-        `Fetching Gmail attachment for ${candidate.email} (msg: ${candidate.gmail_message_id})`,
+        `Fetching email attachment for ${candidate.email} (msg: ${candidate.gmail_message_id})`,
       );
 
-      // Get Gmail account for this user
+      // Get email account for this user
       const { data: accounts } = await sb
         .from('email_accounts')
         .select('*')
         .eq('user_email', userEmail)
-        .eq('provider', 'google');
+        .in('provider', ['google', 'microsoft']);
 
       const account = accounts?.[0];
       if (!account) {
         this.logger.warn(
-          `No Gmail account found to proxy download for ${userEmail}`,
+          `No email account found to proxy download for ${userEmail}`,
         );
         // Fallback to cv_url if exists
         return { url: candidate.cv_url };
       }
 
+      if (account.provider === 'microsoft') {
+        try {
+          // MS Graph uses access_token
+          let accessToken = account.access_token;
+
+          const attachmentsRes = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${candidate.gmail_message_id}/attachments/${candidate.gmail_attachment_id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          
+          if (!attachmentsRes.ok) {
+            throw new Error(`Graph API error: ${attachmentsRes.status}`);
+          }
+          
+          const attachData = await attachmentsRes.json();
+          const b64Data = attachData.contentBytes;
+          if (!b64Data) {
+             throw new Error('No contentBytes returned from MS Graph API');
+          }
+
+          const buffer = Buffer.from(b64Data, 'base64');
+          
+          this.logger.log(`Successfully proxy-downloaded MS attachment ${buffer.length} bytes for ${candidate.email}`);
+
+          return {
+            buffer,
+            filename: `CV_${candidate.name.replace(/\s+/g, '_')}_Original.pdf`,
+            mimetype: 'application/pdf', 
+          };
+        } catch (err: any) {
+          this.logger.error(`Microsoft Graph download proxy failed: ${err.message}`);
+          return { url: candidate.cv_url };
+        }
+      }
+
+      // Google Provider
       const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,

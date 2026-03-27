@@ -45,7 +45,7 @@ export function SyncStatus({ userEmail, onComplete }: SyncStatusProps) {
 
     eventSource.onerror = (err) => {
       console.error('SSE Connection Error:', err);
-      eventSource.close();
+      // Remove eventSource.close() to allow native browser auto-reconnect on network drop
     };
 
     return () => eventSource.close();
@@ -69,10 +69,10 @@ export function SyncStatus({ userEmail, onComplete }: SyncStatusProps) {
   
   const getStatusIcon = () => {
     switch (progress.status) {
-      case 'completed': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'failed': return <AlertCircle className="w-5 h-5 text-red-500" />;
-      case 'stopped': return <StopCircle className="w-5 h-5 text-orange-500" />;
-      default: return <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />;
+      case 'completed': return <CheckCircle2 className="w-5 h-5 text-emerald-400" />;
+      case 'failed': return <AlertCircle className="w-5 h-5 text-rose-400" />;
+      case 'stopped': return <StopCircle className="w-5 h-5 text-amber-500" />;
+      default: return <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin" />;
     }
   };
 
@@ -88,38 +88,47 @@ export function SyncStatus({ userEmail, onComplete }: SyncStatusProps) {
   };
 
   return (
-    <div className="fixed bottom-6 end-6 z-50 w-80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-5 duration-300">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {getStatusIcon()}
-          <span className="font-semibold text-sm truncate max-w-[180px]">{getStatusText()}</span>
+    <div className="fixed bottom-6 end-6 z-[100] w-80 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] p-5 animate-in slide-in-from-bottom-8 fade-in duration-500">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/5 rounded-xl border border-white/5 shadow-inner">
+            {getStatusIcon()}
+          </div>
+          <span className="font-bold text-sm text-white tracking-wide truncate max-w-[160px]">{getStatusText()}</span>
         </div>
         {progress.status !== 'completed' && progress.status !== 'failed' && progress.status !== 'stopped' && (
           <button 
             onClick={stopSync} 
-            className="p-1 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full text-slate-400 hover:text-red-500 transition-colors group"
+            className="p-1.5 hover:bg-rose-500/20 rounded-full text-slate-500 hover:text-rose-400 transition-colors group"
             title={t('sync_stop')}
           >
-            <StopCircle className="w-5 h-5" />
+            <StopCircle className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      <div className="space-y-2">
-        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+      <div className="space-y-3">
+        <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden shadow-inner">
           <div 
-            className={`h-full transition-all duration-500 ease-out ${
-              progress.status === 'failed' ? 'bg-red-500' : 
-              progress.status === 'completed' ? 'bg-green-500' : 'bg-blue-600'
+            className={`h-full transition-all duration-700 ease-out shadow-[0_0_10px_currentColor] ${
+              progress.status === 'failed' ? 'bg-rose-500 text-rose-500' : 
+              progress.status === 'completed' ? 'bg-emerald-400 text-emerald-400' : 'bg-indigo-500 text-indigo-500'
             }`}
             style={{ width: `${Math.max(percentage, 5)}%` }}
           />
         </div>
-        <div className="flex justify-between text-[10px] text-slate-500 font-medium">
-          <span>{percentage.toFixed(0)}%</span>
-          <span>{progress.processed} / {progress.total}</span>
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-black tracking-wider text-slate-400 uppercase">
+            {progress.processed} / {progress.total} {t('processed') || 'PROCESSED'}
+          </span>
+          <span className={`text-[10px] font-black ${
+            progress.status === 'failed' ? 'text-rose-400' : 
+            progress.status === 'completed' ? 'text-emerald-400' : 'text-indigo-400'
+          }`}>
+            {percentage.toFixed(0)}%
+          </span>
         </div>
-        <p className="text-[11px] text-slate-400 truncate mt-1">
+        <p className="text-[11px] text-slate-500 font-medium truncate">
           {progress.message}
         </p>
       </div>

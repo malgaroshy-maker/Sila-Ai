@@ -128,7 +128,7 @@ export class EmailController {
 
     // Manual sync always forces processing regardless of internal cooldown
     // Run in background (fire-and-forget) to prevent browser retries/timeouts
-    this.emailProcessorService.handleCron(true).catch(err => {
+    this.emailProcessorService.handleCron(true, userEmail).catch(err => {
       console.error('Manual sync background error:', err);
     });
     return { message: 'Sync triggered successfully in background', blocked: false };

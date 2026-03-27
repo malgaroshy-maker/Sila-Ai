@@ -1,0 +1,300 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History } from 'lucide-react';
+
+interface Model {
+  model_id: string;
+  display_name: string;
+  category: string;
+  is_preview?: boolean;
+  badge?: string;
+}
+
+export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { isOpen: boolean, onClose: () => void, userEmail: string, t?: Record<string, string> }) {
+  const [apiKey, setApiKey] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const [availableModels, setAvailableModels] = useState<Model[]>([]);
+  const [aiMode, setAiMode] = useState<'balanced' | 'strict'>('balanced');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [exceptionalThreshold, setExceptionalThreshold] = useState(90);
+  const [rejectThreshold, setRejectThreshold] = useState(50);
+  const [duplicateStrategy, setDuplicateStrategy] = useState<'update' | 'skip' | 'new'>('update');
+  const [analysisLanguage, setAnalysisLanguage] = useState<'BH' | 'EN' | 'AR'>('BH');
+  const [chatLanguage, setChatLanguage] = useState<'BH' | 'EN' | 'AR'>('BH');
+  const [evaluationFocus, setEvaluationFocus] = useState<'balanced' | 'technical' | 'career'>('balanced');
+  const [syncFrequency, setSyncFrequency] = useState<'manual' | '1h' | '6h' | '24h'>('6h');
+  const [maskPii, setMaskPii] = useState(true);
+  
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+  const [isModelsLoading, setIsModelsLoading] = useState(false);
+  const isLoading = isSettingsLoading || isModelsLoading;
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen && userEmail) {
+      fetchSettings();
+    }
+  }, [isOpen, userEmail]);
+
+  const fetchSettings = async () => {
+    if (!userEmail) return;
+    console.log('Fetching settings for:', userEmail);
+    setIsSettingsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/settings`, {
+        headers: { 'x-user-email': userEmail }
+      });
+      const data = await res.json();
+      setApiKey(data.gemini_api_key || '');
+      setSelectedModel(data.gemini_model || '');
+      
+      if (data) {
+        setAiMode(data.ai_mode || 'balanced');
+        setWebhookUrl(data.webhook_url || '');
+        setExceptionalThreshold(parseInt(data.exceptional_threshold) || 90);
+        setRejectThreshold(parseInt(data.reject_threshold) || 50);
+        setDuplicateStrategy(data.duplicate_strategy || 'update');
+        setAnalysisLanguage(data.analysis_language || 'BH');
+        setChatLanguage(data.chat_language || 'BH');
+        setEvaluationFocus(data.evaluation_focus || 'balanced');
+        setSyncFrequency(data.sync_frequency || '6h');
+        setMaskPii(data.mask_pii !== false); // Default to true
+      }
+      
+      if (data.gemini_api_key) {
+        fetchModels(data.gemini_api_key);
+      }
+    } catch (e) {
+      console.error('Failed to fetch settings', e);
+    } finally {
+      setIsSettingsLoading(false);
+    }
+  };
+
+  const fetchModels = async (key: string) => {
+    // We now fetch the curated catalog from our own backend
+    setIsModelsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/ai/models`, {
+        headers: { 'x-user-email': userEmail }
+      });
+      if (!res.ok) throw new Error('Failed to fetch model catalog');
+      const data = await res.json();
+      
+      if (Array.isArray(data)) {
+        setAvailableModels(data);
+        const modelExists = data.some(m => m.model_id === selectedModel);
+        if (data.length > 0 && (!selectedModel || !modelExists)) {
+          if (!selectedModel) {
+            setSelectedModel(data[0].model_id);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch models', e);
+    } finally {
+      setIsModelsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!apiKey) {
+      setMessage('API Key is required to save settings.');
+      return;
+    }
+    setIsSaving(true);
+    setMessage('');
+    try {
+      const res = await fetch(`${API_URL}/settings/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+        body: JSON.stringify({
+          gemini_api_key: apiKey,
+          gemini_model: selectedModel,
+          ai_mode: aiMode,
+          webhook_url: webhookUrl,
+          exceptional_threshold: exceptionalThreshold.toString(),
+          reject_threshold: rejectThreshold.toString(),
+          duplicate_strategy: duplicateStrategy,
+          analysis_language: analysisLanguage,
+          chat_language: chatLanguage,
+          evaluation_focus: evaluationFocus,
+          sync_frequency: syncFrequency,
+          mask_pii: maskPii
+        })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Failed to save');
+      }
+      
+      setMessage('Settings saved successfully!');
+      // Trigger a refresh event for the QuotaMonitor component to update immediately
+      window.dispatchEvent(new CustomEvent('refresh-quota'));
+      setTimeout(() => onClose(), 1500);
+    } catch (e: any) {
+      setMessage(`Save failed: ${e.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0F172A] rounded-2xl w-full max-w-md shadow-2xl border border-[#1E293B] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-[#1E293B] flex justify-between items-center">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <span className="bg-[#0369A1]/20 text-[#0EA5E9] p-2 rounded-lg">
+              <Cpu className="w-5 h-5" />
+            </span>
+            {t.settings || 'Settings'}
+          </h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-white p-2 rounded-lg cursor-pointer transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-5">
+          {userEmail && (
+            <div className="bg-[#0369A1]/10 rounded-xl p-4 border border-[#0369A1]/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#0369A1]/20 p-2 rounded-lg">
+                  <Mail className="w-5 h-5 text-[#0EA5E9]" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-medium tracking-wider uppercase mb-0.5">{t.account_connected || 'Connected Account'}</p>
+                  <p className="text-sm font-bold text-white">{userEmail}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section: AI Configuration */}
+          <div className="space-y-4 pt-2">
+            <h3 className="text-xs font-bold text-[#0EA5E9] uppercase tracking-widest flex items-center gap-2">
+              <Cpu className="w-4 h-4" />
+              {t.ai_config || 'AI Configuration'}
+            </h3>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
+                <Key className="w-4 h-4 text-slate-400" />
+                {t.api_key || 'Gemini API Key'}
+              </label>
+                <input 
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  onBlur={() => fetchModels(apiKey)}
+                  placeholder="AIzaSy..."
+                  className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-2 focus:ring-[#0369A1] outline-none transition-all placeholder-slate-500"
+                />
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-[#0EA5E9] hover:text-[#38BDF8] flex items-center gap-1 mt-1 transition-colors w-fit"
+                >
+                  <Key className="w-3 h-3" />
+                  {t.get_api_key_link || t.api_key_hint || 'Get your API key from Google AI Studio'}
+                </a>
+              </div>
+
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-2">
+                <label className="block text-sm font-medium text-slate-300 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-slate-400" />
+                  {t.ai_model || 'AI Model'}
+                </label>
+                <select 
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-[#1E293B] bg-[#020617] text-white focus:ring-1 focus:ring-[#0369A1] outline-none transition-all cursor-pointer"
+                >
+                  {availableModels.length > 0 ? (
+                    <>
+                      {/* Grouping by Category */}
+                      {Array.from(new Set(availableModels.map(m => m.category))).map(cat => (
+                        <optgroup key={cat} label={t[`category_${cat.toLowerCase().replace(/\s+/g, '_')}`] || cat} className="bg-[#0F172A] text-[#0EA5E9] font-bold">
+                          {availableModels.filter(m => m.category === cat).map(m => (
+                            <option key={m.model_id} value={m.model_id} className="text-white bg-[#020617]">
+                              {m.display_name} {m.is_preview ? `(${t.preview || 'Preview'})` : ''} {m.badge ? `(${t[`badge_${m.badge.toLowerCase()}`] || m.badge})` : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </>
+                  ) : (
+                    <option value="models/gemini-3.1-flash-lite-preview">gemini-3.1-flash (Curating...)</option>
+                  )}
+                </select>
+              </div>
+              <button 
+                type="button"
+                onClick={() => fetchModels(apiKey)}
+                disabled={isLoading || !apiKey}
+                className="p-2.5 bg-[#1E293B] hover:bg-[#334155] rounded-lg text-slate-300 transition-colors self-end h-[42px]"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.analysis_language || 'Analysis Lang'}</label>
+                <select 
+                  value={analysisLanguage}
+                  onChange={(e) => setAnalysisLanguage(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+                >
+                  <option value="BH">{t.lang_bh || 'Bilingual'}</option>
+                  <option value="EN">{t.lang_en || 'English'}</option>
+                  <option value="AR">{t.lang_ar || 'Arabic'}</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.chat_language || 'Chat Lang'}</label>
+                <select 
+                  value={chatLanguage}
+                  onChange={(e) => setChatLanguage(e.target.value as any)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+                >
+                  <option value="BH">{t.lang_bh || 'Bilingual'}</option>
+                  <option value="EN">{t.lang_en || 'English'}</option>
+                  <option value="AR">{t.lang_ar || 'Arabic'}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.evaluation_focus || 'AI Evaluation Focus'}</label>
+              <select 
+                value={evaluationFocus}
+                onChange={(e) => setEvaluationFocus(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+              >
+                <option value="balanced">{t.focus_balanced || 'Balanced'}</option>
+                <option value="technical">{t.focus_technical || 'Technical'}</option>
+                <option value="career">{t.focus_career || 'Career'}</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300">{t.ai_behavior || 'AI Behavior Mode'}</label>
+              <div className="flex rounded-lg border border-[#1E293B] overflow-hidden p-1 bg-[#020617]">
+                <button
+                  onClick={() => setAiMode('balanced')}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${aiMode === 'balanced' ? 'bg-[#0369A1] text-white' : 'text-slate-400'}`}
+                >
+                  {t.balanced || 'Balanced'}
+                </button>
+                <button
+                  onClick={() => setAiMode('strict')}
+                  className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${aiMode === 'strict' ? 'bg-rose-500 text-white' : 'text-slate-400'}`}
+                >

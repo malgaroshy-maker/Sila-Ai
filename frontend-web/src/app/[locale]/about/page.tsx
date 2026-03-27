@@ -57,24 +57,24 @@ function AboutContent() {
       </div>
 
       {/* Floating Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#020617]/60 backdrop-blur-3xl border-b border-white/5 py-4 px-6">
+      <nav className="sticky top-0 z-50 bg-[#020617]/60 backdrop-blur-3xl border-b border-white/5 py-4 px-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link 
             href={backHref} 
-            className="flex items-center gap-3 group px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all active:scale-95"
+            className="flex items-center gap-3 group px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all active:scale-95 shadow-sm hover:shadow-md"
           >
-            <div className="p-1.5 bg-indigo-600 rounded-lg shadow-[0_0_20px_rgba(79,70,229,0.5)]">
-              <ArrowLeft size={16} className={`text-white transition-transform ${isRtl ? 'rotate-180 group-hover:translate-x-1.5' : 'group-hover:-translate-x-1.5'}`} />
+            <div className="p-1.5 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 transition-colors shadow-inner">
+              <ArrowLeft size={16} className={`text-indigo-400 transition-transform ${isRtl ? 'rotate-180 group-hover:translate-x-1' : 'group-hover:-translate-x-1'}`} />
             </div>
-            <span className="font-black text-slate-300 group-hover:text-white text-xs uppercase tracking-widest hidden sm:inline">
+            <span className="font-bold text-slate-300 group-hover:text-white text-xs uppercase tracking-widest hidden sm:inline transition-colors">
               {backLabel}
             </span>
           </Link>
 
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+            <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner">
               <Sparkles className="text-indigo-400 h-4 w-4" />
-              <span className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase">Neural Intelligence</span>
+              <span className="text-[10px] font-black tracking-[0.2em] text-indigo-300/80 uppercase">Neural Intelligence</span>
             </div>
             <LanguageSwitcher />
           </div>
@@ -101,31 +101,31 @@ function AboutContent() {
       </header>
 
       {/* Grid: The Pulse of ARIS */}
-      <section className="py-32 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <div className="group relative p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700">
-              <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-10 border border-indigo-500/20 group-hover:scale-110 transition-transform">
-                <Cpu className="text-indigo-400 h-8 w-8" />
+      <section className="py-24 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="group relative p-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.04] hover:border-indigo-500/30 transition-all duration-500 shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-2">
+              <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-8 border border-indigo-500/20 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
+                <Cpu className="text-indigo-400 h-7 w-7" />
               </div>
-              <h3 className="text-3xl font-black mb-6 tracking-tight text-white">{t('feature_ai_title')}</h3>
-              <p className="text-slate-400 text-lg leading-relaxed font-medium">{t('feature_ai_desc')}</p>
+              <h3 className="text-2xl font-black mb-4 tracking-tight text-slate-200 group-hover:text-white transition-colors">{t('feature_ai_title')}</h3>
+              <p className="text-slate-400 text-base leading-relaxed font-medium">{t('feature_ai_desc')}</p>
             </div>
 
-            <div className="group relative p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700">
-              <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-10 border border-emerald-500/20 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="text-emerald-400 h-8 w-8" />
+            <div className="group relative p-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.04] hover:border-emerald-500/30 transition-all duration-500 shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-2">
+              <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-8 border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all">
+                <ShieldCheck className="text-emerald-400 h-7 w-7" />
               </div>
-              <h3 className="text-3xl font-black mb-6 tracking-tight text-white">{t('feature_security_title')}</h3>
-              <p className="text-slate-400 text-lg leading-relaxed font-medium">{t('feature_security_desc')}</p>
+              <h3 className="text-2xl font-black mb-4 tracking-tight text-slate-200 group-hover:text-white transition-colors">{t('feature_security_title')}</h3>
+              <p className="text-slate-400 text-base leading-relaxed font-medium">{t('feature_security_desc')}</p>
             </div>
 
-            <div className="group relative p-12 bg-white/[0.02] border border-white/5 rounded-[3.5rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700">
-              <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-10 border border-blue-500/20 group-hover:scale-110 transition-transform">
-                <LayoutTemplate className="text-blue-400 h-8 w-8" />
+            <div className="group relative p-10 bg-white/[0.02] border border-white/5 rounded-[2.5rem] hover:bg-white/[0.04] hover:border-blue-500/30 transition-all duration-500 shadow-lg hover:shadow-blue-500/10 hover:-translate-y-2">
+              <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-8 border border-blue-500/20 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all">
+                <LayoutTemplate className="text-blue-400 h-7 w-7" />
               </div>
-              <h3 className="text-3xl font-black mb-6 tracking-tight text-white">{t('feature_pipeline_title')}</h3>
-              <p className="text-slate-400 text-lg leading-relaxed font-medium">{t('feature_pipeline_desc')}</p>
+              <h3 className="text-2xl font-black mb-4 tracking-tight text-slate-200 group-hover:text-white transition-colors">{t('feature_pipeline_title')}</h3>
+              <p className="text-slate-400 text-base leading-relaxed font-medium">{t('feature_pipeline_desc')}</p>
             </div>
           </div>
         </div>
@@ -149,51 +149,51 @@ function AboutContent() {
       </section>
 
       {/* Visionaries: Double Column Impact */}
-      <section className="py-32 px-6">
+      <section className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-24 space-y-4 text-center lg:text-start">
-            <h2 className="text-6xl md:text-8xl font-black tracking-tighter text-white">{t('footer_crafted')}</h2>
-            <p className="text-slate-500 font-black tracking-[0.5em] uppercase text-xs italic">Architects of Cognitive Recruitment</p>
+          <div className="mb-20 space-y-3 text-center lg:text-start">
+            <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-slate-100">{t('footer_crafted')}</h2>
+            <p className="text-slate-500 font-bold tracking-[0.4em] uppercase text-xs">Architects of Cognitive Recruitment</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             {/* Developer Card */}
-            <div className="group relative p-12 lg:p-20 bg-white/[0.01] border border-white/5 rounded-[4.5rem] hover:bg-white/[0.03] hover:border-white/10 transition-all duration-700 overflow-hidden">
-              <div className="absolute top-12 end-12">
-                <div className="px-5 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-widest uppercase italic shadow-lg shadow-indigo-500/10">
+            <div className="group relative p-10 lg:p-16 bg-white/[0.02] border border-white/5 rounded-[3rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-500 overflow-hidden shadow-xl">
+              <div className="absolute top-8 end-8">
+                <div className="px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold tracking-widest uppercase shadow-sm">
                   Engineering Lead
                 </div>
               </div>
-              <div className="space-y-12 relative z-10">
-                <div className="w-24 h-24 bg-indigo-600/20 rounded-[2.5rem] flex items-center justify-center border border-indigo-500/30 group-hover:bg-indigo-600 transition-all duration-500 shadow-2xl shadow-indigo-500/20">
-                  <Terminal size={40} className="text-white" />
+              <div className="space-y-10 relative z-10">
+                <div className="w-20 h-20 bg-indigo-600/10 rounded-[2rem] flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-600/30 transition-all duration-500 shadow-lg">
+                  <Terminal size={32} className="text-indigo-400 group-hover:text-white transition-colors" />
                 </div>
-                <div className="space-y-4">
-                  <h4 className="text-5xl font-black text-white tracking-tight">{t('developer_name')}</h4>
-                  <p className="text-indigo-400 font-black tracking-[0.3em] uppercase text-xs">{t('developer')}</p>
+                <div className="space-y-3">
+                  <h4 className="text-4xl lg:text-5xl font-black text-slate-100 tracking-tight">{t('developer_name')}</h4>
+                  <p className="text-indigo-400 font-bold tracking-[0.2em] uppercase text-[11px]">{t('developer')}</p>
                 </div>
-                <p className="text-2xl text-slate-400 leading-relaxed font-medium italic border-start-8 border-indigo-500/30 ps-10">
+                <p className="text-xl text-slate-400 leading-relaxed font-medium border-start-4 border-indigo-500/30 ps-8">
                   {t('developer_desc')}
                 </p>
               </div>
             </div>
 
             {/* Strategic Thinker Card */}
-            <div className="group relative p-12 lg:p-20 bg-white/[0.01] border border-white/5 rounded-[4.5rem] hover:bg-white/[0.03] hover:border-white/10 transition-all duration-700 overflow-hidden">
-              <div className="absolute top-12 end-12">
-                <div className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-widest uppercase italic shadow-lg shadow-emerald-500/10">
+            <div className="group relative p-10 lg:p-16 bg-white/[0.02] border border-white/5 rounded-[3rem] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-500 overflow-hidden shadow-xl">
+              <div className="absolute top-8 end-8">
+                <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-widest uppercase shadow-sm">
                   Strategy Chief
                 </div>
               </div>
-              <div className="space-y-12 relative z-10">
-                <div className="w-24 h-24 bg-emerald-600/20 rounded-[2.5rem] flex items-center justify-center border border-emerald-500/30 group-hover:bg-emerald-600 transition-all duration-500 shadow-2xl shadow-emerald-500/20">
-                  <Globe size={40} className="text-white" />
+              <div className="space-y-10 relative z-10">
+                <div className="w-20 h-20 bg-emerald-600/10 rounded-[2rem] flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-600/30 transition-all duration-500 shadow-lg">
+                  <Globe size={32} className="text-emerald-400 group-hover:text-white transition-colors" />
                 </div>
-                <div className="space-y-4">
-                  <h4 className="text-5xl font-black text-white tracking-tight">{t('idea_name')}</h4>
-                  <p className="text-emerald-400 font-black tracking-[0.3em] uppercase text-xs">{t('idea')}</p>
+                <div className="space-y-3">
+                  <h4 className="text-4xl lg:text-5xl font-black text-slate-100 tracking-tight">{t('idea_name')}</h4>
+                  <p className="text-emerald-400 font-bold tracking-[0.2em] uppercase text-[11px]">{t('idea')}</p>
                 </div>
-                <p className="text-2xl text-slate-400 leading-relaxed font-medium italic border-start-8 border-emerald-500/30 ps-10">
+                <p className="text-xl text-slate-400 leading-relaxed font-medium border-start-4 border-emerald-500/30 ps-8">
                   {t('idea_desc')}
                 </p>
               </div>
