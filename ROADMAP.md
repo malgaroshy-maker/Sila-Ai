@@ -1,4 +1,4 @@
-# 🗺️ ARIS Strategy Roadmap (2026)
+# 🗺️ SILA Strategy Roadmap (2026)
 
 > **AI Recruitment Intelligence System**
 > High-performance, AI-driven recruitment workflows for enterprise HR teams.

@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Welcome, Agent! This repository hosts the **AI Recruitment Intelligence System (ARIS)**—an enterprise-grade platform for HR teams to automate candidate selection using Gemini-powered analysis, RAG-based search, and multi-channel integration.
+Welcome, Agent! This repository hosts the **AI Recruitment Intelligence System (SILA)**—an enterprise-grade platform for HR teams to automate candidate selection using Gemini-powered analysis, RAG-based search, and multi-channel integration.
 
 ## 1. Project Context & Architecture
-ARIS is a monorepo designed for high-performance, AI-driven recruitment workflows.
+SILA is a monorepo designed for high-performance, AI-driven recruitment workflows.
 
 - **/backend-api**: NestJS, TypeScript, Supabase (PostgreSQL + `pgvector`), Gemini API (`gemini-3.1-flash-lite`), Puppeteer (`@sparticuz/chromium`) for PDF reporting.
 - **/frontend-web**: Next.js 16 (App Router), React 19, Tailwind CSS v4, `next-intl` (i18n), Framer Motion, Recharts.

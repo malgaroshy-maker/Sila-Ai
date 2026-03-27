@@ -12,7 +12,10 @@ import * as crypto from 'crypto';
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private readonly responseCache = new Map<string, { result: any; expiry: number }>();
+  private readonly responseCache = new Map<
+    string,
+    { result: any; expiry: number }
+  >();
 
   constructor(private readonly supabaseService: SupabaseService) {}
 

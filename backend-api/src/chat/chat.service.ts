@@ -125,7 +125,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 === Guiding Instructions ===
 1. LANGUAGE: Follow the specific language instruction: "${langInstructions[chatLanguage as keyof typeof langInstructions] || langInstructions.BH}".
 2. ACCURACY: Use the provided RAG context to answer specific CV details. If the info is missing, state it clearly.
-3. COMPARISON: Use the Analysis Overview to compare candidates based on final_score and cultural_fit_score.
+3. COMPSILAON: Use the Analysis Overview to compare candidates based on final_score and cultural_fit_score.
 4. TONE: Maintain a professional, executive recruitment tone.
 5. FORMATTING: Use markdown (bold, lists) for readability.
 6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.`;

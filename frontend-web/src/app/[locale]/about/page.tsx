@@ -13,7 +13,7 @@ export default function AboutPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#020617] flex items-center justify-center text-white font-black tracking-widest uppercase animate-pulse">
-        ARIS Intelligence...
+        SILA Intelligence...
       </div>
     }>
       <AboutContent />
@@ -101,7 +101,7 @@ function AboutContent() {
         </div>
       </header>
 
-      {/* Grid: The Pulse of ARIS */}
+      {/* Grid: The Pulse of SILA */}
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

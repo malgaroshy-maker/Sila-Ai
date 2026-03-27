@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SILA - Full System Tutorial & Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --bg: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent: #22d3ee;
+            --accent-glow: rgba(34, 211, 238, 0.4);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        [dir="rtl"] {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            padding-top: 20px;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lang-toggle {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lang-toggle:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .toc {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .toc a {
+            color: var(--accent);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(34, 211, 238, 0.1);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .toc a:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .icon-box {
+            background: var(--primary);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--primary-glow);
+            flex-shrink: 0;
+        }
+
+        .icon-box.accent {
+            background: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .icon-box.success {
+            background: var(--success);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            opacity: 0.5;
+        }
+
+        [dir="rtl"] .feature-card::before {
+            background: linear-gradient(-90deg, var(--primary), transparent);
+        }
+
+        .feature-card h3 {
+            margin-bottom: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+
+        .example-box {
+            background: #000;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border-left: 3px solid var(--primary);
+            color: #a5b4fc;
+        }
+
+        [dir="rtl"] .example-box {
+            border-left: none;
+            border-right: 3px solid var(--primary);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .tag.new {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .score-display {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .score-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid var(--primary);
+            background: rgba(0,0,0,0.3);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            color: var(--text-muted);
+            padding: 40px 0;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        /* Language-specific content display */
+        .en-content { display: block; }
+        .ar-content { display: none; }
+
+        [dir="rtl"] .en-content { display: none; }
+        [dir="rtl"] .ar-content { display: block; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .section { padding: 25px; }
+            .toc { flex-direction: column; }
+            .toc a { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo"><i data-lucide="cpu"></i> SILA</div>
+            <button class="lang-toggle" onclick="toggleLanguage()">
+                <i data-lucide="globe"></i>
+                <span class="en-content">العربية</span>
+                <span class="ar-content">English</span>
+            </button>
+        </header>
+
+        <section class="hero">
+            <h1 class="en-content">The Complete SILA Masterclass</h1>
+            <h1 class="ar-content">الدليل الشامل لنظام SILA للتوظيف</h1>
+            <p class="en-content">From intelligent CV parsing to autonomous chat actions, master every feature of the AI Recruitment Intelligence System (2026 Edition).</p>
+            <p class="ar-content">من تحليل السير الذاتية الذكي إلى إجراءات الدردشة المستقلة، احترف كل ميزة في نظام ذكاء التوظيف (إصدار 2026).</p>
+        </section>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <a href="#jobs" class="en-content">1. Job Creation</a>
+            <a href="#jobs" class="ar-content">1. إنشاء الوظائف</a>
+            <a href="#ingestion" class="en-content">2. CV Ingestion</a>
+            <a href="#ingestion" class="ar-content">2. استقبال السير الذاتية</a>
+            <a href="#analysis" class="en-content">3. AI Analysis</a>
+            <a href="#analysis" class="ar-content">3. التحليل بالذكاء الاصطناعي</a>
+            <a href="#pipeline" class="en-content">4. Pipeline Management</a>
+            <a href="#pipeline" class="ar-content">4. إدارة مسار التوظيف</a>
+            <a href="#chat" class="en-content">5. Actionable Assistant</a>
+            <a href="#chat" class="ar-content">5. المساعد الذكي الفعال</a>
+            <a href="#settings" class="en-content">6. Settings & Config</a>
+            <a href="#settings" class="ar-content">6. الإعدادات والتهيئة</a>
+        </div>
+
+        <!-- 1. Jobs -->
+        <div id="jobs" class="section">
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="briefcase"></i></div>
+                <h2 class="en-content">1. Smart Job Management</h2>
+                <h2 class="ar-content">1. إدارة الوظائف الذكية</h2>
+            </div>
+            <p class="en-content" style="margin-bottom: 20px;">Create and manage the positions you are hiring for. The AI uses these requirements as the benchmark for scoring every candidate.</p>
+            <p class="ar-content" style="margin-bottom: 20px;">قم بإنشاء وإدارة المناصب التي توظف لها. يستخدم الذكاء الاصطناعي هذه المتطلبات كمعيار لتقييم كل مرشح.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3 class="en-content">AI Job Drafting</h3>
+                    <h3 class="ar-content">صياغة الوظائف بالذكاء</h3>
+                    <p class="en-content">Don't write descriptions manually. Type a simple prompt like "I need a Senior React Dev who knows AWS", and SILA will generate a structured title, description, and requirement list instantly.</p>
+                    <p class="ar-content">لا تكتب الأوصاف يدوياً. اكتب أمراً بسيطاً مثل "أحتاج إلى مطور React أول يعرف AWS"، وسيقوم SILA بإنشاء عنوان ووصف وقائمة متطلبات منظمة على الفور.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content">Dynamic Requirements</h3>
+                    <h3 class="ar-content">متطلبات ديناميكية</h3>
+                    <p class="en-content">The requirements array (JSON) dictates exactly what the Gemini model looks for in CVs. Update them anytime to shift the AI's focus.</p>
+                    <p class="ar-content">تحدد مصفوفة المتطلبات بدقة ما يبحث عنه نموذج Gemini في السير الذاتية. قم بتحديثها في أي وقت لتغيير تركيز الذكاء الاصطناعي.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Ingestion -->
+        <div id="ingestion" class="section">
+            <div class="section-header">
+                <div class="icon-box accent"><i data-lucide="inbox"></i></div>
+                <h2 class="en-content">2. Omnichannel CV Ingestion</h2>
+                <h2 class="ar-content">2. استقبال السير الذاتية الشامل</h2>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3 class="en-content"><i data-lucide="upload-cloud"></i> Manual Upload</h3>
+                    <h3 class="ar-content"><i data-lucide="upload-cloud"></i> الرفع اليدوي</h3>
+                    <p class="en-content">Upload PDFs directly. SILA uses Gemini's multimodal OCR to perfectly extract text, bypassing traditional parser errors.</p>
+                    <p class="ar-content">قم برفع ملفات PDF مباشرة. يستخدم SILA تقنية التعرف البصري (OCR) من Gemini لاستخراج النص بدقة تامة، متجاوزاً أخطاء المحللات التقليدية.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content"><i data-lucide="mail"></i> Email Integration</h3>
+                    <h3 class="ar-content"><i data-lucide="mail"></i> ربط البريد الإلكتروني</h3>
+                    <p class="en-content">Connect your HR inbox (Gmail/Outlook). SILA monitors incoming emails, extracts attached CVs, and automatically creates candidates in your pipeline.</p>
+                    <p class="ar-content">اربط صندوق بريد الموارد البشرية (Gmail/Outlook). يراقب SILA رسائل البريد الواردة، ويستخرج السير الذاتية المرفقة، وينشئ المرشحين تلقائياً.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. AI Analysis -->
+        <div id="analysis" class="section">
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="brain-circuit"></i></div>
+                <h2 class="en-content">3. Deep Candidate Analysis</h2>
+                <h2 class="ar-content">3. التحليل العميق للمرشحين</h2>
+            </div>
+            <p class="en-content" style="margin-bottom: 20px;">Once a CV is in the system, Gemini 3.1 breaks it down into structured data using our proprietary Matryoshka Scoring system.</p>
+            <p class="ar-content" style="margin-bottom: 20px;">بمجرد دخول السيرة الذاتية إلى النظام، يقوم Gemini 3.1 بتقسيمها إلى بيانات منظمة باستخدام نظام تقييم "ماتريوشكا" الخاص بنا.</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3 class="en-content">The Scoring Engine</h3>
+                    <h3 class="ar-content">محرك التقييم</h3>
+                    <p class="en-content">Candidates receive specific scores (0-100) for:</p>
+                    <p class="ar-content">يحصل المرشحون على درجات محددة (0-100) في:</p>
+                    <ul class="en-content" style="margin-left: 20px; margin-top: 10px; color: var(--text-muted);">
+                        <li>Skills Match (Technical alignment)</li>
+                        <li>Industry Readiness (Experience level)</li>
+                        <li>Cultural Fit & Language</li>
+                        <li><strong>Final Score</strong> (The overall verdict)</li>
+                    </ul>
+                    <ul class="ar-content" style="margin-right: 20px; margin-top: 10px; color: var(--text-muted);">
+                        <li>مطابقة المهارات (التوافق التقني)</li>
+                        <li>الجاهزية المهنية (مستوى الخبرة)</li>
+                        <li>التوافق الثقافي واللغات</li>
+                        <li><strong>الدرجة النهائية</strong> (الحكم النهائي)</li>
+                    </ul>
+                    <div class="score-display">
+                        <div class="score-circle" style="border-color: var(--success); color: var(--success);">92</div>
+                        <div class="score-circle" style="border-color: var(--warning); color: var(--warning);">75</div>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content">Qualitative Insights</h3>
+                    <h3 class="ar-content">رؤى نوعية</h3>
+                    <p class="en-content">Beyond numbers, SILA generates:</p>
+                    <p class="ar-content">أبعد من الأرقام، يُنشئ SILA:</p>
+                    <div class="en-content" style="margin-top: 10px;">
+                        <span class="tag">Strengths</span> <span class="tag">Weaknesses</span> <br>
+                        <span class="tag">Red Flags</span> <span class="tag">Career Trajectory</span>
+                    </div>
+                    <div class="ar-content" style="margin-top: 10px;">
+                        <span class="tag">نقاط القوة</span> <span class="tag">نقاط الضعف</span> <br>
+                        <span class="tag">علامات الخطر</span> <span class="tag">المسار المهني</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Pipeline -->
+        <div id="pipeline" class="section">
+            <div class="section-header">
+                <div class="icon-box success"><i data-lucide="kanban"></i></div>
+                <h2 class="en-content">4. Pipeline Management</h2>
+                <h2 class="ar-content">4. إدارة مسار التوظيف</h2>
+            </div>
+            <p class="en-content">Visualize your hiring process. Candidates move through standardized stages: <strong>Applied → Screening → Interview → Offered → Hired</strong> (or Rejected).</p>
+            <p class="ar-content">قم بتصور عملية التوظيف الخاصة بك. ينتقل المرشحون عبر مراحل قياسية: <strong>مُتقدم → فرز → مقابلة → معروض عليه → مُعين</strong> (أو مرفوض).</p>
+            <div class="example-box" style="margin-top: 20px; border-left-color: var(--success);">
+                <span class="en-content">Tip: You can drag and drop candidates on the Kanban board, or simply ask the AI Chat to move them for you!</span>
+                <span class="ar-content">نصيحة: يمكنك سحب وإفلات المرشحين على لوحة كانبان، أو ببساطة اطلب من مساعد الدردشة الذكي نقلهم نيابة عنك!</span>
+            </div>
+        </div>
+
+        <!-- 5. Chat Assistant -->
+        <div id="chat" class="section" style="border: 1px solid var(--primary); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; right: 0; padding: 10px 20px; background: var(--primary); color: white; font-weight: bold; border-bottom-left-radius: 16px;">
+                <span class="en-content">Phase 8 Update</span>
+                <span class="ar-content">تحديث المرحلة 8</span>
+            </div>
+            
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="bot-message-square"></i></div>
+                <h2 class="en-content">5. The Actionable AI Assistant</h2>
+                <h2 class="ar-content">5. المساعد الذكي الفعال</h2>
+            </div>
+            
+            <p class="en-content" style="margin-bottom: 25px;">The crown jewel of SILA. This isn't just a chatbot; it's an autonomous agent hooked directly into your database. It uses Hybrid Search (Semantic + Text) and Function Calling to do the work for you.</p>
+            <p class="ar-content" style="margin-bottom: 25px;">جوهرة التاج في SILA. هذا ليس مجرد روبوت دردشة؛ إنه وكيل مستقل متصل مباشرة بقاعدة بياناتك. يستخدم البحث الهجين واستدعاء الوظائف للقيام بالعمل نيابة عنك.</p>
+
+            <div class="feature-grid">
+                <!-- Action 1 -->
+                <div class="feature-card">
+                    <span class="tag new">ACTION</span>
+                    <h3 class="en-content">Pipeline Control</h3>
+                    <h3 class="ar-content">التحكم في المسار</h3>
+                    <div class="example-box">
+                        <span class="en-content">"Move Sarah Jenkins to the Interview stage."</span>
+                        <span class="ar-content">"انقل سارة إلى مرحلة المقابلة."</span>
+                    </div>
+                </div>
+                <!-- Action 2 -->
+                <div class="feature-card">
+                    <span class="tag new">ENGAGEMENT</span>
+                    <h3 class="en-content">Smart Drafting</h3>
+                    <h3 class="ar-content">الصياغة الذكية</h3>
+                    <div class="example-box">
+                        <span class="en-content">"Generate a technical interview guide for John, focusing on his weaknesses."</span>
+                        <span class="ar-content">"قم بإنشاء دليل مقابلة تقنية لجون، مع التركيز على نقاط ضعفه."</span>
+                    </div>
+                </div>
+                <!-- Action 3 -->
+                <div class="feature-card">
+                    <span class="tag new">STRATEGY</span>
+                    <h3 class="en-content">Cross-Matching & Salary</h3>
+                    <h3 class="ar-content">المطابقة العكسية والرواتب</h3>
+                    <div class="example-box">
+                        <span class="en-content">"Is David better suited for any other open roles we have?"</span>
+                        <span class="ar-content">"هل ديفيد مناسب أكثر لأي أدوار أخرى مفتوحة لدينا؟"</span>
+                    </div>
+                </div>
+                <!-- Action 4 -->
+                <div class="feature-card">
+                    <span class="tag new">EFFICIENCY</span>
+                    <h3 class="en-content">Bulk Operations</h3>
+                    <h3 class="ar-content">العمليات الجماعية</h3>
+                    <div class="example-box">
+                        <span class="en-content">"Archive all candidates for the DevOps role with a score below 50."</span>
+                        <span class="ar-content">"أرشفة جميع المرشحين لوظيفة DevOps الذين تقل درجاتهم عن 50."</span>
+                    </div>
+                </div>
+                <!-- Action 5 -->
+                <div class="feature-card">
+                    <span class="tag new">SEARCH</span>
+                    <h3 class="en-content">Hybrid RAG Search</h3>
+                    <h3 class="ar-content">البحث الهجين RAG</h3>
+                    <div class="example-box">
+                        <span class="en-content">"Find me candidates who know Python and have leadership experience."</span>
+                        <span class="ar-content">"ابحث لي عن مرشحين يعرفون Python ولديهم خبرة قيادية."</span>
+                    </div>
+                </div>
+                <!-- Action 6 -->
+                <div class="feature-card">
+                    <span class="tag new">REPORTS</span>
+                    <h3 class="en-content">PDF Export</h3>
+                    <h3 class="ar-content">تصدير PDF</h3>
+                    <div class="example-box">
+                        <span class="en-content">"Export a full summary report for Emily."</span>
+                        <span class="ar-content">"قم بتصدير تقرير ملخص كامل لإيميلي."</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Settings -->
+        <div id="settings" class="section">
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="sliders"></i></div>
+                <h2 class="en-content">6. Customizing Your AI Engine</h2>
+                <h2 class="ar-content">6. تخصيص محرك الذكاء الاصطناعي</h2>
+            </div>
+            <p class="en-content" style="margin-bottom: 20px;">SILA adapts to your company's hiring culture through the Settings panel.</p>
+            <p class="ar-content" style="margin-bottom: 20px;">يتكيف SILA مع ثقافة التوظيف في شركتك من خلال لوحة الإعدادات.</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3 class="en-content"><i data-lucide="shield"></i> PII Masking</h3>
+                    <h3 class="ar-content"><i data-lucide="shield"></i> إخفاء البيانات الشخصية</h3>
+                    <p class="en-content">Toggle on PII Masking to ensure candidate emails and phone numbers are hidden from standard views for unbiased initial screening.</p>
+                    <p class="ar-content">قم بتفعيل إخفاء البيانات لضمان إخفاء رسائل البريد الإلكتروني وأرقام هواتف المرشحين لفرز أولي غير متحيز.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content"><i data-lucide="languages"></i> Analysis Language</h3>
+                    <h3 class="ar-content"><i data-lucide="languages"></i> لغة التحليل</h3>
+                    <p class="en-content">Force the AI to output its analysis, strengths, and recommendations in <strong>English</strong>, <strong>Arabic</strong>, or let it choose dynamically.</p>
+                    <p class="ar-content">أجبر الذكاء الاصطناعي على إخراج تحليلاته وتوصياته باللغة <strong>الإنجليزية</strong> أو <strong>العربية</strong>، أو دعه يختار ديناميكياً.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content"><i data-lucide="cpu"></i> Model Selection</h3>
+                    <h3 class="ar-content"><i data-lucide="cpu"></i> اختيار النموذج</h3>
+                    <p class="en-content">Switch between <strong>Gemini 3.1 Flash Lite</strong> for blazing fast bulk processing, or <strong>Gemini 3.1 Pro</strong> for deep, complex reasoning.</p>
+                    <p class="ar-content">بدل بين <strong>Gemini 3.1 Flash Lite</strong> للمعالجة الجماعية السريعة، أو <strong>Gemini 3.1 Pro</strong> للتفكير المعقد والعميق.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content"><i data-lucide="scale"></i> AI Strictness</h3>
+                    <h3 class="ar-content"><i data-lucide="scale"></i> صرامة الذكاء</h3>
+                    <p class="en-content">Set to <strong>Strict Mode</strong> to heavily penalize missing requirements, or <strong>Balanced</strong> for holistic evaluation.</p>
+                    <p class="ar-content">اضبط على <strong>النمط المتشدد</strong> لمعاقبة المتطلبات المفقودة بشدة، أو <strong>متوازن</strong> للتقييم الشامل.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div style="margin-bottom: 15px;">
+                <i data-lucide="cpu" style="color: var(--primary); width: 32px; height: 32px;"></i>
+            </div>
+            <h3 class="en-content" style="color: white; margin-bottom: 5px;">SILA</h3>
+            <h3 class="ar-content" style="color: white; margin-bottom: 5px;">نظام SILA</h3>
+            <p class="en-content">AI Recruitment Intelligence System &copy; 2026</p>
+            <p class="ar-content">نظام الذكاء الاصطناعي للتوظيف &copy; 2026</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        function toggleLanguage() {
+            const html = document.documentElement;
+            const currentDir = html.getAttribute('dir');
+            
+            if (currentDir === 'ltr') {
+                html.setAttribute('dir', 'rtl');
+                html.setAttribute('lang', 'ar');
+            } else {
+                html.setAttribute('dir', 'ltr');
+                html.setAttribute('lang', 'en');
+            }
+        }
+
+        // Smooth scroll for TOC
+        document.querySelectorAll('.toc a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                const headerOffset = 100; // Account for sticky header
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: "smooth"
+                });
+            });
+        });
+    </script>
+</body>
+</html>

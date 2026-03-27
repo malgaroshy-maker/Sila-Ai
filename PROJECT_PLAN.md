@@ -1,4 +1,4 @@
-# 📋 ARIS implementation Backlog (March 2026)
+# 📋 SILA implementation Backlog (March 2026)
 
 > This document tracks granular implementation tasks for the AI Recruitment Intelligence System.
 
@@ -60,7 +60,7 @@
 - [ ] Augment AI scoring with external "Proof of Work" evidence
 
 ### 9.2 Mobile App — Flutter Implementation
-- [ ] iOS/Android project setup with common ARIS API
+- [ ] iOS/Android project setup with common SILA API
 - [ ] Real-time push notifications for "Exceptional" candidates
 - [ ] Mobile camera integration for instant "Photo-to-Analysis" CV ingestion
 
