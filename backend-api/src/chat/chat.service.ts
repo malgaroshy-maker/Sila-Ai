@@ -215,7 +215,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           {
             name: 'send_rejection_email',
             description:
-              'Drafts a personalized rejection email for a candidate based on their AI analysis.',
+              'Drafts and sends a personalized rejection email for a candidate based on their AI analysis.',
             parameters: {
               type: 'object',
               properties: {
@@ -225,6 +225,51 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                 },
               },
               required: ['application_id'],
+            },
+          },
+          {
+            name: 'send_interview_email',
+            description: 'Sends an interview invitation email to a candidate.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+                interview_date: {
+                  type: 'string',
+                  description:
+                    'The date and time of the interview (e.g., "Monday at 2 PM").',
+                },
+                interview_link: {
+                  type: 'string',
+                  description: 'Optional video call link.',
+                },
+              },
+              required: ['application_id', 'interview_date'],
+            },
+          },
+          {
+            name: 'send_offer_email',
+            description: 'Sends a formal job offer email to a candidate.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+                salary: {
+                  type: 'string',
+                  description: 'The proposed annual salary.',
+                },
+                start_date: {
+                  type: 'string',
+                  description: 'The proposed start date.',
+                },
+              },
+              required: ['application_id', 'salary', 'start_date'],
             },
           },
           {
@@ -407,22 +452,75 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     }
   }
 
+  private async resolveApplicationId(
+    sb: any,
+    id: string,
+    userEmail: string,
+  ): Promise<string | null> {
+    this.logger.log(`Attempting to resolve ID: ${id} for user: ${userEmail}`);
+
+    // 1. Try directly as application_id
+    const { data: appDirect } = await sb
+      .from('applications')
+      .select('id, jobs!inner(user_email)')
+      .eq('id', id)
+      .eq('jobs.user_email', userEmail)
+      .maybeSingle();
+
+    if (appDirect) return appDirect.id;
+
+    // 2. Try as analysis_result_id
+    const { data: appFromAnalysis } = await sb
+      .from('analysis_results')
+      .select('application_id, applications!inner(jobs!inner(user_email))')
+      .eq('id', id)
+      .eq('applications.jobs.user_email', userEmail)
+      .maybeSingle();
+
+    if (appFromAnalysis) return appFromAnalysis.application_id;
+
+    // 3. Try as candidate_id (get latest application)
+    const { data: appFromCandidate } = await sb
+      .from('applications')
+      .select('id, jobs!inner(user_email)')
+      .eq('candidate_id', id)
+      .eq('jobs.user_email', userEmail)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (appFromCandidate) return appFromCandidate.id;
+
+    return null;
+  }
+
   private async handleFunctionCall(userEmail: string, call: any) {
     const sb = this.supabaseService.getClient();
 
     try {
       if (call.name === 'update_candidate_stage') {
         const { application_id, stage } = call.args;
-        this.logger.log(`Moving application ${application_id} to ${stage}`);
+        const resolvedId = await this.resolveApplicationId(
+          sb,
+          application_id,
+          userEmail,
+        );
+
+        if (!resolvedId)
+          throw new Error(
+            `Could not find application record for ID: ${application_id}`,
+          );
+
+        this.logger.log(`Moving application ${resolvedId} to ${stage}`);
         const { data, error } = await sb
           .from('applications')
           .update({ pipeline_stage: stage })
-          .eq('id', application_id)
+          .eq('id', resolvedId)
           .select()
           .maybeSingle();
-        
+
         if (error) throw new Error(error.message);
-        if (!data) throw new Error(`Application ${application_id} not found.`);
+        if (!data) throw new Error(`Application ${resolvedId} not found.`);
 
         return {
           status: 'success',
@@ -443,7 +541,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 
         if (error) throw new Error(error.message);
         if (!data) throw new Error(`Job ${job_id} not found or access denied.`);
-        
+
         return {
           status: 'success',
           message: `Job requirements updated.`,
@@ -454,31 +552,51 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       if (
         call.name === 'generate_interview_guide' ||
         call.name === 'send_rejection_email' ||
+        call.name === 'send_interview_email' ||
+        call.name === 'send_offer_email' ||
         call.name === 'cross_match_candidate' ||
         call.name === 'salary_benchmarking' ||
         call.name === 'hiring_risk_assessment' ||
         call.name === 'export_candidate_report'
       ) {
         const { application_id } = call.args;
-        this.logger.log(`Function: ${call.name} called for application: ${application_id} (User: ${userEmail})`);
-        
+        const resolvedId = await this.resolveApplicationId(
+          sb,
+          application_id,
+          userEmail,
+        );
+
+        if (!resolvedId) {
+          this.logger.warn(
+            `App not found for ${application_id} (User: ${userEmail})`,
+          );
+          throw new Error(
+            'Could not find application data for this ID or access denied.',
+          );
+        }
+
+        this.logger.log(
+          `Function: ${call.name} called for resolved application: ${resolvedId} (User: ${userEmail})`,
+        );
+
         // Fetch full candidate analysis and job details
         const { data: app, error } = await sb
           .from('analysis_results')
           .select(
             '*, applications!inner(id, job_id, candidate_id, jobs!inner(title, description, requirements, user_email), candidates!inner(name, email))',
           )
-          .eq('application_id', application_id)
-          .eq('applications.jobs.user_email', userEmail)
+          .eq('application_id', resolvedId)
           .maybeSingle();
 
         if (error) {
-          this.logger.error(`Database error for ${application_id}: ${error.message}`);
+          this.logger.error(
+            `Database error for ${resolvedId}: ${error.message}`,
+          );
           throw new Error(`Database error: ${error.message}`);
         }
         if (!app) {
-          this.logger.warn(`App not found for ${application_id} (User: ${userEmail})`);
-          throw new Error('Could not find analysis data for this candidate or access denied.');
+          this.logger.warn(`Analysis not found for ${resolvedId}`);
+          throw new Error('Could not find analysis data for this candidate.');
         }
 
         if (call.name === 'generate_interview_guide') {
@@ -514,6 +632,46 @@ ${analysisSummary || 'No candidate analyses available yet.'}
             status: 'success',
             draft,
             message: `Rejection email successfully sent to ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'send_interview_email') {
+          const { interview_date, interview_link } = call.args;
+          const draft = {
+            to: app.applications.candidates.email,
+            subject: `Interview Invitation: ${app.applications.jobs.title}`,
+            body: `Dear ${app.applications.candidates.name},<br><br>We are excited to invite you for an interview for the <b>${app.applications.jobs.title}</b> position. Your profile stood out based on our AI analysis.<br><br><b>Scheduled Date:</b> ${interview_date}${interview_link ? `<br><b>Meeting Link:</b> <a href="${interview_link}">${interview_link}</a>` : ''}<br><br>We look forward to speaking with you!`,
+          };
+
+          await this.emailService.sendEmail(
+            userEmail,
+            draft.to,
+            draft.subject,
+            draft.body,
+          );
+          return {
+            status: 'success',
+            message: `Interview invitation sent to ${app.applications.candidates.name} for ${interview_date}.`,
+          };
+        }
+
+        if (call.name === 'send_offer_email') {
+          const { salary, start_date } = call.args;
+          const draft = {
+            to: app.applications.candidates.email,
+            subject: `Job Offer: ${app.applications.jobs.title} at our Company`,
+            body: `Dear ${app.applications.candidates.name},<br><br>Congratulations! Based on your exceptional performance and our analysis (Match Score: ${app.final_score}%), we are thrilled to offer you the position of <b>${app.applications.jobs.title}</b>.<br><br><b>Salary Offer:</b> ${salary}<br><b>Start Date:</b> ${start_date}<br><br>Welcome to the team!`,
+          };
+
+          await this.emailService.sendEmail(
+            userEmail,
+            draft.to,
+            draft.subject,
+            draft.body,
+          );
+          return {
+            status: 'success',
+            message: `Offer letter sent to ${app.applications.candidates.name} with salary ${salary}.`,
           };
         }
 
