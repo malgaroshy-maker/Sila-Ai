@@ -111,7 +111,7 @@ export class EmailService {
     const state = Buffer.from(JSON.stringify({ userEmail, locale })).toString('base64');
     const tenant = 'common';
     const clientId = process.env.MS_CLIENT_ID || '';
-    const scopes = encodeURIComponent('offline_access user.read mail.read mail.readwrite');
+    const scopes = encodeURIComponent('offline_access user.read mail.read mail.readwrite Mail.Send');
     const redirectUri = encodeURIComponent(this.msRedirectUri);
     return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&response_mode=query&scope=${scopes}&state=${state}`;
   }
