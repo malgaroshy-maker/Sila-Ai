@@ -546,13 +546,17 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
               <div className="relative group flex-1 md:flex-none">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-[#0EA5E9] transition-colors" />
+                {/* Decoy input to catch autofill */}
+                <input type="text" style={{ display: 'none' }} tabIndex={-1} />
                 <input 
-                  autoComplete="new-password" 
+                  autoComplete="off"
                   spellCheck="false" 
-                  name="candidate_search_random_str"
-                  type="text" 
+                  name="q_search_field"
+                  type="search" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={(e) => e.target.removeAttribute('readOnly')}
+                  readOnly
                   placeholder={t.searching || 'Search candidates...'} 
                   className="bg-[#020617]/50 border border-[#1E293B] rounded-xl ps-10 pe-4 py-2 text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-[#0EA5E9]/20 focus:border-[#0EA5E9] transition-all"
                 />
