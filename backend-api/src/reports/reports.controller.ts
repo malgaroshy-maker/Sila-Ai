@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Res, Headers, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  Headers,
+  NotFoundException,
+} from '@nestjs/common';
 import * as express from 'express';
 import { ReportsService } from './reports.service';
 
@@ -15,8 +22,11 @@ export class ReportsController {
     if (!userEmail) throw new NotFoundException('User email header missing');
 
     try {
-      const pdfBuffer = await this.reportsService.generateJobReportPdf(userEmail, jobId);
-      
+      const pdfBuffer = await this.reportsService.generateJobReportPdf(
+        userEmail,
+        jobId,
+      );
+
       res.set({
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename=job-report-${jobId}.pdf`,

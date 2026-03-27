@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { CandidatesService } from '../candidates/candidates.service';
 import { EmailProcessorService } from '../email/email-processor.service';
@@ -13,7 +17,12 @@ export class JobsService {
     private aiService: AiService,
   ) {}
 
-  async createJob(userEmail: string, title: string, description: string, requirements: any) {
+  async createJob(
+    userEmail: string,
+    title: string,
+    description: string,
+    requirements: any,
+  ) {
     const { data: job, error } = await this.supabaseService
       .getClient()
       .from('jobs')
@@ -31,7 +40,10 @@ export class JobsService {
     return job;
   }
 
-  private async processHistoricalCandidates(userEmail: string, job: { id: string; title: string; description: string; requirements: any }) {
+  private async processHistoricalCandidates(
+    userEmail: string,
+    job: { id: string; title: string; description: string; requirements: any },
+  ) {
     try {
       const { data: candidates } = await this.supabaseService
         .getClient()
@@ -91,7 +103,12 @@ export class JobsService {
 
   async generateJob(userEmail: string, prompt: string) {
     const jobData = await this.aiService.generateJobFromText(userEmail, prompt);
-    return this.createJob(userEmail, jobData.title, jobData.description, jobData.requirements);
+    return this.createJob(
+      userEmail,
+      jobData.title,
+      jobData.description,
+      jobData.requirements,
+    );
   }
 
   async deleteJob(userEmail: string, id: string) {

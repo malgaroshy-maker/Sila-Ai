@@ -1,6 +1,6 @@
 # AI Recruitment Intelligence — Roadmap
 
-> Last updated: 2026-03-26
+> Last updated: 2026-03-27
 
 ---
 
@@ -91,24 +91,27 @@
 |---|---|---|---|---|
 | Frontend | Vercel | `[TBD]` | ✅ | Build and runtime verified |
 | Backend | Render | `[TBD]` | ✅ | Puppeteer/Chrome checks passed |
-| Auth | Google | N/A | ✅ | OAuth redirect verified |
+| Auth | Google/Microsoft | N/A | ✅ | OAuth redirect verified |
 
 - [x] Verify frontend build on Vercel
 - [x] Verify backend health check (`/health` or root) on Render
 - [x] Verify connectivity between Frontend and Backend (`process.env.NEXT_PUBLIC_API_URL`)
 - [x] Test Gmail/OAuth2 callback in production
+- [x] Test Microsoft/Graph callback in production
 
 ---
 
-## Phase 7: Expansion 🔮 *FUTURE (Pending Deployment Verification)*
+## Phase 7: Expansion 🔮 *IN PROGRESS*
 
-| # | Feature | PRD | Est. |
-|---|---------|-----|------|
-| 33 | Outlook / Microsoft Graph Integration | §3.2 | 3h |
-| 34 | LinkedIn / GitHub Profile Enrichment | §9 | 4h |
-| 35 | Mobile App (Flutter) | §5 | 20h+ |
-| 36 | Multi-Company SaaS Platform | §9 | 20h+ |
-| 37 | Role-Based Access Control (Admin, Recruiter, Viewer) | §7 | 4h |
+| # | Feature | PRD | Est. | Status |
+|---|---------|-----|------|--------|
+| 38 | Outlook / Microsoft Graph Integration | §3.2 | 3h | ✅ |
+| 39 | **UI/UX Redesign: Deep Glassmorphism & High-End Polish** | - | - | ✅ |
+| 40 | **Build Optimization: Ultra-fast 3-stage Docker Build** | - | - | ✅ |
+| 41 | LinkedIn / GitHub Profile Enrichment | §9 | 4h | ⏳ |
+| 42 | Mobile App (Flutter) | §5 | 20h+ | ⏳ |
+| 43 | Multi-Company SaaS Platform | §9 | 20h+ | ⏳ |
+| 44 | Role-Based Access Control (Admin, Recruiter, Viewer) | §7 | 4h | ⏳ |
 
 ---
 

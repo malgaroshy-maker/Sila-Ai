@@ -14,7 +14,11 @@ export class WebhooksService {
   }
 
   private async initTransporter() {
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    if (
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS
+    ) {
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT) || 587,
@@ -24,7 +28,9 @@ export class WebhooksService {
         },
       });
     } else {
-      this.logger.warn('No SMTP credentials found in env. Creating an Ethereal test account for email alerts...');
+      this.logger.warn(
+        'No SMTP credentials found in env. Creating an Ethereal test account for email alerts...',
+      );
       const testAccount = await nodemailer.createTestAccount();
       this.isTestAccount = true;
       this.transporter = nodemailer.createTransport({
@@ -39,7 +45,12 @@ export class WebhooksService {
       this.logger.log(`Ethereal test account created: ${testAccount.user}`);
     }
   }
-  async checkAndNotify(userEmail: string, candidateName: string, score: number, jobTitle: string) {
+  async checkAndNotify(
+    userEmail: string,
+    candidateName: string,
+    score: number,
+    jobTitle: string,
+  ) {
     // 1. Check if user has a webhook URL or custom threshold
     const sb = this.supabaseService.getClient();
     const { data: userSettings } = await sb
@@ -56,11 +67,15 @@ export class WebhooksService {
     const threshold = parseInt(settingsMap.exceptional_threshold) || 90;
 
     if (score < threshold) {
-      this.logger.debug(`Score ${score} is below threshold ${threshold} for ${userEmail}. Skipping notify.`);
+      this.logger.debug(
+        `Score ${score} is below threshold ${threshold} for ${userEmail}. Skipping notify.`,
+      );
       return;
     }
 
-    this.logger.log(`Exceptional candidate detected: ${candidateName} for ${jobTitle} with score ${score} (Threshold: ${threshold})`);
+    this.logger.log(
+      `Exceptional candidate detected: ${candidateName} for ${jobTitle} with score ${score} (Threshold: ${threshold})`,
+    );
 
     if (settingsMap.webhook_url) {
       this.triggerWebhook(settingsMap.webhook_url, {
@@ -68,7 +83,7 @@ export class WebhooksService {
         candidateName,
         score,
         jobTitle,
-        userEmail
+        userEmail,
       });
     }
 
@@ -82,14 +97,19 @@ export class WebhooksService {
       await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
     } catch (e: any) {
       this.logger.error(`Webhook trigger failed: ${e.message}`);
     }
   }
 
-  private async sendAlertEmail(recipient: string, name: string, score: number, job: string) {
+  private async sendAlertEmail(
+    recipient: string,
+    name: string,
+    score: number,
+    job: string,
+  ) {
     const subjectText = `🚀 Exceptional Candidate Found: ${name} | مرشح استثنائي جديد`;
     const htmlContent = `
       <div dir="ltr" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 600px; margin: auto; background-color: #ffffff;">
@@ -139,48 +159,77 @@ export class WebhooksService {
         if (account.blocked_until) {
           const blockedUntil = new Date(account.blocked_until).getTime();
           if (Date.now() < blockedUntil) {
-            this.logger.warn(`Skipping API alert for ${recipient} - account is in cooldown until ${account.blocked_until}. Falling back to SMTP.`);
+            this.logger.warn(
+              `Skipping API alert for ${recipient} - account is in cooldown until ${account.blocked_until}. Falling back to SMTP.`,
+            );
           } else {
             if (account.provider === 'google') {
-              return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+              return await this.sendViaGmail(
+                recipient,
+                subjectText,
+                htmlContent,
+                account,
+              );
             } else if (account.provider === 'microsoft') {
-              return await this.sendViaMicrosoft(recipient, subjectText, htmlContent, account);
+              return await this.sendViaMicrosoft(
+                recipient,
+                subjectText,
+                htmlContent,
+                account,
+              );
             }
           }
         } else {
           if (account.provider === 'google') {
-            return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+            return await this.sendViaGmail(
+              recipient,
+              subjectText,
+              htmlContent,
+              account,
+            );
           } else if (account.provider === 'microsoft') {
-            return await this.sendViaMicrosoft(recipient, subjectText, htmlContent, account);
+            return await this.sendViaMicrosoft(
+              recipient,
+              subjectText,
+              htmlContent,
+              account,
+            );
           }
         }
       }
     } catch (apiError: any) {
-      const errorMessage = apiError.response?.data?.error?.message || apiError.message || apiError;
-      const errorCode = apiError.code || apiError.response?.status || apiError.status || 500;
-      
-      this.logger.warn(`Failed to send via API: ${errorMessage} (Status: ${errorCode}). Falling back to default SMTP...`);
+      const errorMessage =
+        apiError.response?.data?.error?.message || apiError.message || apiError;
+      const errorCode =
+        apiError.code || apiError.response?.status || apiError.status || 500;
+
+      this.logger.warn(
+        `Failed to send via API: ${errorMessage} (Status: ${errorCode}). Falling back to default SMTP...`,
+      );
 
       // 403 (rateLimitExceeded) or 429 (Too Many Requests)
-      const isRateLimit = 
-        errorCode === 429 || 
-        errorCode === 403 || 
-        errorMessage.toLowerCase().includes('rate limit') || 
+      const isRateLimit =
+        errorCode === 429 ||
+        errorCode === 403 ||
+        errorMessage.toLowerCase().includes('rate limit') ||
         errorMessage.toLowerCase().includes('retry after');
 
       if (isRateLimit) {
         let blockTime = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // Default 30 mins
-        
+
         const retryMatch = errorMessage.match(/Retry after\s+([\d-T:.Z]+)/i);
         if (retryMatch && retryMatch[1]) {
           const googleTime = new Date(retryMatch[1]).getTime();
           blockTime = new Date(googleTime + 120 * 1000).toISOString();
-          this.logger.warn(`Detected Gmail rate limit. Setting block until ${blockTime}`);
+          this.logger.warn(
+            `Detected Gmail rate limit. Setting block until ${blockTime}`,
+          );
         }
 
         try {
           const sb = this.supabaseService.getClient();
-          await sb.from('email_accounts')
+          await sb
+            .from('email_accounts')
             .update({ blocked_until: blockTime })
             .eq('email_address', recipient);
         } catch (dbErr) {
@@ -191,7 +240,9 @@ export class WebhooksService {
 
     // Fallback: Send via Transporter (SMTP / Ethereal)
     if (!this.transporter) {
-      this.logger.warn('Transporter is not initialized yet. Skipping email alert.');
+      this.logger.warn(
+        'Transporter is not initialized yet. Skipping email alert.',
+      );
       return;
     }
 
@@ -200,12 +251,14 @@ export class WebhooksService {
         from: '"AI Recruitment Bot" <system@ai-recruit.com>',
         to: recipient,
         subject: subjectText,
-        html: htmlContent
+        html: htmlContent,
       });
       this.logger.log(`Alert email sent to ${recipient} via SMTP`);
-      
+
       if (this.isTestAccount) {
-        this.logger.log(`[TEST EMAIL] Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+        this.logger.log(
+          `[TEST EMAIL] Preview URL: ${nodemailer.getTestMessageUrl(info)}`,
+        );
       }
     } catch (e: any) {
       this.logger.warn(`Failed to send alert email: ${e.message}`);
@@ -224,78 +277,99 @@ export class WebhooksService {
     const res = await fetch(tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+      body: params.toString(),
     });
     const data = await res.json();
     if (!data.access_token) {
-      throw new Error('Failed to refresh Microsoft token: ' + JSON.stringify(data));
+      throw new Error(
+        'Failed to refresh Microsoft token: ' + JSON.stringify(data),
+      );
     }
-    
+
     const sb = this.supabaseService.getClient();
-    await sb.from('email_accounts').update({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token || account.refresh_token,
-      updated_at: new Date().toISOString()
-    }).eq('id', account.id);
+    await sb
+      .from('email_accounts')
+      .update({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || account.refresh_token,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', account.id);
 
     return data.access_token;
   }
 
-  private async sendViaMicrosoft(recipient: string, subjectText: string, htmlContent: string, account: any) {
+  private async sendViaMicrosoft(
+    recipient: string,
+    subjectText: string,
+    htmlContent: string,
+    account: any,
+  ) {
     let accessToken = account.access_token;
-    
+
     try {
       accessToken = await this.refreshMicrosoftToken(account);
     } catch (e: any) {
-      this.logger.error(`Failed to refresh MS token for ${recipient}: ${e.message}`);
+      this.logger.error(
+        `Failed to refresh MS token for ${recipient}: ${e.message}`,
+      );
     }
 
     const graphApiUrl = `https://graph.microsoft.com/v1.0/me/sendMail`;
-    
+
     const response = await fetch(graphApiUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         message: {
           subject: subjectText,
           body: {
             contentType: 'HTML',
-            content: htmlContent
+            content: htmlContent,
           },
           toRecipients: [
             {
               emailAddress: {
-                address: recipient
-              }
-            }
-          ]
-        }
-      })
+                address: recipient,
+              },
+            },
+          ],
+        },
+      }),
     });
 
     if (!response.ok) {
-        throw new Error(`Graph API error: ${response.status} ${await response.text()}`);
+      throw new Error(
+        `Graph API error: ${response.status} ${await response.text()}`,
+      );
     }
-    
-    this.logger.log(`✅ Alert email sent successfully to ${recipient} using Microsoft Graph API!`);
+
+    this.logger.log(
+      `✅ Alert email sent successfully to ${recipient} using Microsoft Graph API!`,
+    );
   }
 
-  private async sendViaGmail(recipient: string, subjectText: string, htmlContent: string, account: any) {
+  private async sendViaGmail(
+    recipient: string,
+    subjectText: string,
+    htmlContent: string,
+    account: any,
+  ) {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID || '',
-      process.env.GOOGLE_CLIENT_SECRET || ''
+      process.env.GOOGLE_CLIENT_SECRET || '',
     );
-    
+
     oauth2Client.setCredentials({
       access_token: account.access_token,
       refresh_token: account.refresh_token,
     });
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    
+
     const utf8Subject = `=?utf-8?B?${Buffer.from(subjectText).toString('base64')}?=`;
     const messageParts = [
       `From: "AI Recruitment System" <${recipient}>`,
@@ -304,22 +378,24 @@ export class WebhooksService {
       `MIME-Version: 1.0`,
       `Subject: ${utf8Subject}`,
       '',
-      htmlContent
+      htmlContent,
     ];
-    
+
     const message = messageParts.join('\n');
     const encodedMessage = Buffer.from(message)
       .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
-      
+
     await gmail.users.messages.send({
       userId: 'me',
       requestBody: { raw: encodedMessage },
-      quotaUser: recipient
+      quotaUser: recipient,
     } as any);
-    
-    this.logger.log(`✅ Alert email sent successfully to ${recipient} using their own Gmail API!`);
+
+    this.logger.log(
+      `✅ Alert email sent successfully to ${recipient} using their own Gmail API!`,
+    );
   }
 }

@@ -720,33 +720,40 @@ export class CandidatesService {
       if (account.provider === 'microsoft') {
         try {
           // MS Graph uses access_token
-          let accessToken = account.access_token;
+          const accessToken = account.access_token;
 
-          const attachmentsRes = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${candidate.gmail_message_id}/attachments/${candidate.gmail_attachment_id}`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-          });
-          
+          const attachmentsRes = await fetch(
+            `https://graph.microsoft.com/v1.0/me/messages/${candidate.gmail_message_id}/attachments/${candidate.gmail_attachment_id}`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            },
+          );
+
           if (!attachmentsRes.ok) {
             throw new Error(`Graph API error: ${attachmentsRes.status}`);
           }
-          
+
           const attachData = await attachmentsRes.json();
           const b64Data = attachData.contentBytes;
           if (!b64Data) {
-             throw new Error('No contentBytes returned from MS Graph API');
+            throw new Error('No contentBytes returned from MS Graph API');
           }
 
           const buffer = Buffer.from(b64Data, 'base64');
-          
-          this.logger.log(`Successfully proxy-downloaded MS attachment ${buffer.length} bytes for ${candidate.email}`);
+
+          this.logger.log(
+            `Successfully proxy-downloaded MS attachment ${buffer.length} bytes for ${candidate.email}`,
+          );
 
           return {
             buffer,
             filename: `CV_${candidate.name.replace(/\s+/g, '_')}_Original.pdf`,
-            mimetype: 'application/pdf', 
+            mimetype: 'application/pdf',
           };
         } catch (err: any) {
-          this.logger.error(`Microsoft Graph download proxy failed: ${err.message}`);
+          this.logger.error(
+            `Microsoft Graph download proxy failed: ${err.message}`,
+          );
           return { url: candidate.cv_url };
         }
       }

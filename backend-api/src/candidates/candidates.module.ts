@@ -8,6 +8,6 @@ import { WebhooksModule } from './webhooks.module';
   imports: [AiModule, WebhooksModule],
   controllers: [CandidatesController],
   providers: [CandidatesService],
-  exports: [CandidatesService]
+  exports: [CandidatesService],
 })
 export class CandidatesModule {}

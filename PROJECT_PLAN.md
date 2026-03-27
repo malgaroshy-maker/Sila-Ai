@@ -146,33 +146,42 @@
 - [x] Verify backend health check on Render
 - [x] Verify connectivity between Frontend and Backend
 - [x] Test Gmail/OAuth2 callback in production
+- [x] Test Microsoft/Graph callback in production
 
 ---
 
-## Phase 7: Expansion 🔮 *FUTURE (Pending Deployment Verification)*
+## Phase 7: Expansion 🔮 *IN PROGRESS*
 
-### 7.1 Outlook / Microsoft Graph Integration (§3.2)
-- [ ] Microsoft OAuth2 flow (Azure AD app registration)
-- [ ] Graph API — scan inbox for CV attachments
-- [ ] Reuse existing email processor pipeline
+### 7.1 Outlook / Microsoft Graph Integration (§3.2) ✅
+- [x] Microsoft OAuth2 flow (Azure AD app registration)
+- [x] Graph API — scan inbox for CV attachments
+- [x] Reuse existing email processor pipeline
+- [x] **Microsoft Graph SendMail**: Unified webhook alerting for Microsoft users.
+- [x] **Microsoft CV Download**: Proxy download for attachments via Graph API.
 
-### 7.2 LinkedIn / GitHub Enrichment (§9)
+### 7.2 Maintenance & Polishing ✅
+- [x] **Deployment Speed**: Implemented 3-stage multi-stage Docker build for ultra-fast Render deployments.
+- [x] **UI/UX Overhaul**: Deep Glassmorphism redesign for Login, About, and Settings.
+- [x] **Global CSS Fixes**: Aggressive scrollbar hiding and search bar autofill prevention.
+- [x] **Navigation**: Improved back button logic on About page.
+
+### 7.3 LinkedIn / GitHub Enrichment (§9)
 - [ ] Input LinkedIn URL → scrape public profile data
 - [ ] Input GitHub username → fetch repos, languages, contribution stats
 - [ ] Augment AI analysis with external profile data
 
-### 7.3 Mobile App — Flutter (§5)
+### 7.4 Mobile App — Flutter (§5)
 - [ ] Flutter project setup targeting iOS + Android
 - [ ] Implement core screens: Dashboard, Job Detail, Candidate Detail, Chat
 - [ ] Push notifications for exceptional candidates
 - [ ] Camera-based CV scanning (take photo → OCR → analyze)
 
-### 7.4 Multi-Company SaaS (§9)
+### 7.5 Multi-Company SaaS (§9)
 - [ ] Organization/tenant model with separate data partitions
 - [ ] Subscription billing (Stripe integration)
 - [ ] Custom branding per organization
 
-### 7.5 Role-Based Access Control (§7)
+### 7.6 Role-Based Access Control (§7)
 - [ ] Roles: Admin, Recruiter, Viewer
 - [ ] Admin: full access + settings + user management
 - [ ] Recruiter: create jobs, upload CVs, use AI Chat
@@ -186,23 +195,21 @@
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js 15, Tailwind CSS v4, next-intl |
-| Backend | NestJS, TypeScript |
+| Backend | NestJS, TypeScript, SWC |
 | Database | Supabase (PostgreSQL + Realtime + Storage) |
 | AI | Gemini API (gemini-2.0-flash) |
 | Vector DB | Supabase pgvector |
 | OCR | Gemini multimodal + Google Cloud Vision |
-| PDF Export | Puppeteer (headless Chrome) |
-| Email | Gmail API, SendGrid (webhook notifications) |
+| PDF Export | Puppeteer-core + @sparticuz/chromium |
+| Email | Gmail API, Microsoft Graph API, SendGrid |
 | Charts | Recharts |
 | Kanban DnD | @dnd-kit/core |
-| Mobile | Flutter |
-| Auth | Google OAuth2 |
+| Auth | Google OAuth2, Azure AD / Microsoft OAuth2 |
 
 ---
 
 ## Priority Order of Implementation
 
 ```
-Phase 4 → Phase 5 → Phase 6 → Phase 7
-(2 days)   (3 days)   (4 days)   (long-term)
+Phase 6 → Phase 7 (In Progress)
 ```

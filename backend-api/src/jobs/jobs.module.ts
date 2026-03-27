@@ -9,6 +9,6 @@ import { AiModule } from '../ai/ai.module';
   imports: [CandidatesModule, EmailModule, AiModule],
   controllers: [JobsController],
   providers: [JobsService],
-  exports: [JobsService]
+  exports: [JobsService],
 })
 export class JobsModule {}

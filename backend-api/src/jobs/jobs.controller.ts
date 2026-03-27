@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Headers, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  Headers,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { AiService } from '../ai/ai.service';
 
@@ -6,25 +16,45 @@ import { AiService } from '../ai/ai.service';
 export class JobsController {
   constructor(
     private readonly jobsService: JobsService,
-    private readonly aiService: AiService
+    private readonly aiService: AiService,
   ) {}
 
   private requireEmail(email: string) {
-    if (!email) throw new UnauthorizedException('x-user-email header is required');
+    if (!email)
+      throw new UnauthorizedException('x-user-email header is required');
   }
 
   @Post()
-  createJob(@Headers('x-user-email') email: string, @Body() body: { title: string; description: string; requirements: any }) {
+  createJob(
+    @Headers('x-user-email') email: string,
+    @Body() body: { title: string; description: string; requirements: any },
+  ) {
     this.requireEmail(email);
-    return this.jobsService.createJob(email, body.title, body.description, body.requirements);
+    return this.jobsService.createJob(
+      email,
+      body.title,
+      body.description,
+      body.requirements,
+    );
   }
 
   @Post('generate')
-  async generateJob(@Headers('x-user-email') email: string, @Body() body: { prompt: string }) {
+  async generateJob(
+    @Headers('x-user-email') email: string,
+    @Body() body: { prompt: string },
+  ) {
     this.requireEmail(email);
-    const generated = await this.aiService.generateJobFromText(email, body.prompt);
+    const generated = await this.aiService.generateJobFromText(
+      email,
+      body.prompt,
+    );
     // Create the job automatically
-    return this.jobsService.createJob(email, generated.title, generated.description, generated.requirements);
+    return this.jobsService.createJob(
+      email,
+      generated.title,
+      generated.description,
+      generated.requirements,
+    );
   }
 
   @Get()
@@ -40,7 +70,11 @@ export class JobsController {
   }
 
   @Put(':id')
-  updateJob(@Headers('x-user-email') email: string, @Param('id') id: string, @Body() body: any) {
+  updateJob(
+    @Headers('x-user-email') email: string,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
     this.requireEmail(email);
     return this.jobsService.updateJob(email, id, body);
   }

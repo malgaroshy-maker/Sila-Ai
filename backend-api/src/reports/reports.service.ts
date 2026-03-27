@@ -11,14 +11,19 @@ export class ReportsService {
     private readonly jobsService: JobsService,
   ) {}
 
-  async generateJobReportPdf(userEmail: string, jobId: string): Promise<Buffer> {
+  async generateJobReportPdf(
+    userEmail: string,
+    jobId: string,
+  ): Promise<Buffer> {
     const job = await this.jobsService.getJob(userEmail, jobId);
     if (!job) throw new NotFoundException('Job not found');
 
     const sb = this.supabaseService.getClient();
     const { data: results, error } = await sb
       .from('analysis_results')
-      .select('*, applications!inner(job_id, candidate_id, candidates(name, email), jobs!inner(user_email))')
+      .select(
+        '*, applications!inner(job_id, candidate_id, candidates(name, email), jobs!inner(user_email))',
+      )
       .eq('applications.job_id', jobId)
       .eq('applications.jobs.user_email', userEmail)
       .order('final_score', { ascending: false });
@@ -26,17 +31,17 @@ export class ReportsService {
     if (error) throw new Error(`Failed to fetch analysis: ${error.message}`);
 
     const html = this.buildHtmlTemplate(job, results || []);
-    
+
     const executablePath = await chromium.executablePath();
     const browser = await puppeteer.launch({
       headless: true,
       executablePath: executablePath || process.env.PUPPETEER_EXECUTABLE_PATH,
       args: chromium.args,
     });
-    
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
-    
+
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -51,11 +56,17 @@ export class ReportsService {
     const isArabic = true; // Defaulting to Arabic for this project as requested
     const direction = isArabic ? 'rtl' : 'ltr';
 
-    const rows = results.map((res, index) => {
-      const candidate = res.applications.candidates;
-      const scoreColor = res.final_score >= 80 ? '#22C55E' : res.final_score >= 60 ? '#EAB308' : '#EF4444';
-      
-      return `
+    const rows = results
+      .map((res, index) => {
+        const candidate = res.applications.candidates;
+        const scoreColor =
+          res.final_score >= 80
+            ? '#22C55E'
+            : res.final_score >= 60
+              ? '#EAB308'
+              : '#EF4444';
+
+        return `
         <tr>
           <td>${index + 1}</td>
           <td><strong>${candidate.name}</strong><br/><small>${candidate.email}</small></td>
@@ -63,12 +74,16 @@ export class ReportsService {
           <td>${res.recommendation}</td>
           <td>
             <ul style="margin: 0; padding-right: 20px;">
-              ${res.strengths.slice(0, 3).map((s: string) => `<li>${s}</li>`).join('')}
+              ${res.strengths
+                .slice(0, 3)
+                .map((s: string) => `<li>${s}</li>`)
+                .join('')}
             </ul>
           </td>
         </tr>
       `;
-    }).join('');
+      })
+      .join('');
 
     return `
       <!DOCTYPE html>

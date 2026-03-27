@@ -1,4 +1,8 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
@@ -12,8 +16,11 @@ export class ChatService {
     private readonly aiService: AiService,
   ) {}
 
-
-  async chat(userEmail: string, message: string, history: { role: string; text: string }[]) {
+  async chat(
+    userEmail: string,
+    message: string,
+    history: { role: string; text: string }[],
+  ) {
     const sb = this.supabaseService.getClient();
     const settings = await this.aiService.getSettings(userEmail);
     const genAI = new GoogleGenerativeAI(settings.apiKey);
@@ -23,19 +30,28 @@ export class ChatService {
     let ragContext = '';
     let matchedCount = 0;
     try {
-      const queryEmbedding = await this.aiService.generateEmbedding(userEmail, message);
-      const { data: matched, error: matchError } = await sb.rpc('match_candidates', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.1, // Low threshold to get more context
-        match_count: 5,       // Top 5 relevant CV snippets
-        user_email_filter: userEmail // THE FIX: Filter by current user
-      });
+      const queryEmbedding = await this.aiService.generateEmbedding(
+        userEmail,
+        message,
+      );
+      const { data: matched, error: matchError } = await sb.rpc(
+        'match_candidates',
+        {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.1, // Low threshold to get more context
+          match_count: 5, // Top 5 relevant CV snippets
+          user_email_filter: userEmail, // THE FIX: Filter by current user
+        },
+      );
 
       if (matched && matched.length > 0) {
         matchedCount = matched.length;
-        ragContext = matched.map((m: any) => 
-          `[Candidate CV Snippet - ID: ${m.candidate_id}]\n${m.content}`
-        ).join('\n---\n');
+        ragContext = matched
+          .map(
+            (m: any) =>
+              `[Candidate CV Snippet - ID: ${m.candidate_id}]\n${m.content}`,
+          )
+          .join('\n---\n');
       }
     } catch (e) {
       this.logger.error(`RAG retrieval failed: ${e.message}`);
@@ -44,33 +60,54 @@ export class ChatService {
     // 2. Metadata Step: Fetch basic jobs and analysis overview for the user
     const [jobsRes, analysisRes] = await Promise.all([
       sb.from('jobs').select('*').eq('user_email', userEmail),
-      sb.from('analysis_results')
-        .select('*, applications!inner(job_id, candidate_id, jobs!inner(title, user_email), candidates!inner(name, email))')
+      sb
+        .from('analysis_results')
+        .select(
+          '*, applications!inner(job_id, candidate_id, jobs!inner(title, user_email), candidates!inner(name, email))',
+        )
         .eq('applications.jobs.user_email', userEmail)
         .order('created_at', { ascending: false })
-        .limit(20) // Limit to top 20 latest/best analyses for general context
+        .limit(20), // Limit to top 20 latest/best analyses for general context
     ]);
 
     const jobs = jobsRes.data || [];
     const analyses = analysisRes.data || [];
 
     // Build context summaries
-    const jobsSummary = jobs.map(j => `- "${j.title}" (ID: ${j.id}): ${j.description}`).join('\n');
-    const analysisSummary = analyses.map(a => {
-      const name = a.applications?.candidates?.name || 'Unknown';
-      const job = a.applications?.jobs?.title || 'Unknown Job';
-      const isGrad = a.is_fresh_graduate ? '🎓 Fresh Grad' : 'Professional';
-      return `- ${name} (${isGrad}) | Job: "${job}" | Score: ${a.final_score}/100 | Fit: ${a.cultural_fit_score}/100 | Trajectory: ${a.career_trajectory} | Tags: ${a.tags?.join(', ')}`;
-    }).join('\n');
+    const jobsSummary = jobs
+      .map((j) => `- "${j.title}" (ID: ${j.id}): ${j.description}`)
+      .join('\n');
+    const analysisSummary = analyses
+      .map((a) => {
+        const name = a.applications?.candidates?.name || 'Unknown';
+        const job = a.applications?.jobs?.title || 'Unknown Job';
+        const isGrad = a.is_fresh_graduate ? '🎓 Fresh Grad' : 'Professional';
+        return `- ${name} (${isGrad}) | Job: "${job}" | Score: ${a.final_score}/100 | Fit: ${a.cultural_fit_score}/100 | Trajectory: ${a.career_trajectory} | Tags: ${a.tags?.join(', ')}`;
+      })
+      .join('\n');
 
     const langInstructions = {
-      'AR': 'أجب باللغة العربية حصراً. استخدم مصطلحات الموارد البشرية الاحترافية.',
-      'EN': 'Response MUST be in English exclusively. Use professional HR terminology.',
-      'BH': 'أجب بنفس لغة سؤال المستخدم (عربي/إنجليزي). إذا كان السؤال هجيناً، أجب بلغة الأغلبية أو العربية كافتراضي.'
+      AR: 'أجب باللغة العربية حصراً. استخدم مصطلحات الموارد البشرية الاحترافية.',
+      EN: 'Response MUST be in English exclusively. Use professional HR terminology.',
+      BH: 'أجب بنفس لغة سؤال المستخدم (عربي/إنجليزي). إذا كان السؤال هجيناً، أجب بلغة الأغلبية أو العربية كافتراضي.',
     };
 
     const chatLanguage = (settings as any).chat_language || 'BH';
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const todayAr = new Date().toLocaleDateString('ar-BH', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
     const systemPrompt = `You are an AI Recruitment Specialist (RAG-Enabled) for the "AI Recruitment Intelligence System".
+Today is: ${today} (${todayAr}).
 ${langInstructions[chatLanguage as keyof typeof langInstructions] || langInstructions.BH}
 
 === Retrieve Documents Context (RAG) ===
@@ -91,32 +128,54 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.`;
 
     // Gemini Conversation History for the fetch wrapper (stateless multi-turn)
-    const chatHistory = history.map(h => ({
+    const chatHistory = history.map((h) => ({
       role: h.role === 'user' ? 'user' : 'model',
-      parts: [{ text: h.text }]
+      parts: [{ text: h.text }],
     }));
 
     const fullContents = [
       { role: 'user', parts: [{ text: 'System context: ' + systemPrompt }] },
-      { role: 'model', parts: [{ text: (chatLanguage === 'EN') ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?' : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟' }] },
+      {
+        role: 'model',
+        parts: [
+          {
+            text:
+              chatLanguage === 'EN'
+                ? 'Understood. I have access to the vector database and recruitment context. How can I assist you?'
+                : 'فهمت. أنا متصل الآن بقاعدة بيانات المتجهات وجاهز لتحليل السير الذاتية وتقديم إجابات دقيقة بناءً على المحتوى المسترجع ولغة التواصل المفضلة. كيف يمكنني مساعدتك اليوم؟',
+          },
+        ],
+      },
       ...chatHistory,
-      { role: 'user', parts: [{ text: message }] }
+      { role: 'user', parts: [{ text: message }] },
     ];
 
     try {
-      const result = await this.aiService.fetchGeminiWithQuota(userEmail, fullContents);
-      
+      const result = await this.aiService.fetchGeminiWithQuota(
+        userEmail,
+        fullContents,
+      );
+
       const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!responseText) throw new Error('Empty response from AI');
 
       // Log usage for the chat message
-      await this.aiService.logUsage(userEmail, 'chat', result.usageMetadata, settings.model);
+      await this.aiService.logUsage(
+        userEmail,
+        'chat',
+        result.usageMetadata,
+        settings.model,
+      );
 
-      this.logger.log(`Chat RAG: "${message.slice(0, 50)}..." → ${matchedCount} matches found`);
+      this.logger.log(
+        `Chat RAG: "${message.slice(0, 50)}..." → ${matchedCount} matches found`,
+      );
       return { response: responseText };
     } catch (error: any) {
       this.logger.error('Chat error:', error.message);
-      return { response: 'عذراً، حدث خطأ في معالجة طلبك عبر نظام RAG. حاول مرة أخرى.' };
+      return {
+        response: 'عذراً، حدث خطأ في معالجة طلبك عبر نظام RAG. حاول مرة أخرى.',
+      };
     }
   }
 }
