@@ -287,6 +287,40 @@ export class EmailService {
     }
   }
 
+  async refreshMicrosoftToken(account: any): Promise<string> {
+    const tenant = 'common';
+    const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+    const params = new URLSearchParams();
+    params.append('client_id', process.env.MS_CLIENT_ID || '');
+    params.append('client_secret', process.env.MS_CLIENT_SECRET || '');
+    params.append('refresh_token', account.refresh_token);
+    params.append('grant_type', 'refresh_token');
+
+    const res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    const data = await res.json();
+    if (!data.access_token) {
+      throw new Error(
+        'Failed to refresh Microsoft token: ' + JSON.stringify(data),
+      );
+    }
+
+    const sb = this.supabaseService.getClient();
+    await sb
+      .from('email_accounts')
+      .update({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || account.refresh_token,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', account.id);
+
+    return data.access_token;
+  }
+
   private async sendGmail(
     account: any,
     to: string,
