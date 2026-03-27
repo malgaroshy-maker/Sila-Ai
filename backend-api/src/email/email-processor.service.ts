@@ -17,23 +17,31 @@ export class EmailProcessorService {
   ) {}
 
   @Cron('0 */15 * * * *')
-  async handleCron(force = false) {
+  async handleCron(force = false, targetUserEmail?: string) {
     if (this.isProcessing) {
       this.logger.debug(`Email ingestion already in progress (force: ${force}), skipping...`);
       return;
     }
 
     this.isProcessing = true;
-    this.logger.debug(`Running email ingestion worker (force: ${force})...`);
+    this.logger.debug(`Running email ingestion worker (force: ${force}, target: ${targetUserEmail || 'ALL'})...`);
     
-    // Clear any previous stop requests at start
     const sb = this.supabaseService.getClient();
-    await sb.from('email_accounts').update({ stop_sync_requested: false }).eq('stop_sync_requested', true);
+
+    // Clear any previous stop requests at start
+    if (targetUserEmail) {
+       await sb.from('email_accounts').update({ stop_sync_requested: false }).eq('user_email', targetUserEmail).eq('stop_sync_requested', true);
+    } else {
+       await sb.from('email_accounts').update({ stop_sync_requested: false }).eq('stop_sync_requested', true);
+    }
 
     try {
-      const { data: accounts, error } = await sb
-        .from('email_accounts')
-        .select('*');
+      let query = sb.from('email_accounts').select('*');
+      if (targetUserEmail) {
+        query = query.eq('user_email', targetUserEmail);
+      }
+
+      const { data: accounts, error } = await query;
 
       if (error || !accounts) {
         this.logger.error('Failed to fetch email accounts', error);
@@ -63,6 +71,11 @@ export class EmailProcessorService {
             }).eq('id', activity.id).then();
           }
         };
+
+        // Immediately emit a progress event so the UI reacts instantly when forced
+        if (force) {
+          emitProgress({ status: 'scanning', total: 0, processed: 0, message: 'Connecting to mail server...' });
+        }
 
         // Check for active Google block
         if (account.blocked_until) {
