@@ -141,7 +141,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 4. TONE: Maintain a professional, executive recruitment tone.
 5. FORMATTING: Use markdown (bold, lists) for readability.
 6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.
-7. CANDIDATE IDENTIFICATION: Always refer to candidates by their full name. Never use their ID or UUID in your final response text.`;
+7. CANDIDATE IDENTIFICATION: REFER TO CANDIDATES ONLY BY THEIR FULL NAME. ABSOLUTELY DO NOT DISPLAY, OUTPUT, OR GENERATE ANY ID, UUID, OR TECHNICAL IDENTIFIER FOR CANDIDATES.
+8. DATA OUTPUT FORMAT: FOR ALL CANDIDATES, OUTPUT ONLY THE NAME AND KEY METRICS. DO NOT INCLUDE ANY TECHNICAL IDS OR UUIDS IN YOUR RESPONSE.`;
 
     // Gemini Conversation History for the fetch wrapper (stateless multi-turn)
     const chatHistory = history.map((h) => ({
