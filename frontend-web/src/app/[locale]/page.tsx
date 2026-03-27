@@ -101,13 +101,13 @@ async function DashboardClient({ locale }: { locale: string }) {
     'lang_bh', 'lang_en', 'lang_ar', 'focus_balanced', 'focus_technical', 'focus_career',
     'sync_manual', 'sync_1h', 'sync_6h', 'sync_24h', 'badge_fastest', 'badge_strongest',
     'preview', 'save_settings', 'get_api_key_link', 'category_free_tier', 'category_trial', 
-    'category_experimental', 'category_legacy', 'error_quota_exceeded', 'error_quota_exceeded_details', 
-    'error_ai_failed', 'error_unknown', 'error_download_failed', 'error_connection_download'
+    'category_experimental', 'category_legacy', 'error_ai_failed', 'error_unknown', 
+    'error_download_failed', 'error_connection_download'
   ];
   
   const translations: Record<string, string> = {};
   keys.forEach(k => {
-    try { translations[k] = t(k as any); } catch { translations[k] = k; }
+    translations[k] = t(k);
   });
 
   return <DashboardInteractive initialJobs={jobs || []} initialResults={results || []} t={translations} locale={locale} />;
