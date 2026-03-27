@@ -124,35 +124,42 @@ export class WebhooksService {
       </div>
     `;
 
-    // Try to send via user's connected Gmail account first
+    // Try to send via user's connected Gmail/Microsoft account first
     try {
       const sb = this.supabaseService.getClient();
       const { data: account } = await sb
         .from('email_accounts')
         .select('*')
         .eq('email_address', recipient)
-        .eq('provider', 'google')
+        .in('provider', ['google', 'microsoft'])
         .single();
 
       if (account && account.access_token) {
-        // Check for active Google block before sending
+        // Check for active provider block before sending
         if (account.blocked_until) {
           const blockedUntil = new Date(account.blocked_until).getTime();
           if (Date.now() < blockedUntil) {
-            this.logger.warn(`Skipping Gmail alert for ${recipient} - account is in Google cooldown until ${account.blocked_until}. Falling back to SMTP.`);
-            // Continue to SMTP fallback
+            this.logger.warn(`Skipping API alert for ${recipient} - account is in cooldown until ${account.blocked_until}. Falling back to SMTP.`);
           } else {
-            return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+            if (account.provider === 'google') {
+              return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+            } else if (account.provider === 'microsoft') {
+              return await this.sendViaMicrosoft(recipient, subjectText, htmlContent, account);
+            }
           }
         } else {
-          return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+          if (account.provider === 'google') {
+            return await this.sendViaGmail(recipient, subjectText, htmlContent, account);
+          } else if (account.provider === 'microsoft') {
+            return await this.sendViaMicrosoft(recipient, subjectText, htmlContent, account);
+          }
         }
       }
     } catch (apiError: any) {
-      const errorMessage = apiError.response?.data?.error?.message || apiError.message;
-      const errorCode = apiError.code || apiError.response?.status || apiError.status;
+      const errorMessage = apiError.response?.data?.error?.message || apiError.message || apiError;
+      const errorCode = apiError.code || apiError.response?.status || apiError.status || 500;
       
-      this.logger.warn(`Failed to send via Gmail API: ${errorMessage} (Status: ${errorCode}). Falling back to default SMTP...`);
+      this.logger.warn(`Failed to send via API: ${errorMessage} (Status: ${errorCode}). Falling back to default SMTP...`);
 
       // 403 (rateLimitExceeded) or 429 (Too Many Requests)
       const isRateLimit = 
@@ -203,6 +210,77 @@ export class WebhooksService {
     } catch (e: any) {
       this.logger.warn(`Failed to send alert email: ${e.message}`);
     }
+  }
+
+  private async refreshMicrosoftToken(account: any): Promise<string> {
+    const tenant = 'common';
+    const tokenUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`;
+    const params = new URLSearchParams();
+    params.append('client_id', process.env.MS_CLIENT_ID || '');
+    params.append('client_secret', process.env.MS_CLIENT_SECRET || '');
+    params.append('refresh_token', account.refresh_token);
+    params.append('grant_type', 'refresh_token');
+
+    const res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+    const data = await res.json();
+    if (!data.access_token) {
+      throw new Error('Failed to refresh Microsoft token: ' + JSON.stringify(data));
+    }
+    
+    const sb = this.supabaseService.getClient();
+    await sb.from('email_accounts').update({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || account.refresh_token,
+      updated_at: new Date().toISOString()
+    }).eq('id', account.id);
+
+    return data.access_token;
+  }
+
+  private async sendViaMicrosoft(recipient: string, subjectText: string, htmlContent: string, account: any) {
+    let accessToken = account.access_token;
+    
+    try {
+      accessToken = await this.refreshMicrosoftToken(account);
+    } catch (e: any) {
+      this.logger.error(`Failed to refresh MS token for ${recipient}: ${e.message}`);
+    }
+
+    const graphApiUrl = `https://graph.microsoft.com/v1.0/me/sendMail`;
+    
+    const response = await fetch(graphApiUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: {
+          subject: subjectText,
+          body: {
+            contentType: 'HTML',
+            content: htmlContent
+          },
+          toRecipients: [
+            {
+              emailAddress: {
+                address: recipient
+              }
+            }
+          ]
+        }
+      })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Graph API error: ${response.status} ${await response.text()}`);
+    }
+    
+    this.logger.log(`✅ Alert email sent successfully to ${recipient} using Microsoft Graph API!`);
   }
 
   private async sendViaGmail(recipient: string, subjectText: string, htmlContent: string, account: any) {

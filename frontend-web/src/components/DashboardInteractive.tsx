@@ -1008,7 +1008,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-8 relative z-10 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-8 relative z-10 no-scrollbar">
               
               {modalTab === 'intelligence' && (
                 <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
