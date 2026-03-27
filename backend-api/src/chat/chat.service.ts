@@ -140,7 +140,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 3. COMPSILAON: Use the Analysis Overview to compare candidates based on final_score and cultural_fit_score.
 4. TONE: Maintain a professional, executive recruitment tone.
 5. FORMATTING: Use markdown (bold, lists) for readability.
-6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.`;
+6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.
+7. CANDIDATE IDENTIFICATION: Always refer to candidates by their full name. Never use their ID or UUID in your final response text.`;
 
     // Gemini Conversation History for the fetch wrapper (stateless multi-turn)
     const chatHistory = history.map((h) => ({
