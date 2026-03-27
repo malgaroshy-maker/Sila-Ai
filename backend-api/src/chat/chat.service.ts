@@ -51,10 +51,20 @@ export class ChatService {
 
       if (matched && matched.length > 0) {
         matchedCount = matched.length;
+        
+        // Fetch candidate names for the matched IDs
+        const candidateIds = matched.map((m: any) => m.candidate_id);
+        const { data: candidateNames } = await sb
+          .from('candidates')
+          .select('id, name')
+          .in('id', candidateIds);
+
+        const nameMap = new Map(candidateNames?.map(c => [c.id, c.name]) || []);
+
         ragContext = matched
           .map(
             (m: any) =>
-              `[Candidate CV Snippet - ID: ${m.candidate_id}]\n${m.content}`,
+              `[Candidate: ${nameMap.get(m.candidate_id) || 'Unknown'} - ID: ${m.candidate_id}]\n${m.content}`,
           )
           .join('\n---\n');
       }
