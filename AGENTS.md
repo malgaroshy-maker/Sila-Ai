@@ -96,5 +96,11 @@ This version uses Next.js 16 and React 19. APIs and conventions differ from trai
   3. Tests are written or updated.
   4. Logical properties are used in CSS/Tailwind for RTL support.
 
+## 7. AI Implementation Standards (2026)
+- **JSON Mode**: Always use `response_schema` in `AiService`. Never use regex to clean AI strings.
+- **Function Calling**: Register new system actions in `ChatService.handleFunctionCall` and update the `tools` declaration.
+- **Temporal Context**: Every AI prompt must include `Today's Date` (Already implemented in `AiService` helpers).
+- **Quota Resilience**: Check `live_api_status` table before making heavy batch calls.
+
 ---
 *Created on 2026-03-27. Follow these rules to maintain project integrity.*

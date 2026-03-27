@@ -133,7 +133,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       parts: [{ text: h.text }],
     }));
 
-    const fullContents = [
+    const fullContents: any[] = [
       { role: 'user', parts: [{ text: 'System context: ' + systemPrompt }] },
       {
         role: 'model',
@@ -150,11 +150,109 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       { role: 'user', parts: [{ text: message }] },
     ];
 
+    const tools = [
+      {
+        function_declarations: [
+          {
+            name: 'update_candidate_stage',
+            description:
+              'Updates the pipeline stage of a candidate application (e.g., Screening, Interview, Offered, Hired, Rejected).',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the application to update.',
+                },
+                stage: {
+                  type: 'string',
+                  description:
+                    'The new stage name. Valid values: Applied, Screening, Interview, Offered, Hired, Rejected.',
+                },
+              },
+              required: ['application_id', 'stage'],
+            },
+          },
+          {
+            name: 'update_job_requirements',
+            description: 'Updates the requirements list for a specific job.',
+            parameters: {
+              type: 'object',
+              properties: {
+                job_id: {
+                  type: 'string',
+                  description: 'The UUID of the job to update.',
+                },
+                requirements: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'The new list of requirements.',
+                },
+              },
+              required: ['job_id', 'requirements'],
+            },
+          },
+        ],
+      },
+    ];
+
     try {
-      const result = await this.aiService.fetchGeminiWithQuota(
+      let result = await this.aiService.fetchGeminiWithQuota(
         userEmail,
         fullContents,
+        undefined,
+        undefined,
+        undefined,
+        tools,
       );
+
+      // Handle Function Calling Loop (max 2 turns to prevent infinite loops)
+      let turn = 0;
+      while (
+        result.candidates?.[0]?.content?.parts?.some(
+          (p: any) => p.function_call,
+        ) &&
+        turn < 2
+      ) {
+        turn++;
+        const parts = result.candidates[0].content.parts;
+        const functionCalls = parts.filter((p: any) => p.function_call);
+        const functionResponses = [];
+
+        for (const fc of functionCalls) {
+          const call = fc.function_call;
+          this.logger.log(`AI triggering function: ${call.name}`);
+          const response = await this.handleFunctionCall(userEmail, call);
+          functionResponses.push({
+            function_response: {
+              name: call.name,
+              response: response,
+            },
+          });
+        }
+
+        // Add the model's function call to history
+        fullContents.push({
+          role: 'model',
+          parts: parts,
+        });
+
+        // Add the tool's response to history
+        fullContents.push({
+          role: 'tool',
+          parts: functionResponses,
+        });
+
+        // Fetch again with the responses
+        result = await this.aiService.fetchGeminiWithQuota(
+          userEmail,
+          fullContents,
+          undefined,
+          undefined,
+          undefined,
+          tools,
+        );
+      }
 
       const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!responseText) throw new Error('Empty response from AI');
@@ -176,6 +274,51 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       return {
         response: 'عذراً، حدث خطأ في معالجة طلبك عبر نظام RAG. حاول مرة أخرى.',
       };
+    }
+  }
+
+  private async handleFunctionCall(userEmail: string, call: any) {
+    const sb = this.supabaseService.getClient();
+
+    try {
+      if (call.name === 'update_candidate_stage') {
+        const { application_id, stage } = call.args;
+        const { data, error } = await sb
+          .from('applications')
+          .update({ pipeline_stage: stage })
+          .eq('id', application_id)
+          .select()
+          .single();
+
+        if (error) throw new Error(error.message);
+        return {
+          status: 'success',
+          message: `Candidate moved to ${stage}.`,
+          data: data,
+        };
+      }
+
+      if (call.name === 'update_job_requirements') {
+        const { job_id, requirements } = call.args;
+        const { data, error } = await sb
+          .from('jobs')
+          .update({ requirements })
+          .eq('id', job_id)
+          .select()
+          .single();
+
+        if (error) throw new Error(error.message);
+        return {
+          status: 'success',
+          message: `Job requirements updated.`,
+          data: data,
+        };
+      }
+
+      return { status: 'error', message: 'Unknown function call.' };
+    } catch (e: any) {
+      this.logger.error(`Function execution failed: ${e.message}`);
+      return { status: 'error', message: e.message };
     }
   }
 }

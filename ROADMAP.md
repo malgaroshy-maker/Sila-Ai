@@ -1,182 +1,101 @@
-# AI Recruitment Intelligence — Roadmap
+# 🗺️ ARIS Strategy Roadmap (2026)
 
-> Last updated: 2026-03-27
-
----
-
-## Phase 1: Foundation ✅ *COMPLETED*
-
-| # | Feature | PRD | Status |
-|---|---------|-----|--------|
-| 1 | NestJS Backend + Supabase DB | §5 | ✅ |
-| 2 | Next.js Frontend (Dark Theme) | §5 | ✅ |
-| 3 | Job Creation (Form) | §3.1 | ✅ |
-| 4 | PDF CV Upload + AI Analysis | §3.2, §3.3 | ✅ |
-| 5 | Multi-Score System (Skills, GPA, Language, Readiness, Final) | §3.3 | ✅ |
-| 6 | Strengths, Weaknesses, Hiring Recommendation | §3.3 | ✅ |
-| 7 | Dashboard with Ranked Candidates | §3.6 | ✅ |
-| 8 | Color-Coded Scoring (Green/Yellow/Red) | §3.6 | ✅ |
-| 9 | Settings Page (API Key Management) | §7 | ✅ |
+> **AI Recruitment Intelligence System**
+> High-performance, AI-driven recruitment workflows for enterprise HR teams.
 
 ---
 
-## Phase 2: Email + i18n ✅ *COMPLETED*
+## 🚦 System Status Dashboard
 
-| # | Feature | PRD | Status |
-|---|---------|-----|--------|
-| 10 | Gmail API Integration (Scan for CV attachments) | §3.2 | ✅ |
-| 11 | OCR for Scanned PDFs (Gemini multimodal) | §3.2 | ✅ |
-| 12 | i18n — Arabic / English with RTL | §3.6 | ✅ |
-| 13 | Google Fonts (Tajawal for Arabic, Inter for English) | - | ✅ |
-| 14 | Simplified CV Upload (AI auto-extracts name/email) | §3.2 | ✅ |
-
----
-
-## Phase 3: AI Intelligence ✅ *COMPLETED*
-
-| # | Feature | PRD | Status |
-|---|---------|-----|--------|
-| 15 | AI Chat System (Context-aware, conversation history) | §3.5 | ✅ |
-| 16 | AI Job Creation from Natural Language | §3.1 | ✅ |
-| 17 | Auto-Tagging (Senior, Junior, Full-Stack, etc.) | §3.7 | ✅ |
-| 18 | Flag Detection (Weak CV, Overqualified, Missing Skills) | §3.7 | ✅ |
-| 19 | AI Interview Question Suggestions | §3.7 | ✅ |
-| 20 | AI Training Suggestions for Weak Candidates | §3.7 | ✅ |
-| 21 | Full Arabic Translation (Chat, Modals, Smart Features) | - | ✅ |
+| Phase | Focus Area | Progress | Status |
+|:---|:---|:---|:---|
+| **P1-6** | **Core Foundation** | 100% | ✅ COMPLETED |
+| **P7** | **Infrastructure & Polish** | 100% | ✅ COMPLETED |
+| **P8** | **AI Intelligence Layer** | 40% | 🚀 ACTIVE |
+| **P9** | **Enterprise Ecosystem** | 0% | ⏳ PLANNED |
 
 ---
 
-## Phase 4: Multi-User & Settings ✅ *COMPLETED*
+## ✅ Completed Milestones (Phases 1-7)
 
-| # | Feature | PRD | Status |
-|---|---------|-----|--------|
-| 22 | Per-user data isolation (each email = separate workspace) | §7 | ✅ |
-| 23 | Show connected email in Settings | §7 | ✅ |
-| 24 | AI Behavior Modes (Balanced vs Strict toggle) | §3.4 | ✅ |
-| 25 | PDF Report Export (Executive-level per job) | §3.8 | ✅ |
+<details>
+<summary><b>View Architecture & Core Integration Details</b></summary>
 
----
+### Phase 1: Foundation
+- NestJS Backend & Supabase PostgreSQL
+- Next.js 16 (React 19) Frontend
+- Multi-score AI Analysis Engine
 
-## Phase 5: Advanced Pipeline ✅ *COMPLETED*
+### Phase 2: Multi-Channel Ingestion
+- Gmail OAuth2 attachment syncing
+- Gemini Multimodal OCR for scanned CVs
+- Bilingual Arabic/English support (RTL)
 
-| # | Feature | PRD | Est. |
-|---|---------|-----|------|
-| 26 | Candidate Kanban Board (Applied → Interview → Offered → Hired) | - | ✅ |
-| 27 | Email Webhook Notifications for Exceptional Candidates (90%+) | - | ✅ |
-| 28 | Supabase Realtime (live dashboard updates during batch upload) | - | ✅ |
+### Phase 3-6: Intelligence & Scale
+- RAG-Enabled semantic search (pgvector)
+- DOCX & Image support
+- AI Spending & Token Usage Dashboard
+- Pipeline Kanban Board
 
----
-
-## Phase 6: Scale & Intelligence ✅ *COMPLETED*
-
-| # | Feature | PRD | Est. |
-|---|---------|-----|------|
-| 29 | Vector Database (RAG with pgvector - 768d) | - | ✅ |
-| 30 | Multi-Language OCR (Using Gemini Multimodal OCR) | §3.2 | ✅ |
-| 31 | DOCX & Image CV Support | §3.2 | ✅ |
-| 32 | AI Spending Dashboard (Token usage + cost tracking) | - | ✅ |
-| 33 | **UI Refactor: Full-Width AI Insights Analytics** | - | ✅ |
-| 34 | **Advanced Settings (Thresholds, Strategies, PII Masking)** | - | ✅ |
-| 35 | **Full Arabic Localization (Charts, Tooltips, Settings Keys)** | - | ✅ |
-| 36 | **AI Quota Resilience (429 handling, sync retry, background persistence)** | - | ✅ |
-| 37 | **Unified Webhook Alerting (Email, Manual, & Retry consistency)** | - | ✅ |
+### Phase 7: Enterprise Readiness
+- Microsoft Graph / Outlook Integration
+- Deep Glassmorphism UI/UX Redesign
+- Ultra-fast 3-stage Docker deployments
+- Temporal AI Awareness (Current Date: March 27, 2026)
+</details>
 
 ---
 
-## Deployment Verification Status
+## 🚀 Active Phase: AI Intelligence (P8)
 
-> **Status: ✅ COMPLETED**
+*Focus: Scaling reliability and automation via Gemini 3.1 series.*
 
-| Service | Platform | URL | Status | Notes |
-|---|---|---|---|---|
-| Frontend | Vercel | `[TBD]` | ✅ | Build and runtime verified |
-| Backend | Render | `[TBD]` | ✅ | Puppeteer/Chrome checks passed |
-| Auth | Google/Microsoft | N/A | ✅ | OAuth redirect verified |
-
-- [x] Verify frontend build on Vercel
-- [x] Verify backend health check (`/health` or root) on Render
-- [x] Verify connectivity between Frontend and Backend (`process.env.NEXT_PUBLIC_API_URL`)
-- [x] Test Gmail/OAuth2 callback in production
-- [x] Test Microsoft/Graph callback in production
+| # | Feature | PRD | Priority | Status |
+|:---|:---|:---|:---|:---|
+| 41 | **Native JSON Schema Integration** | §3.4 | P0 | ✅ DONE |
+| 42 | **Actionable Chat (Function Calling)** | §3.5 | P0 | ✅ DONE |
+| 43 | **Hybrid Search RAG Optimization** | §6.1 | P1 | 🚀 ACTIVE |
+| 44 | **AI Context Caching (Cost Reduction)** | - | P1 | 🚀 ACTIVE |
+| 45 | **Visual CV Layout Analysis** | §3.2 | P2 | ⏳ PLANNED |
+| 46 | **Reasoning-Based Interviews** | - | P2 | ⏳ PLANNED |
 
 ---
 
-## Phase 7: Infrastructure & Polishing ✅ *COMPLETED*
+## 🌐 Upcoming Phase: Ecosystem (P9)
+
+*Focus: External verification and mobile expansion.*
 
 | # | Feature | PRD | Est. | Status |
-|---|---------|-----|------|--------|
-| 38 | Outlook / Microsoft Graph Integration | §3.2 | 3h | ✅ |
-| 39 | **UI/UX Redesign: Deep Glassmorphism & High-End Polish** | - | - | ✅ |
-| 40 | **Build Optimization: Ultra-fast 3-stage Docker Build** | - | - | ✅ |
-
----
-
-## Phase 8: AI Intelligence 🚀 *IN PROGRESS*
- 
- | # | Feature | PRD | Est. | Status |
- |---|---------|-----|------|--------|
- | 41 | **Native JSON Schema Integration** | §3.4 | 2h | ✅ |
-
-| 42 | **Actionable Chat (Function Calling)** | §3.5 | 4h | 🚀 |
-| 43 | **Hybrid Search RAG Optimization** | §6.1 | 3h | 🚀 |
-| 44 | **Visual CV Layout Analysis** | §3.2 | 3h | 🚀 |
-| 45 | **AI Context Caching (TTL-based)** | - | 3h | 🚀 |
-| 46 | **Reasoning-Based Interviews (Gemini 3.1 Pro)** | - | 4h | 🚀 |
-
----
-
-## Phase 9: Ecosystem & Enterprise 🌐 *PENDING*
-
-| # | Feature | PRD | Est. | Status |
-|---|---------|-----|------|--------|
+|:---|:---|:---|:---|:---|
 | 47 | LinkedIn / GitHub Profile Enrichment | §9 | 4h | ⏳ |
-| 48 | Mobile App (Flutter) | §5 | 20h+ | ⏳ |
+| 48 | Mobile App Implementation (Flutter) | §5 | 20h+ | ⏳ |
 | 49 | Multi-Company SaaS Platform | §9 | 20h+ | ⏳ |
-| 50 | Role-Based Access Control (Admin, Recruiter, Viewer) | §7 | 4h | ⏳ |
+| 50 | Enterprise RBAC (Admin/Recruiter/Viewer) | §7 | 4h | ⏳ |
 
 ---
 
-## Architecture Diagram
+## 🏗️ Technical Architecture
 
 ```mermaid
-graph TB
-    subgraph "Frontend — Next.js"
-        A[Dashboard] --> B[Job Panel]
-        A --> C[Candidate Cards]
-        A --> D[Kanban Board]
-        A --> E[AI Chat Drawer]
-        A --> F[Settings Modal]
-        A --> G[Spending Dashboard]
+graph TD
+    subgraph Ingestion
+        A[Gmail/Outlook] -->|PDF/DOCX| B[Email Processor]
+        C[Manual Upload] -->|OCR/Text| B
     end
 
-    subgraph "Backend — NestJS"
-        H[Jobs Controller] --> I[Jobs Service]
-        J[Candidates Controller] --> K[Candidates Service]
-        L[Chat Controller] --> M[Chat Service]
-        N[Email Controller] --> O[Email Processor]
-        P[Reports Controller] --> Q[PDF Generator]
-        R[Webhook Service] --> S[Email Notifier]
+    subgraph Intelligence
+        B --> D[Gemini 3.1 Flash-Lite]
+        D -->|JSON Schema| E[Analysis Results]
+        F[Chat Interface] -->|Function Calling| G[Action Layer]
+        G -->|Update Stage| E
     end
 
-    subgraph "AI Layer"
-        T[Gemini API - 3.1 series]
-        U[Vector DB — pgvector]
-        V[Google Vision OCR]
+    subgraph Storage
+        E --> H[(Supabase Postgres)]
+        B --> I[(pgvector RAG)]
     end
 
-    subgraph "Data Layer"
-        W[(Supabase PostgreSQL)]
-        X[Supabase Realtime]
-        Y[Supabase Storage]
+    subgraph Client
+        J[Next.js 16 Dashboard] <-->|Realtime| H
     end
-
-    A --> H & J & L & N & P
-    K --> T
-    M --> T
-    M --> U
-    K --> V
-    H & J & L --> W
-    W --> X --> A
-    K --> Y
-    R --> S
 ```

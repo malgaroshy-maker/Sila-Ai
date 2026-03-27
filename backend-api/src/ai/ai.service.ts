@@ -155,6 +155,7 @@ export class AiService {
     mimeType?: string,
     fileBuffer?: Buffer,
     responseSchema?: any,
+    tools?: any[],
   ) {
     const settings = await this.getSettings(userEmail);
     const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${settings.model.replace('models/', '')}:generateContent?key=${settings.apiKey}`;
@@ -171,6 +172,10 @@ export class AiService {
         response_mime_type: 'application/json',
         response_schema: responseSchema,
       };
+    }
+
+    if (tools) {
+      body.tools = tools;
     }
 
     if (fileBuffer && mimeType) {
