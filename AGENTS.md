@@ -23,7 +23,7 @@ ARIS is a monorepo designed for high-performance, AI-driven recruitment workflow
 - **Build:** `npm run build`
 - **Lint:** `npm run lint` (ESLint with auto-fix)
 - **Test All:** `npm run test` (Jest)
-- **Test Single File:** `npm run test -- <path-to-test-file.spec.ts>`
+- **Test Single File:** `npx jest <path-to-test-file.spec.ts>` (e.g., `npx jest src/candidates/candidates.service.spec.ts`)
 - **Test E2E:** `npm run test:e2e`
 
 ### 2.3 Frontend (`/frontend-web`)
@@ -97,10 +97,10 @@ This version uses Next.js 16 and React 19. APIs and conventions differ from trai
   4. Logical properties are used in CSS/Tailwind for RTL support.
 
 ## 7. AI Implementation Standards (2026)
-- **JSON Mode**: Always use `response_schema` in `AiService`. Never use regex to clean AI strings.
+- **JSON Mode**: Always use `responseSchema` in `AiService`. Never use regex to clean AI strings.
 - **Function Calling**: Register new system actions in `ChatService.handleFunctionCall` and update the `tools` declaration.
 - **Temporal Context**: Every AI prompt must include `Today's Date` (Already implemented in `AiService` helpers).
 - **Quota Resilience**: Check `live_api_status` table before making heavy batch calls.
 
 ---
-*Created on 2026-03-27. Follow these rules to maintain project integrity.*
+*Updated on 2026-03-27. Follow these rules to maintain project integrity.*

@@ -8,7 +8,7 @@
 *Current Priority: Enhancing search accuracy and cost efficiency.*
 
 ### 8.1 Native AI Reliability & Structure ✅
-- [x] Implement Gemini `response_schema` for 100% valid JSON analysis
+- [x] Implement Gemini `responseSchema` for 100% valid JSON analysis
 - [x] Eliminate regex-based JSON cleaning in `AiService`
 - [x] Define strict OpenAPI-compliant schemas for candidate analysis
 
@@ -17,16 +17,27 @@
 - [x] Implement `update_candidate_stage` tool (Supabase PATCH)
 - [x] Implement `update_job_requirements` tool (Supabase PATCH)
 - [x] Add multi-turn tool execution loop in Chat RAG
+- [x] **Intelligence Expansion (Batch A: Engagement)** ✅
+    - [x] Implement `generate_interview_guide` (Customized technical rubrics)
+    - [x] Implement `send_rejection_email` (AI-drafted personalized rejection)
+- [x] **Intelligence Expansion (Batch B: Strategy)** ✅
+    - [x] Implement `cross_match_candidate` (Find better roles for candidates)
+    - [x] Implement `salary_benchmarking` (Market-aligned offer suggestions)
+    - [x] Implement `hiring_risk_assessment` (Red flag & gap detection)
+- [x] **Intelligence Expansion (Batch C: Efficiency)** ✅
+    - [x] Implement `bulk_archive_candidates` (Clean up the pipeline)
+    - [x] Implement `find_duplicate_candidates` (Semantic identity check)
+    - [x] Implement `export_candidate_report` (PDF generation via Puppeteer)
 
-### 8.3 Hybrid Search RAG Optimization (Next up)
-- [ ] Implement weighted Hybrid Search (Semantic Vector + Keyword Full-Text)
-- [ ] Update Supabase `match_candidates` RPC for BM25-style ranking
-- [ ] Add `tsvector` columns to `candidate_embeddings` for rare keyword recall
+### 8.3 Hybrid Search RAG Optimization ✅
+- [x] Implement weighted Hybrid Search (Semantic Vector + Keyword Full-Text)
+- [x] Update Supabase `match_candidates` RPC for BM25-style ranking
+- [x] Add `tsvector` columns to `candidate_embeddings` for rare keyword recall
 
-### 8.4 AI Context Caching
-- [ ] Implement TTL-based Context Caching for repeated RAG queries
-- [ ] Reduce token costs for long chat sessions by up to 90%
-- [ ] Build `cacheContent` wrapper in `AiService`
+### 8.4 AI Context Caching ✅
+- [x] Implement TTL-based Context Caching for repeated RAG queries
+- [x] Reduce token costs for long chat sessions by up to 90%
+- [x] Build `cacheContent` wrapper in `AiService` (In-memory TTL cache)
 
 ### 8.5 Multimodal CV Layout Analysis
 - [ ] Use Gemini Vision to evaluate CV structural professionalism

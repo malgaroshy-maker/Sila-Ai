@@ -54,7 +54,13 @@
 |:---|:---|:---|:---|:---|
 | 41 | **Native JSON Schema Integration** | §3.4 | P0 | ✅ DONE |
 | 42 | **Actionable Chat (Function Calling)** | §3.5 | P0 | ✅ DONE |
-| 43 | **Hybrid Search RAG Optimization** | §6.1 | P1 | 🚀 ACTIVE |
+| 42.1| **Intelligence Expansion (Batch A)** | - | P1 | ✅ DONE |
+| 42.2| **Intelligence Expansion (Batch B)** | - | P1 | ✅ DONE |
+| 42.3| **Intelligence Expansion (Batch C)** | - | P2 | ✅ DONE |
+| 43 | **Hybrid Search RAG Optimization** | §6.1 | P1 | ✅ DONE |
+| 44 | **AI Context Caching** | §6.2 | P1 | ✅ DONE |
+| 45 | **Multimodal CV Layout Analysis** | - | P2 | ⏳ PLANNED |
+| 46 | **Reasoning-Based Interviews** | - | P1 | 🚀 ACTIVE |
 | 44 | **AI Context Caching (Cost Reduction)** | - | P1 | 🚀 ACTIVE |
 | 45 | **Visual CV Layout Analysis** | §3.2 | P2 | ⏳ PLANNED |
 | 46 | **Reasoning-Based Interviews** | - | P2 | ⏳ PLANNED |

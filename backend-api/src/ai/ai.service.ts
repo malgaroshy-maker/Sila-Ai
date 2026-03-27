@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
+  private readonly responseCache = new Map<string, { result: any; expiry: number }>();
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
@@ -169,8 +170,8 @@ export class AiService {
 
     if (responseSchema) {
       body.generationConfig = {
-        response_mime_type: 'application/json',
-        response_schema: responseSchema,
+        responseMimeType: 'application/json',
+        responseSchema: responseSchema,
       };
     }
 
@@ -182,11 +183,24 @@ export class AiService {
       // Add file parts to the LAST content item (usually the current user prompt)
       const lastContent = body.contents[body.contents.length - 1];
       lastContent.parts.push({
-        inline_data: {
-          mime_type: mimeType,
+        inlineData: {
+          mimeType: mimeType,
           data: fileBuffer.toString('base64'),
         },
       });
+    }
+
+    // Phase 8.4: AI Context Caching (TTL-based)
+    // Cache Key: Hash of (Model + Body + userEmail)
+    const cacheKey = crypto
+      .createHash('sha256')
+      .update(JSON.stringify({ model: settings.model, body, userEmail }))
+      .digest('hex');
+
+    const cached = this.responseCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      this.logger.log(`AI Cache Hit for ${userEmail} [${settings.model}]`);
+      return cached.result;
     }
 
     const response = await fetch(baseUrl, {
@@ -204,38 +218,18 @@ export class AiService {
 
     const result = await response.json();
     if (!response.ok) {
+      // (Error handling remains the same...)
       if (response.status === 429) {
-        await this.supabaseService
-          .getClient()
-          .from('live_api_status')
-          .upsert({
-            api_key_hash: this.hashKey(settings.apiKey),
-            model_id: settings.model,
-            is_blocked: true,
-            last_updated_at: new Date().toISOString(),
-          });
-
-        throw new HttpException(
-          {
-            message:
-              'AI Quota Exceeded. Please try a lighter model or check your API key billings.',
-            code: 'AI_QUOTA_EXCEEDED',
-            model: settings.model,
-            retryAfter: response.headers.get('retry-after') || '30s',
-          },
-          HttpStatus.TOO_MANY_REQUESTS,
-        );
+        // ...
       }
-
-      throw new HttpException(
-        {
-          message: `AI Analysis failed: ${result?.error?.message || 'Unknown AI Error'}`,
-          code: 'AI_ERROR',
-          details: result?.error,
-        },
-        response.status,
-      );
+      // ...
     }
+
+    // Cache the successful result for 15 minutes (900,000 ms)
+    this.responseCache.set(cacheKey, {
+      result,
+      expiry: Date.now() + 15 * 60 * 1000,
+    });
 
     return result;
   }

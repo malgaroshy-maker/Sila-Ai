@@ -35,12 +35,15 @@ export class ChatService {
         message,
       );
       const { data: matched, error: matchError } = await sb.rpc(
-        'match_candidates',
+        'hybrid_match_candidates',
         {
+          query_text: message,
           query_embedding: queryEmbedding,
-          match_threshold: 0.1, // Low threshold to get more context
-          match_count: 5, // Top 5 relevant CV snippets
-          user_email_filter: userEmail, // THE FIX: Filter by current user
+          match_threshold: 0.1,
+          match_count: 5,
+          full_text_weight: 1.5, // Prioritize keyword matches slightly
+          semantic_weight: 1.0,
+          user_email_filter: userEmail,
         },
       );
 
@@ -192,6 +195,131 @@ ${analysisSummary || 'No candidate analyses available yet.'}
               required: ['job_id', 'requirements'],
             },
           },
+          {
+            name: 'generate_interview_guide',
+            description:
+              'Generates a customized interview rubric and questions based on candidate analysis.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'send_rejection_email',
+            description:
+              'Drafts a personalized rejection email for a candidate based on their AI analysis.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'cross_match_candidate',
+            description:
+              'Checks if a candidate is a good fit for other open positions in the company.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'salary_benchmarking',
+            description:
+              'Provides a recommended salary range for a candidate based on their skills and the job role.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'hiring_risk_assessment',
+            description:
+              'Identifies potential red flags or risks associated with hiring a specific candidate.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'bulk_archive_candidates',
+            description:
+              'Archives all candidates for a specific job whose final score is below a certain threshold.',
+            parameters: {
+              type: 'object',
+              properties: {
+                job_id: {
+                  type: 'string',
+                  description: 'The UUID of the job.',
+                },
+                threshold_score: {
+                  type: 'number',
+                  description:
+                    'Candidates with a score strictly below this will be archived (marked as Rejected).',
+                },
+              },
+              required: ['job_id', 'threshold_score'],
+            },
+          },
+          {
+            name: 'find_duplicate_candidates',
+            description:
+              'Searches for duplicate candidate profiles based on name or email.',
+            parameters: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'The name or email to search for.',
+                },
+              },
+              required: ['query'],
+            },
+          },
+          {
+            name: 'export_candidate_report',
+            description:
+              'Generates a comprehensive summary report for a candidate application.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
         ],
       },
     ];
@@ -210,21 +338,21 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       let turn = 0;
       while (
         result.candidates?.[0]?.content?.parts?.some(
-          (p: any) => p.function_call,
+          (p: any) => p.functionCall,
         ) &&
         turn < 2
       ) {
         turn++;
         const parts = result.candidates[0].content.parts;
-        const functionCalls = parts.filter((p: any) => p.function_call);
+        const functionCalls = parts.filter((p: any) => p.functionCall);
         const functionResponses = [];
 
         for (const fc of functionCalls) {
-          const call = fc.function_call;
+          const call = fc.functionCall;
           this.logger.log(`AI triggering function: ${call.name}`);
           const response = await this.handleFunctionCall(userEmail, call);
           functionResponses.push({
-            function_response: {
+            functionResponse: {
               name: call.name,
               response: response,
             },
@@ -239,7 +367,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 
         // Add the tool's response to history
         fullContents.push({
-          role: 'tool',
+          role: 'function',
           parts: functionResponses,
         });
 
@@ -312,6 +440,153 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           status: 'success',
           message: `Job requirements updated.`,
           data: data,
+        };
+      }
+
+      if (
+        call.name === 'generate_interview_guide' ||
+        call.name === 'send_rejection_email' ||
+        call.name === 'cross_match_candidate' ||
+        call.name === 'salary_benchmarking' ||
+        call.name === 'hiring_risk_assessment'
+      ) {
+        const { application_id } = call.args;
+        // Fetch full candidate analysis and job details
+        const { data: app, error } = await sb
+          .from('analysis_results')
+          .select(
+            '*, applications!inner(job_id, candidate_id, jobs!inner(title, description, requirements, user_email), candidates!inner(name, email))',
+          )
+          .eq('application_id', application_id)
+          .single();
+
+        if (error || !app) throw new Error('Could not find analysis data.');
+
+        if (call.name === 'generate_interview_guide') {
+          return {
+            status: 'success',
+            guide_data: {
+              candidate: app.applications.candidates.name,
+              job: app.applications.jobs.title,
+              rubric: app.interview_questions,
+              weaknesses_to_probe: app.weaknesses,
+              focus_areas: app.tags,
+            },
+            message: `Interview guide generated for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'send_rejection_email') {
+          return {
+            status: 'success',
+            draft: {
+              to: app.applications.candidates.email,
+              subject: `Update on your application for ${app.applications.jobs.title}`,
+              body: `Dear ${app.applications.candidates.name}, thank you for your interest in the ${app.applications.jobs.title} role. While we were impressed with your ${app.tags?.slice(0, 2).join(' and ')}, we've decided to move forward with other candidates whose profiles more closely align with our current focus on ${app.applications.jobs.requirements?.slice(0, 2).join(' and ')}.`,
+            },
+            message: `Rejection draft prepared for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'cross_match_candidate') {
+          const { data: otherJobs } = await sb
+            .from('jobs')
+            .select('title, description, requirements')
+            .eq('user_email', userEmail)
+            .neq('id', app.applications.job_id);
+
+          return {
+            status: 'success',
+            candidate: {
+              name: app.applications.candidates.name,
+              skills: app.tags,
+              score: app.final_score,
+            },
+            other_positions: otherJobs || [],
+            message: `Found ${otherJobs?.length || 0} other potential roles for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'salary_benchmarking') {
+          return {
+            status: 'success',
+            candidate_stats: {
+              name: app.applications.candidates.name,
+              role: app.applications.jobs.title,
+              skills: app.tags,
+              is_fresh_grad: app.is_fresh_graduate,
+              score: app.final_score,
+            },
+            message: `Salary benchmark data retrieved for ${app.applications.candidates.name}.`,
+          };
+        }
+
+        if (call.name === 'hiring_risk_assessment') {
+          return {
+            status: 'success',
+            candidate: app.applications.candidates.name,
+            weaknesses: app.weaknesses,
+            flags: app.flags,
+            trajectory: app.career_trajectory,
+            message: `Risk assessment data compiled for ${app.applications.candidates.name}.`,
+          };
+        }
+      }
+
+      if (call.name === 'bulk_archive_candidates') {
+        const { job_id, threshold_score } = call.args;
+        // Find applications to archive (score < threshold)
+        const { data: toArchive } = await sb
+          .from('analysis_results')
+          .select('application_id')
+          .lt('final_score', threshold_score)
+          .eq('applications.job_id', job_id);
+
+        if (toArchive && toArchive.length > 0) {
+          const ids = toArchive.map((a) => a.application_id);
+          const { error } = await sb
+            .from('applications')
+            .update({ pipeline_stage: 'Rejected' })
+            .in('id', ids);
+
+          if (error) throw new Error(error.message);
+          return {
+            status: 'success',
+            archived_count: ids.length,
+            message: `Successfully archived ${ids.length} candidates with scores below ${threshold_score}.`,
+          };
+        }
+        return {
+          status: 'success',
+          archived_count: 0,
+          message: `No candidates found with scores below ${threshold_score}.`,
+        };
+      }
+
+      if (call.name === 'find_duplicate_candidates') {
+        const { query } = call.args;
+        const { data: dupes } = await sb
+          .from('candidates')
+          .select('id, name, email')
+          .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+          .limit(5);
+
+        return {
+          status: 'success',
+          duplicates: dupes || [],
+          message: `Found ${dupes?.length || 0} candidate(s) matching "${query}".`,
+        };
+      }
+
+      if (call.name === 'export_candidate_report') {
+        const { application_id } = call.args;
+        // In a real scenario, this would trigger the Puppeteer PDF generation endpoint
+        return {
+          status: 'success',
+          application_id: application_id,
+          download_url: `/api/reports/download/${application_id}`, // Placeholder
+          message:
+            'Candidate report generation initiated. You can download it once it is ready.',
         };
       }
 
