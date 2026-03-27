@@ -411,18 +411,22 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     try {
       if (call.name === 'update_candidate_stage') {
         const { application_id, stage } = call.args;
+        this.logger.log(`Moving application ${application_id} to ${stage}`);
         const { data, error } = await sb
           .from('applications')
           .update({ pipeline_stage: stage })
           .eq('id', application_id)
-          .select()
-          .single();
+          .select();
+        
+        this.logger.log(`Update result data: ${JSON.stringify(data)}`);
+        
+        const updatedApp = Array.isArray(data) ? data[0] : data;
 
         if (error) throw new Error(error.message);
         return {
           status: 'success',
           message: `Candidate moved to ${stage}.`,
-          data: data,
+          data: updatedApp,
         };
       }
 
@@ -432,8 +436,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .from('jobs')
           .update({ requirements })
           .eq('id', job_id)
+          .eq('user_email', userEmail)
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) throw new Error(error.message);
         return {
@@ -455,12 +460,14 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         const { data: app, error } = await sb
           .from('analysis_results')
           .select(
-            '*, applications!inner(job_id, candidate_id, jobs!inner(title, description, requirements, user_email), candidates!inner(name, email))',
+            '*, applications!inner(id, job_id, candidate_id, jobs!inner(title, description, requirements, user_email), candidates!inner(name, email))',
           )
           .eq('application_id', application_id)
-          .single();
+          .eq('applications.jobs.user_email', userEmail)
+          .maybeSingle();
 
-        if (error || !app) throw new Error('Could not find analysis data.');
+        if (error) throw new Error(`Database error: ${error.message}`);
+        if (!app) throw new Error('Could not find analysis data for this candidate or access denied.');
 
         if (call.name === 'generate_interview_guide') {
           return {
