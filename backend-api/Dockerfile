@@ -1,32 +1,25 @@
 # syntax=docker/dockerfile:1
 
-# Stage 1: Base & Dependencies
-FROM node:20-slim AS base
+# Stage 1: Build
+FROM node:20-slim AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
-RUN npm install -g npm@latest
-
-# Stage 2: Install ALL dependencies
-FROM base AS deps
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund --loglevel=error
-
-# Stage 3: Build the app
-FROM deps AS builder
 COPY . .
 RUN npm run build
 
-# Stage 4: Install only production dependencies
-FROM base AS prod-deps
-COPY package*.json ./
-RUN npm ci --omit=dev --no-audit --no-fund --loglevel=error
-
-# Stage 5: Final Production Image
+# Stage 2: Final Production Image
 FROM node:20-slim
 WORKDIR /app
-COPY --from=prod-deps /app/node_modules ./node_modules
+
+# Copy only production artifacts
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
+
+# Re-install only production dependencies in the final image
+# This is usually faster than pruning and results in the smallest possible image
+RUN npm ci --omit=dev --no-audit --no-fund --loglevel=error
 
 # Chromium settings
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true

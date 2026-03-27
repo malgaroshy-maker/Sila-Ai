@@ -542,7 +542,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
           </div>
 
           {/* Bottom Row: Actions & Navigation */}
-          <div className="flex flex-col md:flex-row justify-between items-center py-3 gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-center py-3 gap-4 no-scrollbar">
             <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
               <div className="relative group flex-1 md:flex-none">
                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-[#0EA5E9] transition-colors" />

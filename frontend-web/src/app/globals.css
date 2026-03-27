@@ -42,7 +42,7 @@ main, .min-h-screen {
   overflow-x: hidden;
 }
 
-/* Global Hide Scrollbars */
+/* Global Hide Scrollbars - Super Aggressive */
 * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
@@ -52,19 +52,23 @@ main, .min-h-screen {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+  background: transparent !important;
+}
+
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 .no-scrollbar::-webkit-scrollbar {
   display: none !important;
 }
-.no-scrollbar {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-}
-/* Ensure the body itself doesn't have a horizontal scrollbar */
-body {
+
+/* Ensure the body and html don't have horizontal scroll */
+html, body {
   overflow-x: hidden !important;
-  width: 100vw;
+  width: 100vw !important;
+  position: relative;
 }
 
 /* Reduced motion */
