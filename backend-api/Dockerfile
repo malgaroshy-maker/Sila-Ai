@@ -12,12 +12,15 @@ RUN apt-get update && apt-get install -y \
 
 RUN npm install -g npm@latest
 
+# Copy package files and install all dependencies (including devDependencies)
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund --loglevel=error
 
+# Copy application code and build
 COPY . .
 RUN npm run build
-# Remove devDependencies to shrink production image size
+
+# Prune devDependencies to keep the image small
 RUN npm prune --production
 
 # Production stage
@@ -25,9 +28,7 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# We no longer need the massive OS apt-get install block 
-# because we will use @sparticuz/chromium which brings its own binary
-
+# Copy only production artifacts and node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
@@ -35,7 +36,10 @@ COPY --from=builder /app/node_modules ./node_modules
 # Verify build output
 RUN ls -R ./dist
 
+# Chromium for Puppeteer (using Sparticuz)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
+
 EXPOSE 5000
 
-# Try to run main.js from dist or dist/src
-CMD ["sh", "-c", "[ -f dist/main.js ] && node dist/main.js || node dist/src/main.js"]
+CMD ["node", "dist/main.js"]
