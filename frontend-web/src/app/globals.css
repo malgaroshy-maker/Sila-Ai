@@ -28,21 +28,7 @@ html {
   scroll-behavior: smooth;
 }
 
-body {
-  background: var(--color-background);
-  color: var(--color-text);
-  overflow-x: hidden;
-  height: 100vh;
-  margin: 0;
-}
-
-/* Ensure no vertical overflow on main containers */
-main, .min-h-screen {
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Global Hide Scrollbars - Super Aggressive */
+/* Global Hide Scrollbars - Ultimate Aggressive Fix */
 * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
@@ -52,23 +38,70 @@ main, .min-h-screen {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
-  background: transparent !important;
 }
 
-.no-scrollbar {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
+/* Specific class for tailwind utility */
 .no-scrollbar::-webkit-scrollbar {
   display: none !important;
 }
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
 
-/* Ensure the body and html don't have horizontal scroll */
-html, body {
+body {
+  background: var(--color-background);
+  color: var(--color-text);
   overflow-x: hidden !important;
-  width: 100vw !important;
-  position: relative;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure no vertical overflow on main containers */
+main, .min-h-screen {
+  overflow-y: auto;
+  overflow-x: hidden !important;
+}
+
+/* Global Hide Scrollbars - Super Aggressive Fix */
+* {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important;  /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Ensure no vertical overflow on main containers */
+main, .min-h-screen {
+  overflow-y: auto;
+  overflow-x: hidden !important;
+}
+
+/* Focus ring utility */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions default */
+button, a, input, textarea, select {
+  transition: all 200ms ease;
+}
+
+/* Scrollbar utilities */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
 }
 
 /* Reduced motion */

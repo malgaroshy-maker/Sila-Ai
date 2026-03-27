@@ -35,6 +35,9 @@ function AboutContent() {
     }
   }, [searchParams]);
 
+  const isRtl = locale === 'ar';
+  const backLabel = fromOrigin === 'dashboard' ? t('back_to_dashboard') : t('back_to_login');
+
   const handleBack = () => {
     if (fromOrigin === 'dashboard') {
       router.push('/');
