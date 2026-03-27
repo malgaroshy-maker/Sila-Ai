@@ -59,17 +59,8 @@
 | 42.3| **Intelligence Expansion (Batch C)** | - | P2 | ✅ DONE |
 | 43 | **Hybrid Search RAG Optimization** | §6.1 | P1 | ✅ DONE |
 | 44 | **AI Context Caching** | §6.2 | P1 | ✅ DONE |
-| 45 | **Visual CV Layout Analysis** | §3.2 | P2 | ⏳ PLANNED |
-| 46 | **Reasoning-Based Interviews** | - | P2 | ⏳ PLANNED |
-
----
-
-## 🌐 Upcoming Phase: Ecosystem (P9)
-
-*Focus: External verification and mobile expansion.*
-
-| # | Feature | PRD | Est. | Status |
-|:---|:---|:---|:---|:---|
+| 45 | **Multimodal CV Layout Analysis** | §3.2 | P2 | ✅ DONE |
+| 46 | **Reasoning-Based Interviews** | - | P1 | ✅ DONE |
 | 47 | LinkedIn / GitHub Profile Enrichment | §9 | 4h | ⏳ |
 | 48 | Mobile App Implementation (Flutter) | §5 | 20h+ | ⏳ |
 | 49 | Multi-Company SaaS Platform | §9 | 20h+ | ⏳ |

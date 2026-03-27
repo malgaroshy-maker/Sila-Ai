@@ -472,6 +472,8 @@ export class CandidatesService {
           flags: analysisResult.flags || [],
           interview_questions: analysisResult.interview_questions || [],
           training_suggestions: analysisResult.training_suggestions || [],
+          design_score: analysisResult.design_score || 0,
+          reasoning_trace: analysisResult.reasoning_trace || '',
         },
         { onConflict: 'application_id' },
       )

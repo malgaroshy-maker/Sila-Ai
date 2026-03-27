@@ -40,15 +40,15 @@
 - [x] Reduce token costs for long chat sessions by up to 90%
 - [x] Build `cacheContent` wrapper in `AiService` (In-memory TTL cache)
 
-### 8.5 Multimodal CV Layout Analysis
-- [ ] Use Gemini Vision to evaluate CV structural professionalism
-- [ ] Add "Design & Presentation" score (0-100) to analysis table
-- [ ] Visualize hierarchy quality in candidate dashboard
+### 8.5 Multimodal CV Layout Analysis ✅
+- [x] Use Gemini Vision to evaluate CV structural professionalism
+- [x] Add "Design & Presentation" score (0-100) to analysis table
+- [x] Visualize hierarchy quality in candidate dashboard
 
-### 8.6 Reasoning-Based Interviews
-- [ ] Switch `interview_questions` to Gemini 3.1 Pro reasoning model
-- [ ] Implement "Trap Questions" to verify claimed technical skills
-- [ ] Add "Reasoning Trace" to AI justifications
+### 8.6 Reasoning-Based Interviews ✅
+- [x] Switch `interview_questions` to Gemini 3.1 Pro reasoning model
+- [x] Implement "Trap Questions" to verify claimed technical skills
+- [x] Add "Reasoning Trace" to AI justifications
 
 ---
 

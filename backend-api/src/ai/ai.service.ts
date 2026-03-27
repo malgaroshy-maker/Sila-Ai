@@ -286,6 +286,8 @@ export class AiService {
         flags: { type: 'array', items: { type: 'string' } },
         interview_questions: { type: 'array', items: { type: 'string' } },
         training_suggestions: { type: 'array', items: { type: 'string' } },
+        design_score: { type: 'integer' },
+        reasoning_trace: { type: 'string' },
       },
       required: [
         'name',
@@ -307,6 +309,8 @@ export class AiService {
         'flags',
         'interview_questions',
         'training_suggestions',
+        'design_score',
+        'reasoning_trace',
       ],
     };
 
@@ -377,6 +381,11 @@ export class AiService {
       ${cvText}
       
       قم بتحليل السيرة الذاتية بدقة بناءً على المخطط (Schema) المطلوب.
+      
+      Additional Instructions:
+      1. DESIGN & PRESENTATION (design_score): Evaluate the structural layout, hierarchy, and professionalism of the CV document visual presentation (0-100).
+      2. REASONING TRACE (reasoning_trace): Provide a detailed step-by-step chain-of-thought explaining how you arrived at the final score, citing specific evidence from the CV and requirements.
+      3. TRAP QUESTIONS: In your interview_questions, include 2-3 "trap questions" designed to verify the depth of the candidate's technical claims.
       
       ${
         settings.aiMode === 'strict'

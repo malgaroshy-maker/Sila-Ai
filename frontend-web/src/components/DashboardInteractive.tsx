@@ -66,6 +66,8 @@ interface Application {
     cultural_fit_score?: number;
     career_trajectory?: string;
     project_highlights?: string[];
+    design_score?: number;
+    reasoning_trace?: string;
   };
 }
 
@@ -252,8 +254,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-        const res = await fetch(`${apiBase}/health`, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(5000) });
         if (res.ok) setServerStatus('online');
         else setServerStatus('offline');
       } catch {
@@ -263,7 +264,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     checkServerStatus();
     
     // Check if onboarding is needed
-    const hasSeenOnboarding = localStorage.getItem('aris_onboarding_seen');
+    const hasSeenOnboarding = localStorage.getItem('sila_onboarding_seen');
     if (!hasSeenOnboarding) {
       // Small delay for better UX
       setTimeout(() => setIsOnboardingOpen(true), 1500);
@@ -368,7 +369,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     
     setIsDeletingJobId(jobId);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/jobs/${jobId}`, {
+      const res = await fetch(`${API_URL}/jobs/${jobId}`, {
         method: 'DELETE',
         headers: { 'x-user-email': userEmail }
       });
@@ -391,7 +392,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     
     setIsDeletingCandId(candidateId);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/candidates/${candidateId}`, {
+      const res = await fetch(`${API_URL}/candidates/${candidateId}`, {
         method: 'DELETE',
         headers: { 'x-user-email': userEmail }
       });
@@ -1043,8 +1044,15 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.project_impact_score || 0}%</div>
                     </div>
                     <div className="bg-[#10B981]/5 border border-[#10B981]/20 p-5 rounded-3xl text-center group hover:border-[#10B981]/30 transition-all">
-                      <p className="text-[10px) font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#10B981]">{t.skills_match || 'Skills Match'}</p>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-[#10B981]">{t.skills_match || 'Skills Match'}</p>
                       <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.skills_score || 0}%</div>
+                    </div>
+                    <div className="bg-indigo-500/5 border border-indigo-500/20 p-5 rounded-3xl text-center group hover:border-indigo-400/30 transition-all relative">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Info className="w-3 h-3 text-slate-500" />
+                      </div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 group-hover:text-indigo-400">{t.design_presentation || 'Design & Layout'}</p>
+                      <div className="text-3xl font-black text-white">{selectedCandidate.analysis_results?.design_score || 0}%</div>
                     </div>
                     {selectedCandidate.analysis_results?.is_fresh_graduate && (
                       <div className="bg-purple-500/5 border border-purple-500/20 p-5 rounded-3xl text-center group hover:border-purple-500/30 transition-all">
@@ -1096,6 +1104,18 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                       {selectedCandidate.analysis_results?.justification}
                     </p>
                   </div>
+
+                  {selectedCandidate.analysis_results?.reasoning_trace && (
+                    <div className="bg-[#020617]/40 border border-[#1E293B] p-6 rounded-3xl">
+                      <h3 className="text-indigo-400 font-bold text-sm mb-3 flex items-center gap-2">
+                        <Cpu className="w-4 h-4" />
+                        {t.reasoning_trace || 'AI Reasoning Chain'}
+                      </h3>
+                      <p className="text-xs text-slate-400 font-mono leading-relaxed whitespace-pre-wrap">
+                        {selectedCandidate.analysis_results.reasoning_trace}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-3xl">
@@ -1173,13 +1193,12 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                          if (!candidateId) {
                            alert('Error: Candidate ID not found.');
                            return;
-                         }
+                          }
 
-                         setDownloadStatus(prev => ({ ...prev, [candidateId]: 'loading' }));
-                         const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-                         const downloadUrl = `${apiBase}/candidates/${candidateId}/cv-download`;
-                         
-                         try {
+                          setDownloadStatus(prev => ({ ...prev, [candidateId]: 'loading' }));
+                          const downloadUrl = `${API_URL}/candidates/${candidateId}/cv-download`;
+                          
+                          try {
                            const res = await fetch(downloadUrl, {
                              headers: { 'x-user-email': userEmail }
                            });
