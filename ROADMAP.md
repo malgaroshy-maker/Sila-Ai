@@ -101,17 +101,38 @@
 
 ---
 
-## Phase 7: Expansion 🔮 *IN PROGRESS*
+## Phase 7: Infrastructure & Polishing ✅ *COMPLETED*
 
 | # | Feature | PRD | Est. | Status |
 |---|---------|-----|------|--------|
 | 38 | Outlook / Microsoft Graph Integration | §3.2 | 3h | ✅ |
 | 39 | **UI/UX Redesign: Deep Glassmorphism & High-End Polish** | - | - | ✅ |
 | 40 | **Build Optimization: Ultra-fast 3-stage Docker Build** | - | - | ✅ |
-| 41 | LinkedIn / GitHub Profile Enrichment | §9 | 4h | ⏳ |
-| 42 | Mobile App (Flutter) | §5 | 20h+ | ⏳ |
-| 43 | Multi-Company SaaS Platform | §9 | 20h+ | ⏳ |
-| 44 | Role-Based Access Control (Admin, Recruiter, Viewer) | §7 | 4h | ⏳ |
+
+---
+
+## Phase 8: AI Intelligence 🚀 *IN PROGRESS*
+ 
+ | # | Feature | PRD | Est. | Status |
+ |---|---------|-----|------|--------|
+ | 41 | **Native JSON Schema Integration** | §3.4 | 2h | ✅ |
+
+| 42 | **Actionable Chat (Function Calling)** | §3.5 | 4h | 🚀 |
+| 43 | **Hybrid Search RAG Optimization** | §6.1 | 3h | 🚀 |
+| 44 | **Visual CV Layout Analysis** | §3.2 | 3h | 🚀 |
+| 45 | **AI Context Caching (TTL-based)** | - | 3h | 🚀 |
+| 46 | **Reasoning-Based Interviews (Gemini 3.1 Pro)** | - | 4h | 🚀 |
+
+---
+
+## Phase 9: Ecosystem & Enterprise 🌐 *PENDING*
+
+| # | Feature | PRD | Est. | Status |
+|---|---------|-----|------|--------|
+| 47 | LinkedIn / GitHub Profile Enrichment | §9 | 4h | ⏳ |
+| 48 | Mobile App (Flutter) | §5 | 20h+ | ⏳ |
+| 49 | Multi-Company SaaS Platform | §9 | 20h+ | ⏳ |
+| 50 | Role-Based Access Control (Admin, Recruiter, Viewer) | §7 | 4h | ⏳ |
 
 ---
 
@@ -138,7 +159,7 @@ graph TB
     end
 
     subgraph "AI Layer"
-        T[Gemini API]
+        T[Gemini API - 3.1 series]
         U[Vector DB — pgvector]
         V[Google Vision OCR]
     end

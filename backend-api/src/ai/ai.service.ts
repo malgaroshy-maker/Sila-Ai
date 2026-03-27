@@ -154,6 +154,7 @@ export class AiService {
     promptOrContents: string | any[],
     mimeType?: string,
     fileBuffer?: Buffer,
+    responseSchema?: any,
   ) {
     const settings = await this.getSettings(userEmail);
     const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${settings.model.replace('models/', '')}:generateContent?key=${settings.apiKey}`;
@@ -164,6 +165,13 @@ export class AiService {
         : promptOrContents;
 
     const body: any = { contents };
+
+    if (responseSchema) {
+      body.generationConfig = {
+        response_mime_type: 'application/json',
+        response_schema: responseSchema,
+      };
+    }
 
     if (fileBuffer && mimeType) {
       // Add file parts to the LAST content item (usually the current user prompt)
@@ -252,22 +260,69 @@ export class AiService {
     const settings = await this.getSettings(userEmail);
     const prompt = this.constructAnalyzePrompt(jobParams, cvText, settings);
 
+    const schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        email: { type: 'string' },
+        phone: { type: 'string' },
+        skills_score: { type: 'integer' },
+        gpa_score: { type: 'integer', nullable: true },
+        language_score: { type: 'integer' },
+        ind_readiness_score: { type: 'integer' },
+        final_score: { type: 'integer' },
+        is_fresh_graduate: { type: 'boolean' },
+        project_impact_score: { type: 'integer' },
+        cultural_fit_score: { type: 'integer' },
+        career_trajectory: { type: 'string' },
+        project_highlights: { type: 'array', items: { type: 'string' } },
+        strengths: { type: 'array', items: { type: 'string' } },
+        weaknesses: { type: 'array', items: { type: 'string' } },
+        recommendation: { type: 'string', enum: ['Strong', 'Average', 'Weak'] },
+        justification: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        flags: { type: 'array', items: { type: 'string' } },
+        interview_questions: { type: 'array', items: { type: 'string' } },
+        training_suggestions: { type: 'array', items: { type: 'string' } },
+      },
+      required: [
+        'name',
+        'email',
+        'skills_score',
+        'language_score',
+        'ind_readiness_score',
+        'final_score',
+        'is_fresh_graduate',
+        'project_impact_score',
+        'cultural_fit_score',
+        'career_trajectory',
+        'project_highlights',
+        'strengths',
+        'weaknesses',
+        'recommendation',
+        'justification',
+        'tags',
+        'flags',
+        'interview_questions',
+        'training_suggestions',
+      ],
+    };
+
     try {
       const result = await this.fetchGeminiWithQuota(
         userEmail,
         prompt,
         mimeType || 'application/pdf',
         cvBuffer,
+        schema,
       );
 
       const candidateResponse =
         result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!candidateResponse) throw new Error('Empty response from AI');
 
-      const cleanedJson = candidateResponse
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
+      // Native JSON Schema ensures the response is directly parseable
+      const parsedData = JSON.parse(candidateResponse);
 
       // Log usage based on tokens returned in the raw JSON
       await this.logUsage(
@@ -278,7 +333,7 @@ export class AiService {
       );
 
       return {
-        data: JSON.parse(cleanedJson),
+        data: parsedData,
         metadata: {
           usage: result.usageMetadata,
           model: settings.model,
@@ -319,31 +374,8 @@ export class AiService {
       نص السيرة الذاتية:
       ${cvText}
       
-      قم بتحليل السيرة الذاتية وإرجاع مخرجات JSON صارمة بالتنسيق التالي بدون أي نص إضافي:
-      {
-        "name": "اسم المرشح الكامل",
-        "email": "البريد الإلكتروني",
-        "phone": "رقم الهاتف",
-        "skills_score": 0,
-        "gpa_score": null,
-        "language_score": 0,
-        "ind_readiness_score": 0,
-        "final_score": 0,
-        "is_fresh_graduate": false,
-        "project_impact_score": 0,
-        "cultural_fit_score": 0,
-        "career_trajectory": "تحليل مسار المرشح المهني وتوجهه المستقبلي",
-        "project_highlights": ["أبرز مشروع أو إنجاز 1", "إنجاز 2"],
-        "strengths": ["نقطة قوة 1"],
-        "weaknesses": ["نقطة ضعف 1"],
-        "recommendation": "Strong|Average|Weak",
-        "justification": "مبرر التقييم باختصار مع ذكر الملاءمة الثقافية والتوقعات",
-        "tags": ["Senior", "Junior", "🎓 Fresh Grad", "Full-Stack"],
-        "flags": ["🚩 Gap Detected", "🚩 Missing Tool"],
-        "interview_questions": ["سؤال مقابلة مخصص 1 (ركز على المشاريع للخريجين الجدد)", "سؤال 2", "سؤال 3"],
-        "training_suggestions": ["اقتراح لسد الفجوة بين الأكاديميا والصناعة (خاصة للخريجين)", "اقتراح 2"]
-      }
-
+      قم بتحليل السيرة الذاتية بدقة بناءً على المخطط (Schema) المطلوب.
+      
       ${
         settings.aiMode === 'strict'
           ? 'STRICT MODE ACTIVE: You must heavily penalize any missing skills or requirements. Do NOT give partial credit.'
@@ -390,17 +422,20 @@ export class AiService {
       
       Extract the candidate's full name and email address from this text.
       Also, determine if this document is actually a Professional CV/Resume for a job candidate.
-
-      Return ONLY a JSON object with no extra text:
-      { 
-        "name": "Full Name", 
-        "email": "email@example.com",
-        "is_cv": true 
-      }
       
       Text Content:
       ${cvText}
     `;
+
+    const schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        email: { type: 'string' },
+        is_cv: { type: 'boolean' },
+      },
+      required: ['name', 'email', 'is_cv'],
+    };
 
     try {
       const result = await this.fetchGeminiWithQuota(
@@ -408,14 +443,12 @@ export class AiService {
         prompt,
         mimeType || 'application/pdf',
         cvBuffer,
+        schema,
       );
       const parts = result.candidates?.[0]?.content?.parts;
       const responseText = parts?.[0]?.text || '{}';
-      const cleanedJson = responseText
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-      const parsed = JSON.parse(cleanedJson);
+      // No regex cleaning needed anymore with JSON schema
+      const parsed = JSON.parse(responseText);
 
       await this.logUsage(
         userEmail,
@@ -495,21 +528,33 @@ export class AiService {
       
       You are an HR expert. Convert this natural language job request into a structured job posting.
       User request: "${userInput}"
-      Return ONLY valid JSON:
-      {
-        "title": "Job Title",
-        "description": "Detailed job description",
-        "requirements": ["req 1", "req 2"]
-      }`;
+    `;
+
+    const schema = {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        description: { type: 'string' },
+        requirements: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+      required: ['title', 'description', 'requirements'],
+    };
 
     try {
-      const result = await this.fetchGeminiWithQuota(userEmail, prompt);
+      const result = await this.fetchGeminiWithQuota(
+        userEmail,
+        prompt,
+        undefined,
+        undefined,
+        schema,
+      );
       const responseText =
         result.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      const text = responseText
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
+
+      const parsed = JSON.parse(responseText);
 
       await this.logUsage(
         userEmail,
@@ -517,7 +562,7 @@ export class AiService {
         result.usageMetadata,
         settings.model,
       );
-      return JSON.parse(text);
+      return parsed;
     } catch (error: any) {
       this.logger.error('Job generation failed:', error.message);
       return {

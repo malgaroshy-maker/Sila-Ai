@@ -150,7 +150,7 @@
 
 ---
 
-## Phase 7: Expansion 🔮 *IN PROGRESS*
+## Phase 7: Infrastructure & Polishing ✅
 
 ### 7.1 Outlook / Microsoft Graph Integration (§3.2) ✅
 - [x] Microsoft OAuth2 flow (Azure AD app registration)
@@ -164,24 +164,64 @@
 - [x] **UI/UX Overhaul**: Deep Glassmorphism redesign for Login, About, and Settings.
 - [x] **Global CSS Fixes**: Aggressive scrollbar hiding and search bar autofill prevention.
 - [x] **Navigation**: Improved back button logic on About page.
+- [x] **Temporal Awareness**: Fixed AI date/time perception (Current Date: March 27, 2026).
 
-### 7.3 LinkedIn / GitHub Enrichment (§9)
+---
+
+## Phase 8: AI Intelligence & Optimization 🚀 
+ 
+ ### 8.1 Native AI Reliability & Structure ✅
+ - [x] Implement Gemini `response_schema` for 100% valid JSON analysis (Native Structured Outputs)
+ - [x] Eliminate regex-based JSON cleaning in `AiService`
+ - [x] Define strict OpenAPI-compliant schemas for all AI outputs
+
+
+### 8.2 Actionable AI Assistant (Function Calling)
+- [ ] Integrate Gemini Function Calling into `ChatService`
+- [ ] Enable chat actions: "Move candidate to [Stage]", "Update job [Field]", "Generate report"
+- [ ] Implement secure execution layer for AI-triggered backend methods
+
+### 8.3 Hybrid Search RAG Optimization
+- [ ] Implement weighted Hybrid Search (Semantic Vector + Keyword Full-Text)
+- [ ] Update Supabase `match_candidates` RPC for BM25-style ranking
+- [ ] Improve recall for specific technical terms and rare keywords
+
+### 8.4 AI Context Caching
+- [ ] Implement TTL-based Context Caching for repeated RAG queries
+- [ ] Reduce token costs for long chat sessions by up to 90%
+- [ ] Improve chat response latency through cached token reuse
+
+### 8.5 Multimodal CV Layout Analysis
+- [ ] Use Gemini Vision to evaluate CV structural professionalism
+- [ ] Score visual hierarchy, readability, and design consistency
+- [ ] Add "Design Score" to the candidate analysis dashboard
+
+### 8.6 Reasoning-Based Interviews
+- [ ] Use Gemini 3.1 Pro reasoning models for `interview_questions` generation
+- [ ] Generate deep-vetting questions based on CV inconsistencies
+- [ ] Improve "Training Suggestions" with Chain-of-Thought reasoning
+
+---
+
+## Phase 9: Ecosystem & Enterprise 🌐
+
+### 9.1 LinkedIn / GitHub Enrichment (§9)
 - [ ] Input LinkedIn URL → scrape public profile data
 - [ ] Input GitHub username → fetch repos, languages, contribution stats
 - [ ] Augment AI analysis with external profile data
 
-### 7.4 Mobile App — Flutter (§5)
+### 9.2 Mobile App — Flutter (§5)
 - [ ] Flutter project setup targeting iOS + Android
 - [ ] Implement core screens: Dashboard, Job Detail, Candidate Detail, Chat
 - [ ] Push notifications for exceptional candidates
 - [ ] Camera-based CV scanning (take photo → OCR → analyze)
 
-### 7.5 Multi-Company SaaS (§9)
+### 9.3 Multi-Company SaaS (§9)
 - [ ] Organization/tenant model with separate data partitions
 - [ ] Subscription billing (Stripe integration)
 - [ ] Custom branding per organization
 
-### 7.6 Role-Based Access Control (§7)
+### 9.4 Role-Based Access Control (§7)
 - [ ] Roles: Admin, Recruiter, Viewer
 - [ ] Admin: full access + settings + user management
 - [ ] Recruiter: create jobs, upload CVs, use AI Chat
@@ -194,10 +234,10 @@
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 15, Tailwind CSS v4, next-intl |
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, next-intl |
 | Backend | NestJS, TypeScript, SWC |
 | Database | Supabase (PostgreSQL + Realtime + Storage) |
-| AI | Gemini API (gemini-2.0-flash) |
+| AI | Gemini API (gemini-3.1-flash-lite, gemini-3.1-pro) |
 | Vector DB | Supabase pgvector |
 | OCR | Gemini multimodal + Google Cloud Vision |
 | PDF Export | Puppeteer-core + @sparticuz/chromium |
@@ -211,5 +251,5 @@
 ## Priority Order of Implementation
 
 ```
-Phase 6 → Phase 7 (In Progress)
+Phase 7 (Polishing) → Phase 8 (AI Intelligence) → Phase 9 (Enterprise)
 ```

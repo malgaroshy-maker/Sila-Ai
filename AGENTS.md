@@ -5,7 +5,7 @@ Welcome, Agent! This repository hosts the **AI Recruitment Intelligence System (
 ## 1. Project Context & Architecture
 ARIS is a monorepo designed for high-performance, AI-driven recruitment workflows.
 
-- **/backend-api**: NestJS, TypeScript, Supabase (PostgreSQL + `pgvector`), Gemini API (`gemini-2.0-flash`), Puppeteer (`@sparticuz/chromium`) for PDF reporting.
+- **/backend-api**: NestJS, TypeScript, Supabase (PostgreSQL + `pgvector`), Gemini API (`gemini-3.1-flash-lite`), Puppeteer (`@sparticuz/chromium`) for PDF reporting.
 - **/frontend-web**: Next.js 16 (App Router), React 19, Tailwind CSS v4, `next-intl` (i18n), Framer Motion, Recharts.
 - **/frontend_mobile**: Future Flutter application.
 
@@ -49,7 +49,7 @@ This version uses Next.js 16 and React 19. APIs and conventions differ from trai
 - **Icons:** Exclusively use `lucide-react`.
 
 ### 3.2 Backend: NestJS & Supabase
-- **AI Integration:** Exclusively use the Gemini API. Do not use OpenAI or other providers.
+- **AI Integration:** Exclusively use the Gemini API (Focus on 2.5, 3, 3.1 series). Do not use OpenAI or other providers.
 - **Database:** Supabase PostgreSQL with `pgvector` for RAG.
 - **Multi-Tenancy:** **CRITICAL:** Every single query MUST filter by the authenticated `user_email` to ensure strict data isolation between HR accounts.
 - **PDF Generation:** Use `@sparticuz/chromium` in the backend for generating reports to keep the Docker image size minimal.
