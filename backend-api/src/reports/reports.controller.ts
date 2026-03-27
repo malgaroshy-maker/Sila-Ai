@@ -4,6 +4,7 @@ import {
   Param,
   Res,
   Headers,
+  Query,
   NotFoundException,
 } from '@nestjs/common';
 import * as express from 'express';
@@ -16,10 +17,12 @@ export class ReportsController {
   @Get('job/:id/pdf')
   async downloadJobReport(
     @Param('id') jobId: string,
-    @Headers('x-user-email') userEmail: string,
+    @Headers('x-user-email') userEmailHeader: string,
+    @Query('email') userEmailQuery: string,
     @Res() res: express.Response,
   ) {
-    if (!userEmail) throw new NotFoundException('User email header missing');
+    const userEmail = userEmailHeader || userEmailQuery;
+    if (!userEmail) throw new NotFoundException('User email missing');
 
     try {
       const pdfBuffer = await this.reportsService.generateJobReportPdf(
@@ -42,10 +45,12 @@ export class ReportsController {
   @Get('application/:id/pdf')
   async downloadCandidateReport(
     @Param('id') applicationId: string,
-    @Headers('x-user-email') userEmail: string,
+    @Headers('x-user-email') userEmailHeader: string,
+    @Query('email') userEmailQuery: string,
     @Res() res: express.Response,
   ) {
-    if (!userEmail) throw new NotFoundException('User email header missing');
+    const userEmail = userEmailHeader || userEmailQuery;
+    if (!userEmail) throw new NotFoundException('User email missing');
 
     try {
       const pdfBuffer = await this.reportsService.generateCandidateReportPdf(

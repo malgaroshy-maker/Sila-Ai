@@ -717,7 +717,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           return {
             status: 'success',
             application_id: application_id,
-            download_url: `${backendUrl}/reports/application/${application_id}/pdf`,
+            download_url: `${backendUrl}/reports/application/${application_id}/pdf?email=${userEmail}`,
             message: `Candidate report for ${app.applications.candidates.name} has been successfully generated. You can download it using the link provided.`,
           };
         }
