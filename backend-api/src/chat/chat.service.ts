@@ -437,14 +437,14 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .update({ requirements })
           .eq('id', job_id)
           .eq('user_email', userEmail)
-          .select()
-          .maybeSingle();
+          .select();
 
         if (error) throw new Error(error.message);
+        const updatedJob = Array.isArray(data) ? data[0] : data;
         return {
           status: 'success',
           message: `Job requirements updated.`,
-          data: data,
+          data: updatedJob,
         };
       }
 
