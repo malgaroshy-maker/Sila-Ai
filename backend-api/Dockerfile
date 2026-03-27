@@ -17,6 +17,8 @@ RUN npm ci --no-audit --no-fund --loglevel=error
 
 COPY . .
 RUN npm run build
+# Remove devDependencies to shrink production image size
+RUN npm prune --production
 
 # Production stage
 FROM node:20-slim

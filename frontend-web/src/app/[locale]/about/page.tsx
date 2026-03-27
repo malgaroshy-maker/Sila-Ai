@@ -1,11 +1,10 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   ChevronRight, Cpu, LayoutTemplate, ShieldCheck, 
-  Sparkles, Mail, Globe, Zap, ArrowLeft, Terminal
+  Sparkles, Globe, ArrowLeft, Terminal
 } from 'lucide-react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Suspense, useState, useEffect } from 'react';
@@ -25,6 +24,7 @@ export default function AboutPage() {
 function AboutContent() {
   const t = useTranslations('About');
   const locale = useLocale();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [fromOrigin, setFromOrigin] = useState<string | null>(null);
 
@@ -32,23 +32,14 @@ function AboutContent() {
     const fromParam = searchParams.get('from');
     if (fromParam) {
       setFromOrigin(fromParam);
-    } else if (typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host)) {
-      const isDashboard = document.referrer.endsWith('/' + locale) || 
-                          document.referrer.endsWith('/' + locale + '/') || 
-                          document.referrer === window.location.origin + '/' + locale ||
-                          document.referrer === window.location.origin + '/' + locale + '/';
-      if (isDashboard) {
-        setFromOrigin('dashboard');
-      }
     }
-  }, [searchParams, locale]);
+  }, [searchParams]);
 
   const isRtl = locale === 'ar';
-  const backHref = fromOrigin === 'dashboard' ? '/' : '/login';
   const backLabel = fromOrigin === 'dashboard' ? t('back_to_dashboard') : t('back_to_login');
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 font-sans">
       {/* Immersive Neural Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-15%] start-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[140px] animate-pulse" />
@@ -59,8 +50,8 @@ function AboutContent() {
       {/* Floating Navbar */}
       <nav className="sticky top-0 z-50 bg-[#020617]/60 backdrop-blur-3xl border-b border-white/5 py-4 px-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link 
-            href={backHref} 
+          <button 
+            onClick={() => router.back()} 
             className="flex items-center gap-3 group px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all active:scale-95 shadow-sm hover:shadow-md"
           >
             <div className="p-1.5 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 transition-colors shadow-inner">
@@ -69,7 +60,7 @@ function AboutContent() {
             <span className="font-bold text-slate-300 group-hover:text-white text-xs uppercase tracking-widest hidden sm:inline transition-colors">
               {backLabel}
             </span>
-          </Link>
+          </button>
 
           <div className="flex items-center gap-6">
             <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner">
@@ -83,19 +74,19 @@ function AboutContent() {
 
       {/* Hero: Cognitive Vision */}
       <header className="relative pt-32 pb-48 px-6 text-center overflow-hidden">
-        <div className="max-w-5xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-indigo-400 text-xs font-black tracking-[0.4em] uppercase">
+        <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-indigo-400 text-xs font-black tracking-[0.3em] uppercase shadow-sm">
             <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
             {t('title')}
           </div>
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-[1] tracking-tighter">
+          <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-500 leading-[1.1] tracking-tighter drop-shadow-sm">
             {t('subtitle')}
           </h1>
           <p className="text-xl md:text-3xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-medium">
             {t('description')}
           </p>
           <div className="pt-16">
-            <div className="h-1 w-32 bg-gradient-to-r from-transparent via-indigo-500 to-transparent mx-auto opacity-50" />
+            <div className="h-1 w-32 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent mx-auto" />
           </div>
         </div>
       </header>
@@ -132,18 +123,18 @@ function AboutContent() {
       </section>
 
       {/* Section: Atmospheric Vision */}
-      <section className="py-64 px-6 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-600/5 blur-[120px] rounded-full" />
+      <section className="py-48 px-6 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
         <div className="max-w-4xl mx-auto relative z-10 text-center lg:text-start space-y-12">
           <div className="flex items-center gap-6 justify-center lg:justify-start">
-            <h2 className="text-5xl font-black italic text-indigo-400 tracking-tighter">{t('vision_title')}</h2>
+            <h2 className="text-3xl md:text-5xl font-black italic text-indigo-400 tracking-tighter">{t('vision_title')}</h2>
             <div className="flex-1 h-px bg-white/10 hidden lg:block" />
           </div>
-          <p className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight">
+          <p className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-200 leading-tight tracking-tight">
             {t('vision_desc')}
           </p>
           <div className="pt-6">
-            <div className="w-24 h-2 bg-indigo-600 rounded-full mx-auto lg:mx-0 shadow-[0_0_20px_rgba(79,70,229,0.6)]" />
+            <div className="w-24 h-1.5 bg-indigo-600/80 rounded-full mx-auto lg:mx-0 shadow-[0_0_15px_rgba(79,70,229,0.5)]" />
           </div>
         </div>
       </section>
@@ -201,30 +192,6 @@ function AboutContent() {
           </div>
         </div>
       </section>
-
-      {/* Immersive CTA Footer */}
-      <footer className="py-64 px-6 text-center bg-gradient-to-t from-indigo-500/[0.03] to-transparent">
-        <div className="max-w-3xl mx-auto space-y-16">
-          <div className="relative group inline-block">
-            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Link 
-              href={backHref}
-              className="relative inline-flex items-center gap-6 px-16 py-8 rounded-[2.5rem] bg-indigo-600 hover:bg-indigo-500 text-white font-black text-2xl transition-all shadow-[0_0_50px_rgba(79,70,229,0.3)] hover:scale-105 active:scale-95"
-            >
-              <span>{backLabel}</span>
-              <ChevronRight size={32} className={`transition-transform ${isRtl ? 'rotate-180 group-hover:-translate-x-2' : 'group-hover:translate-x-2'}`} />
-            </Link>
-          </div>
-
-          <div className="pt-24 flex items-center justify-center gap-10 text-slate-700 font-black text-[11px] uppercase tracking-[0.6em]">
-            <span className="hover:text-slate-400 transition-colors cursor-default">Intelligence Core</span>
-            <div className="w-1.5 h-1.5 bg-slate-800 rounded-full" />
-            <span className="hover:text-slate-400 transition-colors cursor-default">Precision Built</span>
-            <div className="w-1.5 h-1.5 bg-slate-800 rounded-full" />
-            <span className="hover:text-slate-400 transition-colors cursor-default">© {new Date().getFullYear()}</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
