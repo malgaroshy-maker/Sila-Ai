@@ -942,7 +942,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                   />
                 </div>
               ) : (
-                <AiInsights userEmail={userEmail} t={t} onClose={() => setView('list')} />
+                <AiInsights userEmail={userEmail} t={t} results={filteredResults} onClose={() => setView('list')} onDeleteCandidate={handleDeleteCandidate} />
               )}
             </div>
           </div>
