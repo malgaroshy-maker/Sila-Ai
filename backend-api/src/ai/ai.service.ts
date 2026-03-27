@@ -212,7 +212,7 @@ export class AiService {
     body: any,
     tools?: any[],
   ) {
-    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/${modelId.replace('models/', '')}:generateContent?key=${settings.apiKey}`;
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/${modelId.startsWith('models/') ? modelId : `models/${modelId}`}:generateContent?key=${settings.apiKey}`;
     
     // Phase 8.4: AI Context Caching
     const cacheKey = crypto
