@@ -234,7 +234,19 @@ export class AiService {
 
     await this.updateLiveQuota(settings.apiKey, modelId, response.headers);
 
-    const result = await response.json();
+    const responseText = await response.text();
+    if (!responseText) {
+      throw new Error('Empty response from AI API');
+    }
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      this.logger.error('Failed to parse Gemini response:', responseText);
+      throw new Error('Failed to parse Gemini response as JSON');
+    }
+
     if (!response.ok) {
         const error = new Error(`AI Analysis failed: ${result?.error?.message || 'Unknown Error'}`);
         (error as any).status = response.status;
