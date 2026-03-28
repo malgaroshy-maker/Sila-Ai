@@ -271,7 +271,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           {
             name: 'send_interview_email',
             description:
-              'Sends a professional bilingual interview invitation email to a candidate.',
+              'Sends a professional bilingual interview invitation email to a candidate. ALWAYS use Western numerals (0-9) even in Arabic content.',
             parameters: {
               type: 'object',
               properties: {
@@ -279,15 +279,63 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                   type: 'string',
                   description: 'The UUID of the candidate application.',
                 },
-                interview_date: {
+                interview_date_en: {
                   type: 'string',
                   description:
-                    'The date and time of the interview (e.g., "Monday at 2 PM").',
+                    'The date and time in English (e.g., "Monday, Oct 20 at 2 PM"). Use Western digits 0-9.',
                 },
-                interview_location: {
+                interview_date_ar: {
                   type: 'string',
                   description:
-                    'The location or mode of the interview (e.g., "Office HQ", "Microsoft Teams", "Zoom").',
+                    'The date and time in Arabic. YOU MUST USE WESTERN DIGITS 0-9 (e.g. "الإثنين، 20 أكتوبر في 2 مساءً"). DO NOT use ٠١٢٣.',
+                },
+                interview_location_en: {
+                  type: 'string',
+                  description:
+                    'The location or mode in English (e.g., "Office HQ", "Microsoft Teams").',
+                },
+                interview_location_ar: {
+                  type: 'string',
+                  description:
+                    'The location or mode in Arabic (e.g., "مقر الشركة", "تيمز").',
+                },
+                interview_type_en: {
+                  type: 'string',
+                  description:
+                    'Type of interview in English (e.g. "Technical Round", "Initial Screening").',
+                },
+                interview_type_ar: {
+                  type: 'string',
+                  description:
+                    'Type of interview in Arabic (e.g. "جولة تقنية", "مقابلة أولية").',
+                },
+                duration_en: {
+                  type: 'string',
+                  description: 'Optional duration in English (e.g. "45 minutes").',
+                },
+                duration_ar: {
+                  type: 'string',
+                  description: 'Optional duration in Arabic (e.g. "45 دقيقة"). Use Western digits.',
+                },
+                interviewer_names_en: {
+                  type: 'string',
+                  description: 'Optional names of interviewers in English.',
+                },
+                interviewer_names_ar: {
+                  type: 'string',
+                  description: 'Optional names of interviewers in Arabic.',
+                },
+                rescheduling_contact: {
+                  type: 'string',
+                  description: 'Optional email or phone for rescheduling.',
+                },
+                optional_notes_en: {
+                  type: 'string',
+                  description: 'Any additional notes in English.',
+                },
+                optional_notes_ar: {
+                  type: 'string',
+                  description: 'Any additional notes in Arabic. Use Western digits.',
                 },
                 interview_link: {
                   type: 'string',
@@ -296,8 +344,12 @@ ${analysisSummary || 'No candidate analyses available yet.'}
               },
               required: [
                 'application_id',
-                'interview_date',
-                'interview_location',
+                'interview_date_en',
+                'interview_date_ar',
+                'interview_location_en',
+                'interview_location_ar',
+                'interview_type_en',
+                'interview_type_ar',
               ],
             },
           },
@@ -775,6 +827,15 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           throw new Error('Could not find analysis data for this candidate.');
         }
 
+        // Fetch company name from settings for branding
+        const { data: companySetting } = await sb
+          .from('settings')
+          .select('value')
+          .eq('user_email', userEmail)
+          .eq('key', 'company_name')
+          .maybeSingle();
+        const companyName = companySetting?.value || 'SILA Recruitment';
+
         if (call.name === 'generate_interview_guide') {
           return {
             status: 'success',
@@ -793,6 +854,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           const { subject, html } = generateBilingualEmail('rejection', {
             candidateName: app.applications.candidates.name,
             jobTitle: app.applications.jobs.title,
+            companyName: companyName,
             strengths: app.tags,
             requirements: app.applications.jobs.requirements,
           });
@@ -814,15 +876,42 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         }
 
         if (call.name === 'send_interview_email') {
-          const { interview_date, interview_location, interview_link } =
-            call.args;
+          const {
+            interview_date_en,
+            interview_date_ar,
+            interview_location_en,
+            interview_location_ar,
+            interview_link,
+            interview_type_en,
+            interview_type_ar,
+            duration_en,
+            duration_ar,
+            interviewer_names_en,
+            interviewer_names_ar,
+            rescheduling_contact,
+            optional_notes_en,
+            optional_notes_ar,
+          } = call.args;
+
           const { subject, html } = generateBilingualEmail('interview', {
             candidateName: app.applications.candidates.name,
             jobTitle: app.applications.jobs.title,
+            companyName: companyName,
             details: {
-              date: interview_date,
-              location: interview_location,
+              dateEn: interview_date_en,
+              dateAr: interview_date_ar,
+              locationEn: interview_location_en,
+              locationAr: interview_location_ar,
+              typeEn: interview_type_en,
+              typeAr: interview_type_ar,
               link: interview_link,
+              durationEn: duration_en,
+              durationAr: duration_ar,
+              interviewersEn: interviewer_names_en,
+              interviewersAr: interviewer_names_ar,
+              reschedulingContact: rescheduling_contact,
+              notesEn: optional_notes_en,
+              notesAr: optional_notes_ar,
             },
           });
 
@@ -834,7 +923,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           );
           return {
             status: 'success',
-            message: `Bilingual interview invitation sent to ${app.applications.candidates.name} for ${interview_date} at ${interview_location}.`,
+            message: `Bilingual interview invitation sent to ${app.applications.candidates.name} for ${interview_date_en} at ${interview_location_en}.`,
           };
         }
 
@@ -843,6 +932,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           const { subject, html } = generateBilingualEmail('offer', {
             candidateName: app.applications.candidates.name,
             jobTitle: app.applications.jobs.title,
+            companyName: companyName,
             details: {
               salary,
               start_date,
