@@ -494,7 +494,7 @@ export class CandidatesService {
         candidate.name,
         analysisResult.final_score,
         job.title,
-        analysisResult.justification || '',
+        analysisResult,
         async () => {
           try {
             const data = await this.downloadCV(userEmail, candidate.id);

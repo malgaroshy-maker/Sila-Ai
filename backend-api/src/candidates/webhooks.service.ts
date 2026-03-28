@@ -50,7 +50,7 @@ export class WebhooksService {
     candidateName: string,
     score: number,
     jobTitle: string,
-    justification: string,
+    analysisResult: any,
     getCV: () => Promise<{ buffer?: Buffer; filename?: string } | null>,
   ) {
     // 1. Check if user has a webhook URL or custom threshold
@@ -59,7 +59,7 @@ export class WebhooksService {
       .from('settings')
       .select('key, value')
       .eq('user_email', userEmail)
-      .in('key', ['webhook_url', 'exceptional_threshold']);
+      .in('key', ['webhook_url', 'exceptional_threshold', 'company_name']);
 
     const settingsMap = (userSettings || []).reduce((acc, s) => {
       acc[s.key] = s.value;
@@ -96,8 +96,10 @@ export class WebhooksService {
       this.logger.warn(`Failed to fetch CV for email alert: ${e.message}`);
     }
 
+    const companyName = settingsMap.company_name || 'AI Recruitment System';
+
     // 2. Send email notification anyway
-    this.sendAlertEmail(userEmail, candidateName, score, jobTitle, justification, cvData);
+    this.sendAlertEmail(userEmail, candidateName, score, jobTitle, analysisResult, cvData, companyName);
   }
 
   private async triggerWebhook(url: string, payload: any) {
@@ -118,11 +120,18 @@ export class WebhooksService {
     name: string,
     score: number,
     job: string,
-    justification?: string,
+    analysisResult: any,
     cvData?: { buffer?: Buffer; filename?: string } | null,
+    companyName: string = 'AI Recruitment System',
   ) {
-    const subjectText = `🚀 Exceptional Candidate Found: ${name} | مرشح استثنائي جديد`;
+    const subjectText = `🚀 Exceptional Candidate Found: ${name} - ${companyName}`;
     
+    const justification = analysisResult?.justification || '';
+    const strengths = (analysisResult?.strengths || []).map((s: string) => `<li>${s}</li>`).join('');
+    const skillsScore = analysisResult?.skills_score || 0;
+    const fitScore = analysisResult?.cultural_fit_score || 0;
+    const recommendation = analysisResult?.recommendation || 'Consider';
+
     const aiSummaryHtml = justification ? `
       <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 6px; font-size: 0.9em; color: #475569;">
         <strong>AI Summary:</strong><br/>
@@ -130,9 +139,73 @@ export class WebhooksService {
       </div>
     ` : '';
 
+    const metricsHtml = `
+      <div style="margin-top: 15px; display: flex; gap: 15px;">
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; text-align: center;">
+          <div style="font-size: 0.8em; color: #64748b; text-transform: uppercase;">Skills Match</div>
+          <div style="font-size: 1.2em; font-weight: bold; color: #0ea5e9;">${skillsScore}%</div>
+        </div>
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; text-align: center;">
+          <div style="font-size: 0.8em; color: #64748b; text-transform: uppercase;">Cultural Fit</div>
+          <div style="font-size: 1.2em; font-weight: bold; color: #8b5cf6;">${fitScore}%</div>
+        </div>
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; text-align: center;">
+          <div style="font-size: 0.8em; color: #64748b; text-transform: uppercase;">AI Status</div>
+          <div style="font-size: 1.2em; font-weight: bold; color: #10b981;">${recommendation}</div>
+        </div>
+      </div>
+    `;
+
+    const strengthsHtml = strengths ? `
+      <div style="margin-top: 15px;">
+        <strong style="color: #334155;">Key Strengths:</strong>
+        <ul style="margin-top: 5px; color: #475569; font-size: 0.95em; padding-left: 20px;">
+          ${strengths}
+        </ul>
+      </div>
+    ` : '';
+
+    const aiSummaryHtmlAr = justification ? `
+      <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 6px; font-size: 0.9em; color: #475569;">
+        <strong>ملخص الذكاء الاصطناعي:</strong><br/>
+        ${justification}
+      </div>
+    ` : '';
+
+    const metricsHtmlAr = `
+      <div style="margin-top: 15px; display: flex; gap: 15px;">
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; text-align: center;">
+          <div style="font-size: 0.8em; color: #64748b; text-transform: uppercase;">تطابق المهارات</div>
+          <div style="font-size: 1.2em; font-weight: bold; color: #0ea5e9;">${skillsScore}%</div>
+        </div>
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; text-align: center;">
+          <div style="font-size: 0.8em; color: #64748b; text-transform: uppercase;">الملاءمة الثقافية</div>
+          <div style="font-size: 1.2em; font-weight: bold; color: #8b5cf6;">${fitScore}%</div>
+        </div>
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; text-align: center;">
+          <div style="font-size: 0.8em; color: #64748b; text-transform: uppercase;">القرار الذكي</div>
+          <div style="font-size: 1.2em; font-weight: bold; color: #10b981;">${recommendation}</div>
+        </div>
+      </div>
+    `;
+
+    const strengthsHtmlAr = strengths ? `
+      <div style="margin-top: 15px;">
+        <strong style="color: #334155;">نقاط القوة الرئيسية:</strong>
+        <ul style="margin-top: 5px; color: #475569; font-size: 0.95em; padding-right: 20px;">
+          ${strengths}
+        </ul>
+      </div>
+    ` : '';
+
     const htmlContent = `
       <div dir="ltr" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 600px; margin: auto; background-color: #ffffff;">
         
+        <div style="text-align: center; margin-bottom: 20px;">
+           <h1 style="color: #0f172a; margin: 0; font-size: 1.5em;">${companyName}</h1>
+           <p style="color: #64748b; margin: 5px 0 0 0; font-size: 0.9em;">Recruitment Intelligence Alert</p>
+        </div>
+
         <!-- English Section -->
         <div style="margin-bottom: 30px; border-bottom: 2px dashed #f1f5f9; padding-bottom: 20px;">
           <h2 style="color: #0369a1; margin-top: 0;">Exceptional Candidate Detected!</h2>
@@ -140,6 +213,8 @@ export class WebhooksService {
           <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
             <p style="margin: 0; color: #1e293b;"><strong>Name:</strong> ${name}</p>
             <p style="margin: 10px 0 0 0; color: #1e293b;"><strong>Match Score:</strong> <span style="color: #15803d; font-size: 1.4em; font-weight: bold;">${score}%</span></p>
+            ${metricsHtml}
+            ${strengthsHtml}
             ${aiSummaryHtml}
           </div>
           <p style="margin-top: 20px; color: #64748b; font-size: 0.95em;">Please log in to your recruitment dashboard to review the profile.</p>
@@ -152,14 +227,17 @@ export class WebhooksService {
           <div style="background: #fdf2f8; padding: 20px; border-radius: 8px; border-right: 4px solid #db2777;">
             <p style="margin: 0; color: #1e293b;"><strong>الاسم:</strong> ${name}</p>
             <p style="margin: 10px 0 0 0; color: #1e293b;"><strong>درجة المطابقة:</strong> <span style="color: #15803d; font-size: 1.4em; font-weight: bold;">${score}%</span></p>
+            ${metricsHtmlAr}
+            ${strengthsHtmlAr}
+            ${aiSummaryHtmlAr}
           </div>
           <p style="margin-top: 20px; color: #64748b; font-size: 0.95em;">يرجى تسجيل الدخول إلى لوحة التحكم الخاصة بك لمراجعة الملف الشخصي.</p>
         </div>
 
         <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 30px 0;">
         <p style="font-size: 0.8em; color: #94a3b8; text-align: center;">
-          This is an automated notification from your AI Recruitment System.<br>
-          هذا إشعار تلقائي من نظام التوظيف بالذكاء الاصطناعي الخاص بك.
+          This is an automated notification from ${companyName}'s AI Recruitment System.<br>
+          هذا إشعار تلقائي من نظام التوظيف بالذكاء الاصطناعي لشركة ${companyName}.
         </p>
       </div>
     `;

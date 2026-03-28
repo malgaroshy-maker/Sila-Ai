@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History } from 'lucide-react';
+import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History, Building } from 'lucide-react';
 
 interface Model {
   model_id: string;
@@ -18,6 +18,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   const [availableModels, setAvailableModels] = useState<Model[]>([]);
   const [aiMode, setAiMode] = useState<'balanced' | 'strict'>('balanced');
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [exceptionalThreshold, setExceptionalThreshold] = useState(90);
   const [rejectThreshold, setRejectThreshold] = useState(50);
   const [duplicateStrategy, setDuplicateStrategy] = useState<'update' | 'skip' | 'new'>('update');
@@ -56,6 +57,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
       if (data) {
         setAiMode(data.ai_mode || 'balanced');
         setWebhookUrl(data.webhook_url || '');
+        setCompanyName(data.company_name || '');
         setExceptionalThreshold(parseInt(data.exceptional_threshold) || 90);
         setRejectThreshold(parseInt(data.reject_threshold) || 50);
         setDuplicateStrategy(data.duplicate_strategy || 'update');
@@ -120,6 +122,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
           gemini_model: selectedModel,
           ai_mode: aiMode,
           webhook_url: webhookUrl,
+          company_name: companyName,
           exceptional_threshold: exceptionalThreshold.toString(),
           reject_threshold: rejectThreshold.toString(),
           duplicate_strategy: duplicateStrategy,
@@ -193,8 +196,26 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
             </div>
           )}
 
+            <div className="space-y-4 pt-6 border-t border-[#1E293B]">
+              <h3 className="text-sm font-bold text-slate-300 flex items-center gap-2 mb-4">
+                <Building className="w-4 h-4 text-[#0EA5E9]" />
+                Company Profile
+              </h3>
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-slate-400 block mb-1">Company Name</label>
+                <input 
+                  type="text" 
+                  value={companyName}
+                  onChange={e => setCompanyName(e.target.value)}
+                  placeholder="e.g. SILA Technologies"
+                  className="w-full bg-[#0F172A] border border-[#1E293B] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0EA5E9]/50 transition-colors"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">This name will appear on automated notification emails sent from the system.</p>
+              </div>
+            </div>
+
           {/* Section: AI Configuration */}
-          <div className="space-y-4 pt-2">
+          <div className="space-y-4 pt-6 border-t border-[#1E293B]">
             <h3 className="text-xs font-bold text-[#0EA5E9] uppercase tracking-widest flex items-center gap-2">
               <Cpu className="w-4 h-4" />
               {t.ai_config || 'AI Configuration'}
