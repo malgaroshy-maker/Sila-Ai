@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
 interface BrandLogoProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   className?: string;
   withText?: boolean;
   type?: 'mark' | 'full';
@@ -17,7 +17,9 @@ export default function BrandLogo({
     sm: 32,
     md: 48,
     lg: 80,
-    xl: 120
+    xl: 120,
+    '2xl': 180,
+    '3xl': 240
   };
 
   const pixels = sizes[size];

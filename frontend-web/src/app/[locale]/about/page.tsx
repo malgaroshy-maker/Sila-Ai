@@ -1,7 +1,8 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { 
   ChevronRight, Cpu, LayoutTemplate, ShieldCheck, 
   Sparkles, Globe, ArrowLeft, Terminal
@@ -50,11 +51,11 @@ function AboutContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30 font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-background text-white selection:bg-emerald-500/30 font-sans overflow-x-hidden">
       {/* Immersive Neural Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-15%] start-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[140px] animate-pulse" />
-        <div className="absolute bottom-[-15%] end-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[140px]" />
+        <div className="absolute top-[-15%] start-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[140px] animate-pulse" />
+        <div className="absolute bottom-[-15%] end-[-10%] w-[50%] h-[50%] bg-brand-navy/50 rounded-full blur-[140px]" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.04]" />
       </div>
 
@@ -65,8 +66,8 @@ function AboutContent() {
             onClick={handleBack} 
             className="flex items-center gap-3 group px-5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.08] transition-all active:scale-95 shadow-sm hover:shadow-md"
           >
-            <div className="p-1.5 bg-indigo-500/20 rounded-lg group-hover:bg-indigo-500/30 transition-colors shadow-inner">
-              <ArrowLeft size={16} className={`text-indigo-400 transition-transform ${isRtl ? 'rotate-180 group-hover:translate-x-1' : 'group-hover:-translate-x-1'}`} />
+            <div className="p-1.5 bg-emerald-500/20 rounded-lg group-hover:bg-emerald-500/30 transition-colors shadow-inner">
+              <ArrowLeft size={16} className={`text-emerald-400 transition-transform ${isRtl ? 'rotate-180 group-hover:translate-x-1' : 'group-hover:-translate-x-1'}`} />
             </div>
             <span className="font-bold text-slate-300 group-hover:text-white text-xs uppercase tracking-widest hidden sm:inline transition-colors">
               {backLabel}
@@ -74,9 +75,9 @@ function AboutContent() {
           </button>
 
           <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner">
-              <Sparkles className="text-indigo-400 h-4 w-4" />
-              <span className="text-[10px] font-black tracking-[0.2em] text-indigo-300/80 uppercase">Neural Intelligence</span>
+            <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
+              <Sparkles className="text-emerald-400 h-4 w-4" />
+              <span className="text-[10px] font-black tracking-[0.2em] text-emerald-300/80 uppercase">Neural Intelligence</span>
             </div>
             <LanguageSwitcher />
           </div>
@@ -89,7 +90,7 @@ function AboutContent() {
           <div className="flex justify-center mb-12">
             <div className="relative group">
               <div className="absolute -inset-8 bg-emerald-500/20 blur-[60px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity" />
-              <BrandLogo size="xl" />
+              <BrandLogo size="3xl" />
             </div>
           </div>
           
@@ -152,7 +153,7 @@ function AboutContent() {
             {t('vision_desc')}
           </p>
           <div className="pt-6">
-            <div className="w-24 h-1.5 bg-indigo-600/80 rounded-full mx-auto lg:mx-0 shadow-[0_0_15px_rgba(79,70,229,0.5)]" />
+            <div className="w-24 h-1.5 bg-emerald-600/80 rounded-full mx-auto lg:mx-0 shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
           </div>
         </div>
       </section>
