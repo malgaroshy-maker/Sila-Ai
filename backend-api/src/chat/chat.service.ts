@@ -126,7 +126,8 @@ export class ChatService {
         const name = a.applications?.candidates?.name || 'Unknown';
         const job = a.applications?.jobs?.title || 'Unknown Job';
         const isGrad = a.is_fresh_graduate ? '🎓 Fresh Grad' : 'Professional';
-        return `- ${name} (${isGrad}) | Job: "${job}" | Score: ${a.final_score}/100 | Fit: ${a.cultural_fit_score}/100 | Trajectory: ${a.career_trajectory} | Tags: ${a.tags?.join(', ')}`;
+        const appId = a.application_id;
+        return `- ${name} (AppID: ${appId}) | ${isGrad} | Job: "${job}" | Score: ${a.final_score}/100 | Fit: ${a.cultural_fit_score}/100 | Tags: ${a.tags?.join(', ')}`;
       })
       .join('\n');
 
@@ -170,8 +171,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 4. TONE: Maintain a professional, executive recruitment tone.
 5. FORMATTING: Use markdown (bold, lists) for readability.
 6. BILINGUAL SUPPORT: If the user refers to an English job title in an Arabic prompt, maintain the technical terms correctly.
-7. CANDIDATE IDENTIFICATION: REFER TO CANDIDATES ONLY BY THEIR FULL NAME. ABSOLUTELY DO NOT DISPLAY, OUTPUT, OR GENERATE ANY ID, UUID, OR TECHNICAL IDENTIFIER FOR CANDIDATES.
-8. DATA OUTPUT FORMAT: FOR ALL CANDIDATES, OUTPUT ONLY THE NAME AND KEY METRICS. DO NOT INCLUDE ANY TECHNICAL IDS OR UUIDS IN YOUR RESPONSE.`;
+7. CANDIDATE IDENTIFICATION: Refer to candidates by their full name in your conversation. DO NOT show technical IDs (like AppID or JobID) to the user. However, you MUST use the provided AppID or JobID when calling functions/tools.
+8. DATA OUTPUT FORMAT: For all candidates, output only the Name and Key Metrics. Do not include technical UUIDs in your text response to the user.`;
 
     // Gemini Conversation History for the fetch wrapper (stateless multi-turn)
     const chatHistory = history.map((h) => ({
@@ -671,11 +672,15 @@ ${analysisSummary || 'No candidate analyses available yet.'}
   ): Promise<string | null> {
     this.logger.log(`Attempting to resolve ID: ${id} for user: ${userEmail}`);
 
+    // Clean the input: check if it's a concatenated string like UUID-Name
+    const uuidMatch = id.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const cleanId = uuidMatch ? uuidMatch[0] : id.trim();
+
     // 1. Try directly as application_id
     const { data: appDirect } = await sb
       .from('applications')
       .select('id, jobs!inner(user_email)')
-      .eq('id', id)
+      .eq('id', cleanId)
       .eq('jobs.user_email', userEmail)
       .maybeSingle();
 
@@ -685,7 +690,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     const { data: appFromAnalysis } = await sb
       .from('analysis_results')
       .select('application_id, applications!inner(jobs!inner(user_email))')
-      .eq('id', id)
+      .eq('id', cleanId)
       .eq('applications.jobs.user_email', userEmail)
       .maybeSingle();
 
@@ -695,7 +700,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     const { data: appFromCandidate } = await sb
       .from('applications')
       .select('id, jobs!inner(user_email)')
-      .eq('candidate_id', id)
+      .eq('candidate_id', cleanId)
       .eq('jobs.user_email', userEmail)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -704,11 +709,14 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     if (appFromCandidate) return appFromCandidate.id;
     
     // 4. Try as candidate name (exact/fuzzy matching)
+    // Use the original 'id' string for name matching in case it's actually a name
     this.logger.log(`Attempting resolution by Candidate Name: ${id}`);
+    const nameToMatch = uuidMatch ? id.replace(uuidMatch[0], '').replace(/^[-\s]+|[-\s]+$/g, '') : id.trim();
+    
     const { data: appFromName } = await sb
       .from('applications')
       .select('id, candidates!inner(name), jobs!inner(user_email)')
-      .ilike('candidates.name', `%${id.trim()}%`)
+      .ilike('candidates.name', `%${(nameToMatch || id).trim()}%`)
       .eq('jobs.user_email', userEmail)
       .order('created_at', { ascending: false })
       .limit(1)
