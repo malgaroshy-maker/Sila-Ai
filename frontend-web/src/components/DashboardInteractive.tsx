@@ -264,7 +264,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     checkServerStatus();
     
     // Check if onboarding is needed
-    const hasSeenOnboarding = localStorage.getItem('sila_onboarding_seen');
+    const hasSeenOnboarding = localStorage.getItem('sila_onboarding_completed');
     if (!hasSeenOnboarding) {
       // Small delay for better UX
       setTimeout(() => setIsOnboardingOpen(true), 1500);
@@ -479,7 +479,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         isOpen={isOnboardingOpen} 
         onClose={() => {
           setIsOnboardingOpen(false);
-          localStorage.setItem('aris_onboarding_seen', 'true');
+          localStorage.setItem('sila_onboarding_completed', 'true');
         }}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         t={t}

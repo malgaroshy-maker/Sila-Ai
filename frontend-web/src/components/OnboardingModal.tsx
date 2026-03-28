@@ -16,8 +16,8 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
 
   const steps = [
     {
-      title: t.welcome_title || 'Welcome to ARIS Intelligence',
-      description: t.welcome_step1 || 'To start your journey, you need a Gemini API Key.',
+      title: t.welcome_title || 'Welcome to SILA Intelligence',
+      description: t.welcome_step1 || 'To start your journey, you need a Gemini AI Key to power the neural analysis.',
       icon: <Key className="w-8 h-8 text-amber-400" />,
       color: 'from-amber-500/20 to-amber-600/5'
     },
@@ -35,7 +35,7 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
     },
     {
       title: t.sync_step_title || 'Automated Sync',
-      description: t.welcome_step3 || 'Once configured, ARIS will automatically scan your emails and analyze incoming CVs.',
+      description: t.welcome_step3 || 'Once configured, SILA will automatically scan your emails and analyze incoming CVs instantly.',
       icon: <Mail className="w-8 h-8 text-emerald-400" />,
       color: 'from-emerald-500/20 to-emerald-600/5'
     }
