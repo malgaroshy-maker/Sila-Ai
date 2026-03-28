@@ -189,7 +189,6 @@ export class WebhooksService {
                 subjectText,
                 htmlContent,
                 account,
-                cvData,
               );
             } else if (account.provider === 'microsoft') {
               return await this.sendViaMicrosoft(
@@ -197,7 +196,6 @@ export class WebhooksService {
                 subjectText,
                 htmlContent,
                 account,
-                cvData,
               );
             }
           }
@@ -208,7 +206,6 @@ export class WebhooksService {
               subjectText,
               htmlContent,
               account,
-              cvData,
             );
           } else if (account.provider === 'microsoft') {
             return await this.sendViaMicrosoft(
@@ -216,7 +213,6 @@ export class WebhooksService {
               subjectText,
               htmlContent,
               account,
-              cvData,
             );
           }
         }
@@ -270,21 +266,12 @@ export class WebhooksService {
       return;
     }
 
-    const attachments = [];
-    if (cvData && cvData.buffer && cvData.filename) {
-      attachments.push({
-        filename: cvData.filename,
-        content: cvData.buffer,
-      });
-    }
-
     try {
       const info = await this.transporter.sendMail({
         from: '"AI Recruitment Bot" <system@ai-recruit.com>',
         to: recipient,
         subject: subjectText,
         html: htmlContent,
-        attachments,
       });
       this.logger.log(`Alert email sent to ${recipient} via SMTP`);
 
@@ -350,16 +337,6 @@ export class WebhooksService {
 
     const graphApiUrl = `https://graph.microsoft.com/v1.0/me/sendMail`;
 
-    const attachments = [];
-    if (cvData && cvData.buffer && cvData.filename) {
-      attachments.push({
-        '@odata.type': '#microsoft.graph.fileAttachment',
-        name: cvData.filename,
-        contentType: 'application/pdf',
-        contentBytes: cvData.buffer.toString('base64'),
-      });
-    }
-
     const response = await fetch(graphApiUrl, {
       method: 'POST',
       headers: {
@@ -380,7 +357,6 @@ export class WebhooksService {
               },
             },
           ],
-          attachments: attachments.length > 0 ? attachments : undefined,
         },
       }),
     });
@@ -401,40 +377,45 @@ export class WebhooksService {
     subjectText: string,
     htmlContent: string,
     account: any,
-    cvData?: { buffer?: Buffer; filename?: string } | null,
   ) {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        type: 'OAuth2',
-        user: recipient,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: account.refresh_token,
-        accessToken: account.access_token,
-      },
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID || '',
+      process.env.GOOGLE_CLIENT_SECRET || '',
+    );
+
+    oauth2Client.setCredentials({
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
     });
 
-    const attachments = [];
-    if (cvData && cvData.buffer && cvData.filename) {
-      attachments.push({
-        filename: cvData.filename,
-        content: cvData.buffer,
-      });
-    }
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    await transporter.sendMail({
-      from: `"AI Recruitment System" <${recipient}>`,
-      to: recipient,
-      subject: subjectText,
-      html: htmlContent,
-      attachments,
-    });
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subjectText).toString('base64')}?=`;
+    const messageParts = [
+      `From: "AI Recruitment System" <${recipient}>`,
+      `To: ${recipient}`,
+      `Content-Type: text/html; charset=utf-8`,
+      `MIME-Version: 1.0`,
+      `Subject: ${utf8Subject}`,
+      '',
+      htmlContent,
+    ];
+
+    const message = messageParts.join('\n');
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw: encodedMessage },
+      quotaUser: recipient,
+    } as any);
 
     this.logger.log(
-      `✅ Alert email sent successfully to ${recipient} using their own Gmail API (Nodemailer OAuth2)!`,
+      `✅ Alert email sent successfully to ${recipient} using their own Gmail API!`,
     );
   }
 }

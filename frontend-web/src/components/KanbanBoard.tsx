@@ -61,9 +61,11 @@ interface KanbanProps {
   onDelete?: (candidateId: string, name: string) => Promise<void>;
   t: Record<string, string>;
   locale?: string;
+  selectedCandidateIds?: Set<string>;
+  onSelectCandidate?: (candidateId: string, checked: boolean) => void;
 }
 
-export default function KanbanBoard({ results, onStageChange, onDelete, t, locale = 'en' }: KanbanProps) {
+export default function KanbanBoard({ results, onStageChange, onDelete, t, locale = 'en', selectedCandidateIds = new Set(), onSelectCandidate }: KanbanProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -125,6 +127,8 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
             t={t}
             onDelete={onDelete}
             locale={locale}
+            selectedCandidateIds={selectedCandidateIds}
+            onSelectCandidate={onSelectCandidate}
           />
         ))}
       </div>
@@ -148,7 +152,7 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
   );
 }
 
-function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
+function KanbanColumn({ stage, items, t, onDelete, locale, selectedCandidateIds, onSelectCandidate }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string, selectedCandidateIds?: Set<string>, onSelectCandidate?: (id: string, checked: boolean) => void }) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
   });
@@ -176,7 +180,7 @@ function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: stri
         >
           <div className="space-y-3">
             {items.map(item => (
-              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} locale={locale} />
+              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} locale={locale} isSelected={selectedCandidateIds?.has(item.candidate_id)} onSelect={onSelectCandidate} />
             ))}
           </div>
         </SortableContext>
@@ -185,7 +189,7 @@ function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: stri
   );
 }
 
-function SortableCandidateCard({ result, onDelete, locale }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
+function SortableCandidateCard({ result, onDelete, locale, isSelected, onSelect }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
   const {
     attributes,
     listeners,
@@ -203,13 +207,13 @@ function SortableCandidateCard({ result, onDelete, locale }: { result: Applicati
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CandidateCard result={result} onDelete={onDelete} locale={locale} />
+      <CandidateCard result={result} onDelete={onDelete} locale={locale} isSelected={isSelected} onSelect={onSelect} />
     </div>
   );
 }
 
-function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, isOverlay?: boolean, locale?: string }) {
-  if (!result) return null;
+function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en', isSelected = false, onSelect }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, isOverlay?: boolean, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
+  if (!result || !result.candidates) return null;
   const candidate = result.candidates;
   const score = result.analysis_results?.final_score || 0;
   const status = result.status;
@@ -217,7 +221,18 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en' }: {
   const scoreColor = score >= 80 ? 'text-[#22C55E]' : score >= 60 ? 'text-[#EAB308]' : 'text-[#EF4444]';
 
   return (
-    <div className={`bg-[#020617]/40 border border-[#1E293B]/50 rounded-xl p-4 transition-all hover:border-[#0EA5E9]/30 hover:shadow-lg hover:shadow-[#0EA5E9]/5 cursor-grab active:cursor-grabbing group relative overflow-hidden ${isOverlay ? 'scale-105 rotate-2 shadow-2xl bg-[#1E293B]' : ''}`}>
+    <div className={`bg-[#020617]/40 border ${isSelected ? 'border-[#0EA5E9]/80 ring-1 ring-[#0EA5E9]/50 bg-[#0EA5E9]/5' : 'border-[#1E293B]/50'} rounded-xl p-4 transition-all hover:border-[#0EA5E9]/30 hover:shadow-lg hover:shadow-[#0EA5E9]/5 cursor-grab active:cursor-grabbing group relative overflow-hidden ${isOverlay ? 'scale-105 rotate-2 shadow-2xl bg-[#1E293B]' : ''}`}>
+      {onSelect && (
+        <div className="absolute top-2 start-2 z-10" onClick={(e) => e.stopPropagation()}>
+          <input 
+            type="checkbox" 
+            className="w-4 h-4 rounded border-slate-600 text-[#0EA5E9] focus:ring-[#0EA5E9] bg-slate-800"
+            checked={isSelected}
+            onChange={(e) => onSelect(candidate.id, e.target.checked)}
+            onPointerDown={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       {/* Background Score Glow */}
       {status === 'analyzed' && (
         <div className={`absolute top-0 end-0 w-16 h-16 opacity-5 bg-gradient-to-br ${score >= 80 ? 'from-emerald-500' : score >= 60 ? 'from-amber-500' : 'from-red-500'} blur-2xl -translate-y-8 translate-x-8`} />

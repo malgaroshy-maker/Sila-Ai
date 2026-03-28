@@ -1,0 +1,33 @@
+--- src/candidates/candidates.controller.ts
++++ src/candidates/candidates.controller.ts
+@@ -87,6 +87,15 @@
+     }
+   }
+ 
++  @Post('bulk-cv-download')
++  async bulkDownloadCV(
++    @Headers('x-user-email') userEmail: string,
++    @Body('candidateIds') candidateIds: string[],
++    @Res() res: Response,
++  ) {
++    this.requireEmail(userEmail);
++    return this.candidatesService.bulkDownloadCV(userEmail, candidateIds, res);
++  }
++
+   @Post('applications/:id/analyze')
+   async retryAnalysis(
+     @Headers('x-user-email') userEmail: string,
+@@ -101,6 +110,14 @@
+     this.requireEmail(userEmail);
+     return this.candidatesService.deleteCandidate(userEmail, candidateId);
+   }
++
++  @Delete('bulk')
++  async bulkDeleteCandidates(
++    @Headers('x-user-email') userEmail: string,
++    @Body('candidateIds') candidateIds: string[],
++  ) {
++    this.requireEmail(userEmail);
++    return this.candidatesService.bulkDeleteCandidates(userEmail, candidateIds);
++  }
+ }

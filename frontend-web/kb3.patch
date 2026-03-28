@@ -1,0 +1,28 @@
+--- src/components/KanbanBoard.tsx
++++ src/components/KanbanBoard.tsx
+@@ -107,7 +107,7 @@
+       >
+         <div className="flex gap-6 h-full p-2" dir="ltr">
+           {STAGES.map(stage => (
+-            <KanbanColumn key={stage.id} stage={stage} items={grouped[stage.id]} t={t} onDelete={onDelete} locale={locale} />
++            <KanbanColumn key={stage.id} stage={stage} items={grouped[stage.id]} t={t} onDelete={onDelete} locale={locale} selectedCandidateIds={selectedCandidateIds} onSelectCandidate={onSelectCandidate} />
+           ))}
+         </div>
+       </div>
+@@ -150,7 +150,7 @@
+   );
+ }
+ 
+-function KanbanColumn({ stage, items, t, onDelete, locale }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string }) {
++function KanbanColumn({ stage, items, t, onDelete, locale, selectedCandidateIds, onSelectCandidate }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string, selectedCandidateIds?: Set<string>, onSelectCandidate?: (id: string, checked: boolean) => void }) {
+   const { setNodeRef } = useDroppable({
+     id: stage.id,
+   });
+@@ -177,7 +177,9 @@
+           <div className="space-y-3">
+             {items.map(item => (
+-              <SortableCandidateCard key={item.id} id={item.id} result={item} onDelete={onDelete} locale={locale} />
++              <SortableCandidateCard key={item.id} id={item.id} result={item} onDelete={onDelete} locale={locale} isSelected={selectedCandidateIds?.has(item.candidate_id)} onSelect={onSelectCandidate} />
+             ))}
+           </div>
+         </SortableContext>

@@ -1,0 +1,92 @@
+--- src/components/DashboardInteractive.tsx
++++ src/components/DashboardInteractive.tsx
+@@ -391,6 +391,85 @@
+     }
+   };
+ 
++  const handleSelectCandidate = (candidateId: string, checked: boolean) => {
++    setSelectedCandidateIds(prev => {
++      const next = new Set(prev);
++      if (checked) next.add(candidateId);
++      else next.delete(candidateId);
++      return next;
++    });
++  };
++
++  const handleSelectAllCandidates = (checked: boolean, filteredIds: string[]) => {
++    if (checked) {
++      setSelectedCandidateIds(new Set(filteredIds));
++    } else {
++      setSelectedCandidateIds(new Set());
++    }
++  };
++
++  const handleBulkDelete = async () => {
++    if (selectedCandidateIds.size === 0) return;
++    if (!confirm(`Are you sure you want to delete ${selectedCandidateIds.size} selected candidates?`)) return;
++    
++    setIsBulkActionLoading(true);
++    try {
++      const res = await fetch(`${API_URL}/candidates/bulk/delete`, {
++        method: 'DELETE',
++        headers: { 
++          'x-user-email': userEmail,
++          'Content-Type': 'application/json'
++        },
++        body: JSON.stringify({ candidateIds: Array.from(selectedCandidateIds) })
++      });
++      
++      if (res.ok) {
++        setResults(prev => prev.filter(r => !selectedCandidateIds.has(r.candidate_id)));
++        setSelectedCandidateIds(new Set());
++        if (selectedCandidate && selectedCandidateIds.has(selectedCandidate.candidate_id)) {
++          setSelectedCandidate(null);
++        }
++      } else {
++        alert('Failed to delete selected candidates');
++      }
++    } catch (e) {
++      alert('Connection error');
++    } finally {
++      setIsBulkActionLoading(false);
++    }
++  };
++
++  const handleBulkDownload = async () => {
++    if (selectedCandidateIds.size === 0) return;
++    
++    setIsBulkActionLoading(true);
++    try {
++      const res = await fetch(`${API_URL}/candidates/bulk-cv-download`, {
++        method: 'POST',
++        headers: { 
++          'x-user-email': userEmail,
++          'Content-Type': 'application/json'
++        },
++        body: JSON.stringify({ candidateIds: Array.from(selectedCandidateIds) })
++      });
++      
++      if (res.ok) {
++        const blob = await res.blob();
++        const url = window.URL.createObjectURL(blob);
++        const a = document.createElement('a');
++        a.style.display = 'none';
++        a.href = url;
++        a.download = 'candidates_cvs.zip';
++        document.body.appendChild(a);
++        a.click();
++        window.URL.revokeObjectURL(url);
++        document.body.removeChild(a);
++      } else {
++        alert('Failed to download CVs');
++      }
++    } catch (e) {
++      alert('Connection error');
++    } finally {
++      setIsBulkActionLoading(false);
++    }
++  };
++
+   const handleDeleteCandidate = async (candidateId: string, name: string) => {
+     if (!confirm(`${t.delete_confirm_candidate || 'Are you sure you want to delete candidate'} ${name}?`)) return;
+     

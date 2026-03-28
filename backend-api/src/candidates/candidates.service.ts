@@ -5,11 +5,15 @@ import {
   Logger,
   StreamableFile,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
 import { WebhooksService } from './webhooks.service';
 import { google } from 'googleapis';
+import * as archiver from 'archiver';
+import type { Response } from 'express';
 
 @Injectable()
 export class CandidatesService {
@@ -18,6 +22,7 @@ export class CandidatesService {
   constructor(
     private supabaseService: SupabaseService,
     private aiService: AiService,
+    @Inject(forwardRef(() => WebhooksService))
     private webhooksService: WebhooksService,
   ) {}
 
@@ -489,6 +494,27 @@ export class CandidatesService {
         candidate.name,
         analysisResult.final_score,
         job.title,
+        analysisResult.justification || '',
+        async () => {
+          try {
+            const data = await this.downloadCV(userEmail, candidate.id);
+            if ('buffer' in data && data.buffer) {
+              return { buffer: data.buffer, filename: data.filename };
+            } else if ('url' in data && data.url) {
+              const res = await fetch(data.url);
+              if (res.ok) {
+                const arr = await res.arrayBuffer();
+                return {
+                  buffer: Buffer.from(arr),
+                  filename: `CV_${candidate.name.replace(/\s+/g, '_')}.pdf`,
+                };
+              }
+            }
+          } catch (e) {
+            this.logger.warn(`Could not get CV for alert: ${e.message}`);
+          }
+          return null;
+        },
       );
     }
 
@@ -901,5 +927,118 @@ export class CandidatesService {
     );
 
     return { success: true };
+  }
+
+  async bulkDeleteCandidates(userEmail: string, candidateIds: string[]) {
+    const sb = this.supabaseService.getClient();
+    this.logger.log(`Bulk deleting ${candidateIds.length} candidates for user ${userEmail}`);
+
+    // 1. Fetch candidates to get CV URLs
+    const { data: candidates, error: fetchError } = await sb
+      .from('candidates')
+      .select('id, cv_url')
+      .in('id', candidateIds)
+      .eq('user_email', userEmail);
+
+    if (fetchError || !candidates || candidates.length === 0) {
+      throw new NotFoundException('Candidates not found or unauthorized');
+    }
+
+    const validCandidateIds = candidates.map(c => c.id);
+
+    // 2. Delete CVs from storage
+    const filePathsToDelete = candidates
+      .map(c => c.cv_url)
+      .filter(url => Boolean(url))
+      .map(url => {
+        try {
+          const urlParts = url.split('/cv-backups/');
+          return urlParts.length > 1 ? decodeURIComponent(urlParts[1]) : null;
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter((path): path is string => path !== null);
+
+    if (filePathsToDelete.length > 0) {
+      this.logger.log(`Deleting ${filePathsToDelete.length} CV files from storage`);
+      const { error: storageError } = await sb.storage
+        .from('cv-backups')
+        .remove(filePathsToDelete);
+
+      if (storageError) {
+        this.logger.error(`Failed to bulk delete CVs from storage: ${storageError.message}`);
+      }
+    }
+
+    // 3. Delete related records
+    await sb
+      .from('candidate_embeddings')
+      .delete()
+      .in('candidate_id', validCandidateIds);
+
+    const { error: deleteError, count: deletedRows } = await sb
+      .from('candidates')
+      .delete({ count: 'exact' })
+      .in('id', validCandidateIds)
+      .eq('user_email', userEmail);
+
+    if (deleteError) {
+      throw new InternalServerErrorException(`Failed to bulk delete candidates: ${deleteError.message}`);
+    }
+
+    return { success: true, deleted: deletedRows || validCandidateIds.length };
+  }
+
+  async bulkDownloadCV(userEmail: string, candidateIds: string[], res: Response) {
+    const sb = this.supabaseService.getClient();
+
+    const { data: candidates, error } = await sb
+      .from('candidates')
+      .select('id, name')
+      .in('id', candidateIds)
+      .eq('user_email', userEmail);
+
+    if (error || !candidates || candidates.length === 0) {
+      throw new NotFoundException('No valid candidates found for bulk download');
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="candidates_cvs.zip"');
+
+    const archive = archiver.create('zip', {
+      zlib: { level: 5 }
+    });
+
+    archive.on('error', (err) => {
+      this.logger.error(`Archiver error: ${err.message}`);
+      if (!res.headersSent) {
+        res.status(500).end();
+      }
+    });
+
+    archive.pipe(res);
+
+    for (const candidate of candidates) {
+      try {
+        const cvData = await this.downloadCV(userEmail, candidate.id);
+        const nameClean = candidate.name.replace(/\s+/g, '_');
+        
+        if ('buffer' in cvData && cvData.buffer) {
+          archive.append(cvData.buffer, { name: `CV_${nameClean}.pdf` });
+        } else if ('url' in cvData && cvData.url) {
+          const response = await fetch(cvData.url);
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            archive.append(buffer, { name: `CV_${nameClean}.pdf` });
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`Failed to fetch CV for candidate ${candidate.id}: ${err.message}`);
+      }
+    }
+
+    await archive.finalize();
   }
 }

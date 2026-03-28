@@ -101,6 +101,19 @@ export class CandidatesController {
     }
   }
 
+  @Post('bulk-cv-download')
+  async bulkDownloadCV(
+    @Headers('x-user-email') userEmail: string,
+    @Body('candidateIds') candidateIds: string[],
+    @Res() res: Response,
+  ) {
+    this.requireEmail(userEmail);
+    if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+      throw new BadRequestException('candidateIds array is required');
+    }
+    return this.candidatesService.bulkDownloadCV(userEmail, candidateIds, res);
+  }
+
   @Post('applications/:id/analyze')
   async retryAnalysis(
     @Headers('x-user-email') userEmail: string,
@@ -117,5 +130,17 @@ export class CandidatesController {
   ) {
     this.requireEmail(userEmail);
     return this.candidatesService.deleteCandidate(userEmail, candidateId);
+  }
+
+  @Delete('bulk/delete')
+  async bulkDeleteCandidates(
+    @Headers('x-user-email') userEmail: string,
+    @Body('candidateIds') candidateIds: string[],
+  ) {
+    this.requireEmail(userEmail);
+    if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+      throw new BadRequestException('candidateIds array is required');
+    }
+    return this.candidatesService.bulkDeleteCandidates(userEmail, candidateIds);
   }
 }
