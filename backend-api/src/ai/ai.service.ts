@@ -192,14 +192,28 @@ export class AiService {
 
     const settings = await this.getSettings(userEmail);
     const fallbackModel = 'models/gemini-3.1-flash-lite-preview';
-    
+
     // Attempt primary model, fallback if 429
     try {
-      return await this.executeGeminiCall(settings.model, userEmail, settings, body, tools);
+      return await this.executeGeminiCall(
+        settings.model,
+        userEmail,
+        settings,
+        body,
+        tools,
+      );
     } catch (error: any) {
       if (error.status === 429 && settings.model !== fallbackModel) {
-        this.logger.warn(`Quota exceeded for ${settings.model}, retrying with ${fallbackModel}`);
-        return await this.executeGeminiCall(fallbackModel, userEmail, settings, body, tools);
+        this.logger.warn(
+          `Quota exceeded for ${settings.model}, retrying with ${fallbackModel}`,
+        );
+        return await this.executeGeminiCall(
+          fallbackModel,
+          userEmail,
+          settings,
+          body,
+          tools,
+        );
       }
       throw error;
     }
@@ -213,7 +227,7 @@ export class AiService {
     tools?: any[],
   ) {
     const baseUrl = `https://generativelanguage.googleapis.com/v1beta/${modelId.startsWith('models/') ? modelId : `models/${modelId}`}:generateContent?key=${settings.apiKey}`;
-    
+
     // Phase 8.4: AI Context Caching
     const cacheKey = crypto
       .createHash('sha256')
@@ -227,8 +241,10 @@ export class AiService {
     }
 
     const bodyStr = JSON.stringify(body);
-    this.logger.log(`Gemini request size for ${modelId}: ${(bodyStr.length / 1024 / 1024).toFixed(2)} MB`);
-    
+    this.logger.log(
+      `Gemini request size for ${modelId}: ${(bodyStr.length / 1024 / 1024).toFixed(2)} MB`,
+    );
+
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -238,10 +254,14 @@ export class AiService {
     await this.updateLiveQuota(settings.apiKey, modelId, response.headers);
 
     const responseText = await response.text();
-    
+
     if (!response.ok) {
-      this.logger.error(`Gemini API Error (Status ${response.status}): ${responseText}`);
-      throw new Error(`AI Analysis failed (Status ${response.status}): ${responseText || 'No error message provided'}`);
+      this.logger.error(
+        `Gemini API Error (Status ${response.status}): ${responseText}`,
+      );
+      throw new Error(
+        `AI Analysis failed (Status ${response.status}): ${responseText || 'No error message provided'}`,
+      );
     }
 
     if (!responseText) {

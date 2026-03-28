@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
@@ -22,9 +19,39 @@ export class ChatService {
     userEmail: string,
     message: string,
     history: { role: string; text: string }[],
+    sessionId?: string,
   ) {
     const sb = this.supabaseService.getClient();
     const settings = await this.aiService.getSettings(userEmail);
+
+    // 0. Session Handling: Ensure we have a session to save to
+    let activeSessionId = sessionId;
+    if (!activeSessionId) {
+      const { data: newSession } = await sb
+        .from('chat_sessions')
+        .insert({
+          user_email: userEmail,
+          title: message.slice(0, 40) + (message.length > 40 ? '...' : ''),
+        })
+        .select()
+        .single();
+      activeSessionId = newSession?.id;
+    } else {
+      // Update session timestamp
+      await sb
+        .from('chat_sessions')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeSessionId);
+    }
+
+    // Save user message
+    if (activeSessionId) {
+      await sb.from('chat_messages').insert({
+        session_id: activeSessionId,
+        role: 'user',
+        content: message,
+      });
+    }
     const genAI = new GoogleGenerativeAI(settings.apiKey);
     const model = genAI.getGenerativeModel({ model: settings.model });
 
@@ -51,7 +78,7 @@ export class ChatService {
 
       if (matched && matched.length > 0) {
         matchedCount = matched.length;
-        
+
         // Fetch candidate names for the matched IDs
         const candidateIds = matched.map((m: any) => m.candidate_id);
         const { data: candidateNames } = await sb
@@ -59,7 +86,9 @@ export class ChatService {
           .select('id, name')
           .in('id', candidateIds);
 
-        const nameMap = new Map(candidateNames?.map(c => [c.id, c.name]) || []);
+        const nameMap = new Map(
+          candidateNames?.map((c) => [c.id, c.name]) || [],
+        );
 
         ragContext = matched
           .map(
@@ -252,18 +281,24 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                 },
                 interview_date: {
                   type: 'string',
-                  description: 'The date and time of the interview (e.g., "Monday at 2 PM").',
+                  description:
+                    'The date and time of the interview (e.g., "Monday at 2 PM").',
                 },
                 interview_location: {
                   type: 'string',
-                  description: 'The location or mode of the interview (e.g., "Office HQ", "Microsoft Teams", "Zoom").',
+                  description:
+                    'The location or mode of the interview (e.g., "Office HQ", "Microsoft Teams", "Zoom").',
                 },
                 interview_link: {
                   type: 'string',
                   description: 'Optional video call link.',
                 },
               },
-              required: ['application_id', 'interview_date', 'interview_location'],
+              required: [
+                'application_id',
+                'interview_date',
+                'interview_location',
+              ],
             },
           },
           {
@@ -460,7 +495,69 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       this.logger.log(
         `Chat RAG: "${message.slice(0, 50)}..." → ${matchedCount} matches found`,
       );
-      return { response: responseText };
+
+      // --- Context-Aware Suggestions Logic ---
+      const suggestedActions: any[] = [];
+
+      // Determine context from RAG and analyses
+      const mentionedCandidate = analyses.find(
+        (a) =>
+          message
+            .toLowerCase()
+            .includes((a.applications?.candidates?.name || '').toLowerCase()) ||
+          responseText
+            .toLowerCase()
+            .includes((a.applications?.candidates?.name || '').toLowerCase()),
+      );
+
+      if (mentionedCandidate) {
+        const score = mentionedCandidate.final_score;
+        const name = mentionedCandidate.applications.candidates.name;
+
+        if (score >= 80) {
+          suggestedActions.push({
+            label: `Schedule Interview for ${name}`,
+            prompt: `I'd like to schedule an interview for ${name}. What's the best way to proceed?`,
+            action: 'send_interview_email',
+          });
+        } else if (score < 40) {
+          suggestedActions.push({
+            label: `Reject ${name}`,
+            prompt: `Draft a polite rejection email for ${name} based on our analysis.`,
+            action: 'send_rejection_email',
+          });
+        }
+
+        suggestedActions.push({
+          label: `Generate Scorecard for ${name}`,
+          prompt: `Show me the full breakdown and scorecard for ${name}.`,
+          action: 'export_candidate_report',
+        });
+      } else if (
+        message.toLowerCase().includes('job') ||
+        message.toLowerCase().includes('وظيفة')
+      ) {
+        suggestedActions.push({
+          label: 'Compare Top Candidates',
+          prompt: 'Who are the top 3 candidates across all open positions?',
+        });
+      }
+
+      // Save assistant message with metadata
+      if (activeSessionId) {
+        await sb.from('chat_messages').insert({
+          session_id: activeSessionId,
+          role: 'assistant',
+          content: responseText,
+          metadata: { suggestions: suggestedActions },
+        });
+      }
+
+      return {
+        response: responseText,
+        sessionId: activeSessionId,
+        suggestions: suggestedActions,
+      };
     } catch (error: any) {
       this.logger.error('Chat error:', error.message);
       return {
@@ -469,9 +566,59 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     }
   }
 
-  private async resolveApplicationId(sb: any, id: string, userEmail: string): Promise<string | null> {
+  async getSessions(userEmail: string) {
+    const sb = this.supabaseService.getClient();
+    const { data, error } = await sb
+      .from('chat_sessions')
+      .select('*')
+      .eq('user_email', userEmail)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getMessages(userEmail: string, sessionId: string) {
+    const sb = this.supabaseService.getClient();
+    // Verify ownership via join
+    const { data: session } = await sb
+      .from('chat_sessions')
+      .select('id')
+      .eq('id', sessionId)
+      .eq('user_email', userEmail)
+      .single();
+
+    if (!session) throw new Error('Session not found or access denied');
+
+    const { data, error } = await sb
+      .from('chat_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteSession(userEmail: string, sessionId: string) {
+    const sb = this.supabaseService.getClient();
+    const { error } = await sb
+      .from('chat_sessions')
+      .delete()
+      .eq('id', sessionId)
+      .eq('user_email', userEmail);
+
+    if (error) throw error;
+    return { success: true };
+  }
+
+  private async resolveApplicationId(
+    sb: any,
+    id: string,
+    userEmail: string,
+  ): Promise<string | null> {
     this.logger.log(`Attempting to resolve ID: ${id} for user: ${userEmail}`);
-    
+
     // 1. Try directly as application_id
     const { data: appDirect } = await sb
       .from('applications')
@@ -479,7 +626,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       .eq('id', id)
       .eq('jobs.user_email', userEmail)
       .maybeSingle();
-    
+
     if (appDirect) return appDirect.id;
 
     // 2. Try as analysis_result_id
@@ -513,9 +660,16 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     try {
       if (call.name === 'update_candidate_stage') {
         const { application_id, stage } = call.args;
-        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
-        
-        if (!resolvedId) throw new Error(`Could not find application record for ID: ${application_id}`);
+        const resolvedId = await this.resolveApplicationId(
+          sb,
+          application_id,
+          userEmail,
+        );
+
+        if (!resolvedId)
+          throw new Error(
+            `Could not find application record for ID: ${application_id}`,
+          );
 
         this.logger.log(`Moving application ${resolvedId} to ${stage}`);
         const { data, error } = await sb
@@ -524,7 +678,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .eq('id', resolvedId)
           .select()
           .maybeSingle();
-        
+
         if (error) throw new Error(error.message);
         if (!data) throw new Error(`Application ${resolvedId} not found.`);
 
@@ -547,7 +701,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 
         if (error) throw new Error(error.message);
         if (!data) throw new Error(`Job ${job_id} not found or access denied.`);
-        
+
         return {
           status: 'success',
           message: `Job requirements updated.`,
@@ -566,15 +720,25 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         call.name === 'export_candidate_report'
       ) {
         const { application_id } = call.args;
-        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
+        const resolvedId = await this.resolveApplicationId(
+          sb,
+          application_id,
+          userEmail,
+        );
 
         if (!resolvedId) {
-          this.logger.warn(`App not found for ${application_id} (User: ${userEmail})`);
-          throw new Error('Could not find application data for this ID or access denied.');
+          this.logger.warn(
+            `App not found for ${application_id} (User: ${userEmail})`,
+          );
+          throw new Error(
+            'Could not find application data for this ID or access denied.',
+          );
         }
 
-        this.logger.log(`Function: ${call.name} called for resolved application: ${resolvedId} (User: ${userEmail})`);
-        
+        this.logger.log(
+          `Function: ${call.name} called for resolved application: ${resolvedId} (User: ${userEmail})`,
+        );
+
         // Fetch full candidate analysis and job details
         const { data: app, error } = await sb
           .from('analysis_results')
@@ -585,7 +749,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           .maybeSingle();
 
         if (error) {
-          this.logger.error(`Database error for ${resolvedId}: ${error.message}`);
+          this.logger.error(
+            `Database error for ${resolvedId}: ${error.message}`,
+          );
           throw new Error(`Database error: ${error.message}`);
         }
         if (!app) {
@@ -615,7 +781,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
             requirements: app.applications.jobs.requirements,
           });
 
-          this.logger.log(`Actually sending rejection email to ${app.applications.candidates.email}`);
+          this.logger.log(
+            `Actually sending rejection email to ${app.applications.candidates.email}`,
+          );
           await this.emailService.sendEmail(
             userEmail,
             app.applications.candidates.email,
@@ -630,7 +798,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         }
 
         if (call.name === 'send_interview_email') {
-          const { interview_date, interview_location, interview_link } = call.args;
+          const { interview_date, interview_location, interview_link } =
+            call.args;
           const { subject, html } = generateBilingualEmail('interview', {
             candidateName: app.applications.candidates.name,
             jobTitle: app.applications.jobs.title,

@@ -51,8 +51,12 @@ export const generateBilingualEmail = (
       subject = `Interview Invitation: ${jobTitle} | دعوة للمقابلة الوظيفية`;
       const date = details?.date || 'To be confirmed';
       const loc = details?.location || 'Online';
-      const link = details?.link ? `<p><b>Meeting Link:</b> <a href="${details.link}">${details.link}</a></p>` : '';
-      const linkAr = details?.link ? `<p><b>رابط الاجتماع:</b> <a href="${details.link}">${details.link}</a></p>` : '';
+      const link = details?.link
+        ? `<p><b>Meeting Link:</b> <a href="${details.link}">${details.link}</a></p>`
+        : '';
+      const linkAr = details?.link
+        ? `<p><b>رابط الاجتماع:</b> <a href="${details.link}">${details.link}</a></p>`
+        : '';
 
       contentEn = `
         <p>Dear <span class="highlight">${candidateName}</span>,</p>

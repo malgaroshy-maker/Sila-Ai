@@ -838,7 +838,9 @@ export class CandidatesService {
       .single();
 
     if (fetchError || !candidate) {
-      this.logger.error(`Candidate fetch error for ${candidateId} (User: ${userEmail}): ${fetchError?.message || 'Not Found'}`);
+      this.logger.error(
+        `Candidate fetch error for ${candidateId} (User: ${userEmail}): ${fetchError?.message || 'Not Found'}`,
+      );
       throw new NotFoundException('Candidate not found or unauthorized');
     }
 
@@ -880,17 +882,23 @@ export class CandidatesService {
       .eq('user_email', userEmail);
 
     if (deleteError) {
-      this.logger.error(`Database deletion error for candidate ${candidateId}: ${deleteError.message}`);
+      this.logger.error(
+        `Database deletion error for candidate ${candidateId}: ${deleteError.message}`,
+      );
       throw new InternalServerErrorException(
         `Failed to delete candidate: ${deleteError.message}`,
       );
     }
 
     if (deletedRows === 0) {
-      this.logger.warn(`No rows deleted for candidate ${candidateId} (User: ${userEmail})`);
+      this.logger.warn(
+        `No rows deleted for candidate ${candidateId} (User: ${userEmail})`,
+      );
     }
 
-    this.logger.log(`Successfully deleted candidate ${candidateId} and its associated records.`);
+    this.logger.log(
+      `Successfully deleted candidate ${candidateId} and its associated records.`,
+    );
 
     return { success: true };
   }

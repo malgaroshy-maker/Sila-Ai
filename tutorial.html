@@ -293,6 +293,32 @@
         [dir="rtl"] .en-content { display: none; }
         [dir="rtl"] .ar-content { display: block; }
 
+        .screenshot-container {
+            margin: 25px 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .screenshot-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .screenshot-caption {
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(30, 41, 59, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media (max-width: 768px) {
             .hero h1 { font-size: 2.2rem; }
             .section { padding: 25px; }
@@ -321,6 +347,8 @@
 
         <!-- Table of Contents -->
         <div class="toc">
+            <a href="#setup" class="en-content"><i data-lucide="key" style="width:14px"></i> 0. API Key</a>
+            <a href="#setup" class="ar-content"><i data-lucide="key" style="width:14px"></i> 0. مفتاح API</a>
             <a href="#jobs" class="en-content">1. Job Creation</a>
             <a href="#jobs" class="ar-content">1. إنشاء الوظائف</a>
             <a href="#ingestion" class="en-content">2. CV Ingestion</a>
@@ -333,6 +361,40 @@
             <a href="#chat" class="ar-content">5. المساعد الذكي الفعال</a>
             <a href="#settings" class="en-content">6. Settings & Config</a>
             <a href="#settings" class="ar-content">6. الإعدادات والتهيئة</a>
+        </div>
+
+        <!-- 0. Setup -->
+        <div id="setup" class="section" style="border-left: 4px solid var(--warning);">
+            <div class="section-header">
+                <div class="icon-box" style="background: var(--warning);"><i data-lucide="key"></i></div>
+                <h2 class="en-content">0. Getting Started: API Key Setup</h2>
+                <h2 class="ar-content">0. البداية: إعداد مفتاح API</h2>
+            </div>
+            <p class="en-content">To power the AI analysis, you must obtain a Gemini API key from Google AI Studio. This key is your connection to the neural engine.</p>
+            <p class="ar-content">لتشغيل تحليل الذكاء الاصطناعي، يجب عليك الحصول على مفتاح Gemini API من Google AI Studio. هذا المفتاح هو وصلتك بالمحرك العصبي.</p>
+            
+            <div class="feature-grid" style="margin-top: 25px;">
+                <div class="feature-card">
+                    <h3 class="en-content">1. Get the Key</h3>
+                    <h3 class="ar-content">1. احصل على المفتاح</h3>
+                    <p class="en-content">Visit <a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent)">Google AI Studio</a>, log in with your Google account, and click <strong>"Get API key"</strong> in the sidebar.</p>
+                    <p class="ar-content">قم بزيارة <a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent)">Google AI Studio</a>، وسجل الدخول بحساب Google الخاص بك، ثم انقر فوق <strong>"الحصول على مفتاح API"</strong> في القائمة الجانبية.</p>
+                    <div class="screenshot-container">
+                        <img src="screenshots/google-ai-studio.png" alt="Google AI Studio Mockup">
+                        <div class="screenshot-caption"><i data-lucide="image"></i> Google AI Studio: Create API key button location. / موقع زر إنشاء مفتاح API في Google AI Studio.</div>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <h3 class="en-content">2. Configure SILA</h3>
+                    <h3 class="ar-content">2. تهيئة SILA</h3>
+                    <p class="en-content">Open <strong>Settings</strong> in SILA, paste your key into the "Gemini API Key" field, and click <strong>Save</strong>.</p>
+                    <p class="ar-content">افتح <strong>الإعدادات</strong> في SILA، والصق مفتاحك في حقل "Gemini API Key"، ثم انقر فوق <strong>حفظ</strong>.</p>
+                    <div class="screenshot-container">
+                        <img src="screenshots/sila-settings.png" alt="SILA Settings Mockup">
+                        <div class="screenshot-caption"><i data-lucide="image"></i> SILA Settings: Entering your API key. / إعدادات SILA: إدخال مفتاح API الخاص بك.</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 1. Jobs -->
@@ -350,7 +412,11 @@
                     <h3 class="en-content">AI Job Drafting</h3>
                     <h3 class="ar-content">صياغة الوظائف بالذكاء</h3>
                     <p class="en-content">Don't write descriptions manually. Type a simple prompt like "I need a Senior React Dev who knows AWS", and SILA will generate a structured title, description, and requirement list instantly.</p>
-                    <p class="ar-content">لا تكتب الأوصاف يدوياً. اكتب أمراً بسيطاً مثل "أحتاج إلى مطور React أول يعرف AWS"، وسيقوم SILA بإنشاء عنوان ووصف وقائمة متطلبات منظمة على الفور.</p>
+                    <p class="ar-content">لا تكتب الأوصاف يدوياً. اكتب أمراً بسيطاً مثل "أحتاج إلى مطور React أول يعرف AWS"، وسيقوم SILA بإنشاء عنوان ووصد وقائمة متطلبات منظمة على الفور.</p>
+                    <div class="screenshot-container">
+                        <img src="screenshots/sila-job-creation.png" alt="SILA Job Creation">
+                        <div class="screenshot-caption"><i data-lucide="image"></i> SILA: Drafting a new job with AI.</div>
+                    </div>
                 </div>
                 <div class="feature-card">
                     <h3 class="en-content">Dynamic Requirements</h3>
@@ -412,6 +478,10 @@
                         <li>التوافق الثقافي واللغات</li>
                         <li><strong>الدرجة النهائية</strong> (الحكم النهائي)</li>
                     </ul>
+                    <div class="screenshot-container">
+                        <img src="screenshots/sila-candidate-scorecard.png" alt="SILA Candidate Scorecard">
+                        <div class="screenshot-caption"><i data-lucide="image"></i> SILA: Detailed candidate AI analysis & scoring.</div>
+                    </div>
                     <div class="score-display">
                         <div class="score-circle" style="border-color: var(--success); color: var(--success);">92</div>
                         <div class="score-circle" style="border-color: var(--warning); color: var(--warning);">75</div>
@@ -443,6 +513,12 @@
             </div>
             <p class="en-content">Visualize your hiring process. Candidates move through standardized stages: <strong>Applied → Screening → Interview → Offered → Hired</strong> (or Rejected).</p>
             <p class="ar-content">قم بتصور عملية التوظيف الخاصة بك. ينتقل المرشحون عبر مراحل قياسية: <strong>مُتقدم → فرز → مقابلة → معروض عليه → مُعين</strong> (أو مرفوض).</p>
+            
+            <div class="screenshot-container">
+                <img src="screenshots/sila-kanban.png" alt="SILA Kanban Board">
+                <div class="screenshot-caption"><i data-lucide="image"></i> SILA: Pipeline management with the Kanban board.</div>
+            </div>
+
             <div class="example-box" style="margin-top: 20px; border-left-color: var(--success);">
                 <span class="en-content">Tip: You can drag and drop candidates on the Kanban board, or simply ask the AI Chat to move them for you!</span>
                 <span class="ar-content">نصيحة: يمكنك سحب وإفلات المرشحين على لوحة كانبان، أو ببساطة اطلب من مساعد الدردشة الذكي نقلهم نيابة عنك!</span>
@@ -464,6 +540,11 @@
             
             <p class="en-content" style="margin-bottom: 25px;">The crown jewel of SILA. This isn't just a chatbot; it's an autonomous agent hooked directly into your database. It uses Hybrid Search (Semantic + Text) and Function Calling to do the work for you.</p>
             <p class="ar-content" style="margin-bottom: 25px;">جوهرة التاج في SILA. هذا ليس مجرد روبوت دردشة؛ إنه وكيل مستقل متصل مباشرة بقاعدة بياناتك. يستخدم البحث الهجين واستدعاء الوظائف للقيام بالعمل نيابة عنك.</p>
+            
+            <div class="screenshot-container">
+                <img src="screenshots/sila-chat.png" alt="SILA Chat Assistant">
+                <div class="screenshot-caption"><i data-lucide="image"></i> SILA: Interacting with the autonomous AI assistant.</div>
+            </div>
 
             <div class="feature-grid">
                 <!-- Action 1 -->
