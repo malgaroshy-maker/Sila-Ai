@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { HelpCircle, Sparkles, ShieldCheck, ChevronRight } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function LoginPage() {
   const t = useTranslations('Login');
@@ -29,11 +30,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020617] relative overflow-hidden font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden font-sans selection:bg-indigo-500/30">
       {/* Immersive Neural Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] start-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] end-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] start-[-10%] w-[40%] h-[40%] bg-emerald-600/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] end-[-10%] w-[40%] h-[40%] bg-brand-navy/50 rounded-full blur-[120px]" />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5" />
       </div>
 
@@ -45,12 +46,16 @@ export default function LoginPage() {
       {/* Centered Auth Card */}
       <div className="relative z-10 w-full max-w-lg px-6 animate-in fade-in zoom-in-95 duration-1000">
         <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-8 lg:p-12 shadow-[0_8px_32px_rgb(0,0,0,0.4)] overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 opacity-80" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-400 opacity-80" />
           
-          <div className="text-center mb-10 space-y-5">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 shadow-inner mb-2 transform hover:scale-105 transition-transform duration-500">
-              <Sparkles className="text-indigo-400 h-5 w-5" />
-              <span className="text-base font-black text-slate-200 tracking-widest uppercase">ARIS</span>
+          <div className="text-center mb-10 space-y-6">
+            <div className="flex justify-center mb-4 transform hover:scale-110 transition-transform duration-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <BrandLogo size="xl" />
+            </div>
+            
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-2">
+              <Sparkles className="text-emerald-400 h-3.5 w-3.5" />
+              <span className="text-[10px] font-black text-emerald-300 tracking-[0.3em] uppercase">Connect Any Talent</span>
             </div>
             
             <div className="space-y-3">
@@ -124,7 +129,7 @@ export default function LoginPage() {
         </div>
 
         <footer className="mt-8 flex items-center justify-between text-slate-600 text-[10px] font-bold uppercase tracking-widest px-6">
-          <span>ARIS • v1.0</span>
+          <span>SILA • v3.1</span>
           <span>© {new Date().getFullYear()}</span>
         </footer>
       </div>

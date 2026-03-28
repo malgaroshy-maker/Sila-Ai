@@ -1,6 +1,6 @@
 {
   "Index": {
-    "title": "AI Recruitment Intelligence",
+    "title": "SILA AI Recruitment",
     "description": "Smart CV analysis and comparison platform using AI",
     "upload_cv": "Upload CV",
     "jobs": "Jobs",
@@ -213,7 +213,7 @@
   },
   "Login": {
     "welcome": "Welcome Back",
-    "subtitle": "Sign in to the AI Recruitment System",
+    "subtitle": "Sign in to the SILA Platform",
     "google": "Continue with Google (Gmail)",
     "microsoft": "Continue with Microsoft (Outlook)",
     "connecting": "Connecting...",
@@ -222,7 +222,7 @@
     "coming_soon": "(Coming Soon)"
   },
   "About": {
-    "title": "Cognitive Recruitment Intelligence",
+    "title": "SILA: Cognitive Intelligence",
     "subtitle": "Beyond Parsing. A Revolution in HR Intelligence.",
     "description": "SILA (صلة): The vital link and enduring bond between ambitious talent and visionary employers. SILA isn't just a platform; it's the intellectual backbone of your recruitment strategy. Built on the frontiers of Large Language Models to transform how talent meets opportunity.",
     "back_to_login": "Back to Login",

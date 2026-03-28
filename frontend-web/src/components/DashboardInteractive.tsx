@@ -492,7 +492,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
           {/* Top Row: Brand & Status */}
           <div className="flex justify-between items-center py-4 border-b border-white/5">
             <div className="flex items-center gap-4">
-              <BrandLogo withText size="sm" />
+              <BrandLogo withText size="md" />
               <div className="hidden sm:block">
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 animate-pulse' : serverStatus === 'offline' ? 'bg-rose-500' : 'bg-amber-500 animate-bounce'}`} />

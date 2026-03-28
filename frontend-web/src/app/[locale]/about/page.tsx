@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Suspense, useState, useEffect } from 'react';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function AboutPage() {
   return (
@@ -85,8 +86,15 @@ function AboutContent() {
       {/* Hero: Cognitive Vision */}
       <header className="relative pt-32 pb-48 px-6 text-center overflow-hidden">
         <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-indigo-400 text-xs font-black tracking-[0.3em] uppercase shadow-sm">
-            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
+          <div className="flex justify-center mb-12">
+            <div className="relative group">
+              <div className="absolute -inset-8 bg-emerald-500/20 blur-[60px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity" />
+              <BrandLogo size="xl" />
+            </div>
+          </div>
+          
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-emerald-400 text-xs font-black tracking-[0.3em] uppercase shadow-sm">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
             {t('title')}
           </div>
           <h1 className="text-6xl md:text-8xl lg:text-[10rem] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-500 leading-[1.1] tracking-tighter drop-shadow-sm">
@@ -134,10 +142,10 @@ function AboutContent() {
 
       {/* Section: Atmospheric Vision */}
       <section className="py-48 px-6 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-emerald-600/5 blur-[120px] rounded-full pointer-events-none" />
         <div className="max-w-4xl mx-auto relative z-10 text-center lg:text-start space-y-12">
           <div className="flex items-center gap-6 justify-center lg:justify-start">
-            <h2 className="text-3xl md:text-5xl font-black italic text-indigo-400 tracking-tighter">{t('vision_title')}</h2>
+            <h2 className="text-3xl md:text-5xl font-black italic text-emerald-400 tracking-tighter">{t('vision_title')}</h2>
             <div className="flex-1 h-px bg-white/10 hidden lg:block" />
           </div>
           <p className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-200 leading-tight tracking-tight">
