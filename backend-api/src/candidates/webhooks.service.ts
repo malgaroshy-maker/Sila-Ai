@@ -337,6 +337,7 @@ export class WebhooksService {
     subjectText: string,
     htmlContent: string,
     account: any,
+    cvData?: { buffer?: Buffer; filename?: string } | null,
   ) {
     let accessToken = account.access_token;
 
