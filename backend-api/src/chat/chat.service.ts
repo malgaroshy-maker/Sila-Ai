@@ -650,6 +650,22 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       .maybeSingle();
 
     if (appFromCandidate) return appFromCandidate.id;
+    
+    // 4. Try as candidate name (exact/fuzzy matching)
+    this.logger.log(`Attempting resolution by Candidate Name: ${id}`);
+    const { data: appFromName } = await sb
+      .from('applications')
+      .select('id, candidates!inner(name), jobs!inner(user_email)')
+      .ilike('candidates.name', `%${id.trim()}%`)
+      .eq('jobs.user_email', userEmail)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (appFromName) {
+      this.logger.log(`Resolved ${id} to application ID: ${appFromName.id} via Name Match`);
+      return appFromName.id;
+    }
 
     return null;
   }
