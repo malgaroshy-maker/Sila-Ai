@@ -20,6 +20,7 @@ import OnboardingModal from './OnboardingModal';
 import { Trash2 } from 'lucide-react';
 import QuotaMonitor from './QuotaMonitor';
 import { parseAiError } from '../lib/ai-errors';
+import BrandLogo from './BrandLogo';
 
 interface Job {
   id: string;
@@ -486,21 +487,16 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       />
 
       {/* Premium Header */}
-      <header className="bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#1E293B] sticky top-0 z-40 transition-all duration-300 overflow-x-hidden">
+      <header className="bg-background/80 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40 transition-all duration-300 overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-6">
           {/* Top Row: Brand & Status */}
-          <div className="flex justify-between items-center py-4 border-b border-[#1E293B]/50">
+          <div className="flex justify-between items-center py-4 border-b border-white/5">
             <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-[#0369A1] to-[#0EA5E9] p-2 rounded-xl shadow-lg shadow-[#0EA5E9]/20">
-                <Cpu className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-100">
-                  {t.title || 'AI Recruitment Intelligence'}
-                </h1>
+              <BrandLogo withText size="sm" />
+              <div className="hidden sm:block">
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 animate-pulse' : serverStatus === 'offline' ? 'bg-rose-500' : 'bg-amber-500 animate-bounce'}`} />
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 whitespace-nowrap">
                     {serverStatus === 'online' ? (t.server_online || 'Online') : 
                      serverStatus === 'offline' ? (t.server_offline || 'Offline') : 
                      (t.server_checking || '...')}

@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Brain, Trash2, X, Send, Trophy, BarChart3, Target, HelpCircle, MessageSquare, Plus, History, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BrandLogo from './BrandLogo';
+import BrandSpinner from './BrandSpinner';
 
 interface ChatMessage {
   id?: string;
@@ -240,22 +242,24 @@ export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: 
         </AnimatePresence>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
           {/* Header */}
-          <div className="px-5 py-4 border-b border-[#1E293B] flex items-center gap-3 bg-[#0F172A]">
+          <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3 bg-background/50 backdrop-blur-md">
             <button 
               onClick={() => setShowSidebar(!showSidebar)}
-              className="p-2 -ms-2 hover:bg-[#1E293B] rounded-lg text-slate-400 hover:text-white transition-colors"
+              className="p-2 -ms-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+              title={t?.chat_history || "Toggle History"}
             >
               <History className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="bg-[#22C55E]/10 text-[#22C55E] p-2 rounded-xl hidden sm:block">
-                <Bot className="w-5 h-5" />
-              </span>
+              <BrandLogo size="sm" />
               <div className="min-w-0">
                 <h2 className="text-base font-bold text-white truncate">{t?.chat_title || 'SILA Assistant'}</h2>
-                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">{t?.chat_subtitle || 'Neural Recruitment Engine'}</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-slate-500 text-[10px] uppercase tracking-wider font-semibold">{t?.chat_subtitle || 'Neural Recruitment Engine'}</p>
+                </div>
               </div>
             </div>
             
@@ -278,9 +282,9 @@ export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: 
                 <motion.div 
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-[#22C55E]/20 to-[#0EA5E9]/20 mb-6"
+                  className="mb-6 flex justify-center"
                 >
-                  <Brain className="w-10 h-10 text-[#22C55E]" />
+                  <BrandLogo size="lg" />
                 </motion.div>
                 <h3 className="text-xl font-bold text-white mb-2">{t?.chat_empty_title || 'SILA Intelligence'}</h3>
                 <p className="text-slate-400 text-sm mb-8 leading-relaxed">{t?.chat_empty_desc || 'I have access to your candidate database. Ask me to compare, summarize, or suggest next steps.'}</p>
@@ -307,9 +311,8 @@ export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: 
             )}
 
             {isInitialLoading ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
-                <Loader2 className="w-8 h-8 animate-spin text-[#0EA5E9]" />
-                <p className="text-sm font-medium">Loading history...</p>
+              <div className="flex flex-col items-center justify-center h-full">
+                <BrandSpinner size={48} />
               </div>
             ) : (
               <div className="max-w-3xl mx-auto space-y-6">

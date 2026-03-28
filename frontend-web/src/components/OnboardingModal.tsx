@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Settings, ArrowRight, X, Cpu, Key, Mail, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BrandLogo from './BrandLogo';
 
 export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {} }: { 
   isOpen: boolean, 
@@ -61,7 +62,9 @@ export default function OnboardingModal({ isOpen, onClose, onOpenSettings, t = {
       >
         <div className={`p-8 bg-gradient-to-br ${steps[step-1].color} transition-all duration-500`}>
           <div className="flex justify-between items-start mb-6">
-            <div className="p-3 bg-slate-900/50 rounded-2xl border border-white/10">
+            <div className="p-3 bg-slate-900/50 rounded-2xl border border-white/10 flex items-center gap-3">
+              <BrandLogo size="md" />
+              <div className="w-px h-8 bg-white/10 mx-1" />
               {steps[step-1].icon}
             </div>
             <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-2">
