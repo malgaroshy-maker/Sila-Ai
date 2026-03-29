@@ -144,6 +144,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       onTap: () {
                         context.push('/candidate', extra: app);
                       },
+                      onStatusChange: (newStage) async {
+                        try {
+                          await ref.read(dashboardActionsProvider).updateStage(app.id, newStage);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Updated ${app.candidate.name} to $newStage')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to update: $e')),
+                            );
+                          }
+                        }
+                      },
                     );
                   },
                 ),

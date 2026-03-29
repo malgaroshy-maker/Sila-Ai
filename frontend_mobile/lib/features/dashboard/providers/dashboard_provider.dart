@@ -69,3 +69,33 @@ final filteredApplicationsProvider = Provider<AsyncValue<List<Application>>>((re
     }).toList();
   });
 });
+
+final dashboardActionsProvider = Provider((ref) {
+  final supabase = ref.watch(supabaseProvider);
+  
+  return DashboardActions(supabase, ref);
+});
+
+class DashboardActions {
+  final SupabaseClient _supabase;
+  final Ref _ref;
+
+  DashboardActions(this._supabase, this._ref);
+
+  Future<void> updateStage(String applicationId, String stage) async {
+    final userEmail = _supabase.auth.currentUser?.email;
+    if (userEmail == null) throw Exception('User not authenticated');
+
+    final response = await _supabase
+        .from('applications')
+        .update({'pipeline_stage': stage})
+        .eq('id', applicationId)
+        .select()
+        .maybeSingle();
+
+    if (response == null) throw Exception('Failed to update stage');
+    
+    // Refresh the list
+    _ref.invalidate(applicationsProvider);
+  }
+}

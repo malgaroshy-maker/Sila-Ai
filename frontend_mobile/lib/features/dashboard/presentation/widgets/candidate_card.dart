@@ -9,7 +9,10 @@ class CandidateCard extends StatelessWidget {
     super.key,
     required this.application,
     required this.onTap,
+    this.onStatusChange,
   });
+
+  final void Function(String)? onStatusChange;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +39,7 @@ class CandidateCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onStatusChange != null ? () => _showStatusSheet(context) : null,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -70,95 +74,32 @@ class CandidateCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scoreColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: scoreColor.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          score.toString(),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: scoreColor,
-                          ),
-                        ),
-                        Text(
-                          'Match',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: scoreColor.withValues(alpha: 0.8),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildScoreBadge(score, scoreColor),
                 ],
               ),
               const SizedBox(height: 16),
               if (application.analysisResult?.tags.isNotEmpty ?? false) ...[
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: application.analysisResult!.tags.take(3).map((tag) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFF334155)),
-                      ),
-                      child: Text(
-                        tag,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                _buildTags(),
               ],
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      application.pipelineStage.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                        color: Color(0xFF94A3B8),
+                  _buildStageBadge(),
+                  Row(
+                    children: [
+                      if (onStatusChange != null)
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.more_horiz, size: 20, color: Color(0xFF64748B)),
+                          onPressed: () => _showStatusSheet(context),
+                        ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: theme.colorScheme.primary,
                       ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: theme.colorScheme.primary,
+                    ],
                   ),
                 ],
               ),
@@ -166,6 +107,146 @@ class CandidateCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildScoreBadge(num score, Color scoreColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: scoreColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            score.toString(),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: scoreColor,
+            ),
+          ),
+          Text(
+            'Match',
+            style: TextStyle(
+              fontSize: 10,
+              color: scoreColor.withValues(alpha: 0.8),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTags() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: application.analysisResult!.tags.take(3).map((tag) {
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF334155)),
+          ),
+          child: Text(
+            tag,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildStageBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        application.pipelineStage.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1,
+          color: Color(0xFF94A3B8),
+        ),
+      ),
+    );
+  }
+
+  void _showStatusSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Change Candidate Stage',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'For ${application.candidate.name}',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+            ),
+            const SizedBox(height: 24),
+            _buildStageOption(context, 'Screening', Icons.fact_check, const Color(0xFF0EA5E9)),
+            _buildStageOption(context, 'Interview', Icons.calendar_today, const Color(0xFF7C3AED)),
+            _buildStageOption(context, 'Offered', Icons.star, const Color(0xFFEAB308)),
+            _buildStageOption(context, 'Hired', Icons.check_circle, const Color(0xFF22C55E)),
+            const Divider(color: Color(0xFF1E293B), height: 32),
+            _buildStageOption(context, 'Rejected', Icons.cancel, const Color(0xFFEF4444)),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStageOption(BuildContext context, String stage, IconData icon, Color color) {
+    final isCurrent = application.pipelineStage == stage;
+
+    return ListTile(
+      onTap: () {
+        Navigator.pop(context);
+        onStatusChange?.call(stage);
+      },
+      leading: Icon(icon, color: color),
+      title: Text(
+        stage,
+        style: TextStyle(
+          color: isCurrent ? color : Colors.white,
+          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isCurrent ? Icon(Icons.check, color: color) : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
