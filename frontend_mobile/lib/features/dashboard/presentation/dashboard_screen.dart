@@ -204,6 +204,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.settings, size: 20, color: Color(0xFF64748B)),
+            onPressed: () => context.push('/settings'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, size: 20),
             onPressed: _signOut,
           ),

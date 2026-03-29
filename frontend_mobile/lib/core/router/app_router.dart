@@ -5,6 +5,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/dashboard/presentation/candidate_profile_screen.dart';
 import '../../features/dashboard/domain/models/models.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -21,6 +22,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final application = state.extra as Application;
           return CandidateProfileScreen(application: application);
         },
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
     redirect: (context, state) {
