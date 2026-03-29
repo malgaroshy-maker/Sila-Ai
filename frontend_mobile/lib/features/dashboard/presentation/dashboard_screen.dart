@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/dashboard_provider.dart';
 import 'widgets/candidate_card.dart';
+import '../../chat/presentation/chat_tab.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -53,8 +54,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               return CandidateCard(
                 application: app,
                 onTap: () {
-                  // Navigate to candidate detail profile
-                  // context.push('/candidate/${app.id}');
+                  context.push('/candidate', extra: app);
                 },
               );
             },
@@ -84,31 +84,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildChatTab() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_awesome, size: 64, color: Color(0xFF0EA5E9)),
-          SizedBox(height: 16),
-          Text(
-            'SILA AI Chat Assistant',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Coming soon in the next step...',
-            style: TextStyle(color: Color(0xFF94A3B8)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,7 +104,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: [_buildCandidatesList(), _buildChatTab()],
+        children: [_buildCandidatesList(), const ChatTab()],
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
