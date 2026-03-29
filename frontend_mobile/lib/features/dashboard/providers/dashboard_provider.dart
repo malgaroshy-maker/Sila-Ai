@@ -98,4 +98,46 @@ class DashboardActions {
     // Refresh the list
     _ref.invalidate(applicationsProvider);
   }
+
+  Future<void> deleteCandidate(String candidateId) async {
+    final userEmail = _supabase.auth.currentUser?.email;
+    if (userEmail == null) throw Exception('User not authenticated');
+
+    // 1. Fetch candidate to get CV path (mimic backend logic for safety)
+    final candidateRes = await _supabase
+        .from('candidates')
+        .select('id, cv_url')
+        .eq('id', candidateId)
+        .eq('user_email', userEmail)
+        .maybeSingle();
+
+    if (candidateRes == null) throw Exception('Candidate not found');
+
+    final String? cvUrl = candidateRes['cv_url'];
+
+    // 2. Delete CV from storage if exists
+    if (cvUrl != null && cvUrl.contains('/cv-backups/')) {
+      try {
+        final path = cvUrl.split('/cv-backups/').last;
+        await _supabase.storage.from('cv-backups').remove([Uri.decodeComponent(path)]);
+      } catch (e) {
+        // Silently fail storage delete or handle separately
+      }
+    }
+
+    // 3. Delete embeddings
+    await _supabase
+        .from('candidate_embeddings')
+        .delete()
+        .eq('candidate_id', candidateId);
+
+    // 4. Delete candidate (will cascade to applications)
+    await _supabase
+        .from('candidates')
+        .delete()
+        .eq('id', candidateId)
+        .eq('user_email', userEmail);
+
+    _ref.invalidate(applicationsProvider);
+  }
 }

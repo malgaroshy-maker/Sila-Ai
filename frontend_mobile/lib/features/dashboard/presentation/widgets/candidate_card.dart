@@ -10,9 +10,11 @@ class CandidateCard extends StatelessWidget {
     required this.application,
     required this.onTap,
     this.onStatusChange,
+    this.onDelete,
   });
 
   final void Function(String)? onStatusChange;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class CandidateCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        onLongPress: onStatusChange != null ? () => _showStatusSheet(context) : null,
+        onLongPress: (onStatusChange != null || onDelete != null) ? () => _showStatusSheet(context) : null,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -88,7 +90,7 @@ class CandidateCard extends StatelessWidget {
                   _buildStageBadge(),
                   Row(
                     children: [
-                      if (onStatusChange != null)
+                      if (onStatusChange != null || onDelete != null)
                         IconButton(
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(Icons.more_horiz, size: 20, color: Color(0xFF64748B)),
@@ -207,21 +209,34 @@ class CandidateCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Change Candidate Stage',
+              'Actions & Pipeline',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 4),
             Text(
-              'For ${application.candidate.name}',
+              'Candidate: ${application.candidate.name}',
               style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
             ),
             const SizedBox(height: 24),
-            _buildStageOption(context, 'Screening', Icons.fact_check, const Color(0xFF0EA5E9)),
-            _buildStageOption(context, 'Interview', Icons.calendar_today, const Color(0xFF7C3AED)),
-            _buildStageOption(context, 'Offered', Icons.star, const Color(0xFFEAB308)),
-            _buildStageOption(context, 'Hired', Icons.check_circle, const Color(0xFF22C55E)),
-            const Divider(color: Color(0xFF1E293B), height: 32),
-            _buildStageOption(context, 'Rejected', Icons.cancel, const Color(0xFFEF4444)),
+            if (onStatusChange != null) ...[
+              _buildStageOption(context, 'Screening', Icons.fact_check, const Color(0xFF0EA5E9)),
+              _buildStageOption(context, 'Interview', Icons.calendar_today, const Color(0xFF7C3AED)),
+              _buildStageOption(context, 'Offered', Icons.star, const Color(0xFFEAB308)),
+              _buildStageOption(context, 'Hired', Icons.check_circle, const Color(0xFF22C55E)),
+              _buildStageOption(context, 'Rejected', Icons.cancel, const Color(0xFFEF4444)),
+            ],
+            if (onDelete != null) ...[
+              const Divider(color: Color(0xFF1E293B), height: 32),
+              ListTile(
+                onTap: () {
+                  Navigator.pop(context);
+                  onDelete?.call();
+                },
+                leading: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                title: const Text('Delete Candidate', style: TextStyle(color: Colors.redAccent)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ],
             const SizedBox(height: 16),
           ],
         ),

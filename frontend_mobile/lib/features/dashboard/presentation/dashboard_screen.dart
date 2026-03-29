@@ -160,6 +160,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           }
                         }
                       },
+                      onDelete: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: const Color(0xFF0F172A),
+                            title: const Text('Confirm Delete', style: TextStyle(color: Colors.white)),
+                            content: Text('Are you sure you want to delete ${app.candidate.name}? This action cannot be undone.', style: const TextStyle(color: Color(0xFF94A3B8))),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.redAccent))),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          try {
+                            await ref.read(dashboardActionsProvider).deleteCandidate(app.candidateId);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Deleted ${app.candidate.name}')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to delete: $e')),
+                              );
+                            }
+                          }
+                        }
+                      },
                     );
                   },
                 ),
