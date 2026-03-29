@@ -103,4 +103,14 @@ This version uses Next.js 16 and React 19. APIs and conventions differ from trai
 - **Quota Resilience**: Check `live_api_status` table before making heavy batch calls.
 
 ---
-*Updated on 2026-03-27. Follow these rules to maintain project integrity.*
+- **Quota Resilience**: Check `live_api_status` table before making heavy batch calls.
+
+## 8. Mobile App Development Constraints (Strict Isolation)
+When developing the Flutter mobile application (`frontend_mobile/`), you MUST adhere to the following rules to ensure zero impact on the existing stable web and backend systems:
+1. **Strict Isolation**: Do NOT modify ANY files in `backend-api/` or `frontend-web/` to accommodate the mobile app. The mobile app must adapt to the existing backend API contracts.
+2. **Authentication**: The mobile app will use `supabase_flutter` for local session management but must communicate with the NestJS backend using the existing `x-user-email` HTTP header pattern for multi-tenancy.
+3. **API Consumption**: Treat the NestJS API as a rigid, external third-party service. If a mobile feature requires a backend change, you must explicitly flag it as a breaking change and seek user approval before modifying the backend.
+4. **No Infinite Loops**: The web and backend platforms are considered complete and stable for Phase 8. Do not refactor them unless explicitly instructed.
+
+---
+*Updated on 2026-03-29. Follow these rules to maintain project integrity.*

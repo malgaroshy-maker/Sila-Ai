@@ -61,9 +61,15 @@
 - [ ] Augment AI scoring with external "Proof of Work" evidence
 
 ### 9.2 Mobile App — Flutter Implementation
-- [ ] iOS/Android project setup with common SILA API
-- [ ] Real-time push notifications for "Exceptional" candidates
-- [ ] Mobile camera integration for instant "Photo-to-Analysis" CV ingestion
+- [ ] **Strict Isolation Setup**: Initialize Flutter project (`frontend_mobile/`) without modifying backend/web.
+- [ ] **Tech Stack Initialization**: Install `flutter_riverpod`, `go_router`, and `supabase_flutter`.
+- [ ] **Bilingual Infrastructure**: Configure `flutter_localizations` (RTL/LTR).
+- [ ] **Authentication**: Supabase native Google/Microsoft OAuth via Deep Links.
+- [ ] **Dashboard**: Mobile-optimized rapid-review list matching web glassmorphism UI.
+- [ ] **Candidate Profile**: CV Viewer and `flutter_cached_pdfview` for generated reports.
+- [ ] **AI Chat**: `flutter_markdown` integration for clickable RAG assistance on mobile.
+- [ ] Real-time push notifications via Firebase/Supabase.
+- [ ] Camera integration for instant CV ingestion.
 
 ### 9.3 Multi-Company SaaS & RBAC
 - [ ] Organization-based data partitioning (Tenant ID)
