@@ -22,65 +22,156 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildCandidatesList() {
-    final applicationsAsync = ref.watch(applicationsProvider);
+    final filteredAsync = ref.watch(filteredApplicationsProvider);
+    final jobsAsync = ref.watch(jobsProvider);
+    final selectedJobId = ref.watch(selectedJobIdProvider);
 
-    return applicationsAsync.when(
-      data: (applications) {
-        if (applications.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      children: [
+        // Search Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: TextField(
+            onChanged: (val) => ref.read(searchProvider.notifier).set(val),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Search by name or email...',
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
+              filled: true,
+              fillColor: const Color(0xFF1E293B).withValues(alpha: 0.4),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF334155)),
+              ),
+            ),
+          ),
+        ),
+
+        // Job Filter Chips
+        jobsAsync.when(
+          data: (jobs) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               children: [
-                Icon(Icons.inbox, size: 64, color: Color(0xFF334155)),
-                SizedBox(height: 16),
-                Text(
-                  'No candidates found',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: const Text('All Jobs', style: TextStyle(fontSize: 12)),
+                    selected: selectedJobId == null,
+                    onSelected: (selected) => ref.read(selectedJobIdProvider.notifier).set(null),
+                    backgroundColor: const Color(0xFF1E293B),
+                    selectedColor: const Color(0xFF0EA5E9).withValues(alpha: 0.2),
+                    checkmarkColor: const Color(0xFF0EA5E9),
+                    labelStyle: TextStyle(
+                      color: selectedJobId == null ? const Color(0xFF0EA5E9) : const Color(0xFF94A3B8),
+                      fontWeight: selectedJobId == null ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    side: BorderSide(
+                      color: selectedJobId == null ? const Color(0xFF0EA5E9) : const Color(0xFF334155),
+                    ),
+                  ),
                 ),
+                ...jobs.map((job) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(job.title, style: const TextStyle(fontSize: 12)),
+                    selected: selectedJobId == job.id,
+                    onSelected: (selected) => ref.read(selectedJobIdProvider.notifier).set(selected ? job.id : null),
+                    backgroundColor: const Color(0xFF1E293B),
+                    selectedColor: const Color(0xFF0EA5E9).withValues(alpha: 0.2),
+                    checkmarkColor: const Color(0xFF0EA5E9),
+                    labelStyle: TextStyle(
+                      color: selectedJobId == job.id ? const Color(0xFF0EA5E9) : const Color(0xFF94A3B8),
+                      fontWeight: selectedJobId == job.id ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    side: BorderSide(
+                      color: selectedJobId == job.id ? const Color(0xFF0EA5E9) : const Color(0xFF334155),
+                    ),
+                  ),
+                )),
               ],
             ),
-          );
-        }
+          ),
+          loading: () => const SizedBox.shrink(),
+          error: (err, stack) => const SizedBox.shrink(),
+        ),
 
-        return RefreshIndicator(
-          color: const Color(0xFF0EA5E9),
-          backgroundColor: const Color(0xFF1E293B),
-          onRefresh: () => ref.refresh(applicationsProvider.future),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            itemCount: applications.length,
-            itemBuilder: (context, index) {
-              final app = applications[index];
-              return CandidateCard(
-                application: app,
-                onTap: () {
-                  context.push('/candidate', extra: app);
+        const SizedBox(height: 8),
+
+        Expanded(
+          child: filteredAsync.when(
+            data: (applications) {
+              if (applications.isEmpty) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inbox, size: 64, color: Color(0xFF334155)),
+                      SizedBox(height: 16),
+                      Text(
+                        'No matching candidates',
+                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                color: const Color(0xFF0EA5E9),
+                backgroundColor: const Color(0xFF1E293B),
+                onRefresh: () async {
+                  ref.invalidate(applicationsProvider);
+                  ref.invalidate(jobsProvider);
+                  await ref.read(applicationsProvider.future);
+                  await ref.read(jobsProvider.future);
                 },
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: applications.length,
+                  itemBuilder: (context, index) {
+                    final app = applications[index];
+                    return CandidateCard(
+                      application: app,
+                      onTap: () {
+                        context.push('/candidate', extra: app);
+                      },
+                    );
+                  },
+                ),
               );
             },
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: Color(0xFF0EA5E9)),
+            ),
+            error: (err, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Error loading candidates',
+                    style: TextStyle(color: Color(0xFFEF4444)),
+                  ),
+                  TextButton(
+                    onPressed: () => ref.refresh(applicationsProvider.future),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
           ),
-        );
-      },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF0EA5E9)),
-      ),
-      error: (err, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading candidates',
-              style: const TextStyle(color: Color(0xFFEF4444)),
-            ),
-            TextButton(
-              onPressed: () => ref.refresh(applicationsProvider.future),
-              child: const Text('Retry'),
-            ),
-          ],
         ),
-      ),
+      ],
     );
   }
 

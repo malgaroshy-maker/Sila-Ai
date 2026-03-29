@@ -22,13 +22,15 @@ class Candidate {
 }
 
 class Job {
+  final String id;
   final String title;
   final String userEmail;
 
-  Job({required this.title, required this.userEmail});
+  Job({required this.id, required this.title, required this.userEmail});
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
+      id: json['id'] ?? '',
       title: json['title'] ?? 'Unknown Job',
       userEmail: json['user_email'] ?? '',
     );
