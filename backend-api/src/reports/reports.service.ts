@@ -14,7 +14,7 @@ export class ReportsService {
   async generateJobReportPdf(
     userEmail: string,
     jobId: string,
-  ): Promise<Buffer> {
+  ): Promise<string> {
     const job = await this.jobsService.getJob(userEmail, jobId);
     if (!job) throw new NotFoundException('Job not found');
 
@@ -36,7 +36,7 @@ export class ReportsService {
     const browser = await puppeteer.launch({
       headless: true,
       executablePath: executablePath || process.env.PUPPETEER_EXECUTABLE_PATH,
-      args: chromium.args,
+      args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
@@ -49,13 +49,25 @@ export class ReportsService {
     });
 
     await browser.close();
-    return Buffer.from(pdf);
+    
+    const fileName = `job-reports/${jobId}-${Date.now()}.pdf`;
+    const { error: uploadError } = await sb.storage
+      .from('reports')
+      .upload(fileName, pdf, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+
+    if (uploadError) throw new Error(`Failed to upload report: ${uploadError.message}`);
+
+    const { data: { publicUrl } } = sb.storage.from('reports').getPublicUrl(fileName);
+    return publicUrl;
   }
 
   async generateCandidateReportPdf(
     userEmail: string,
     applicationId: string,
-  ): Promise<Buffer> {
+  ): Promise<string> {
     const sb = this.supabaseService.getClient();
     const { data: res, error } = await sb
       .from('analysis_results')
@@ -75,7 +87,7 @@ export class ReportsService {
     const browser = await puppeteer.launch({
       headless: true,
       executablePath: executablePath || process.env.PUPPETEER_EXECUTABLE_PATH,
-      args: chromium.args,
+      args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
@@ -88,7 +100,19 @@ export class ReportsService {
     });
 
     await browser.close();
-    return Buffer.from(pdf);
+
+    const fileName = `candidate-reports/${applicationId}-${Date.now()}.pdf`;
+    const { error: uploadError } = await sb.storage
+      .from('reports')
+      .upload(fileName, pdf, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+
+    if (uploadError) throw new Error(`Failed to upload report: ${uploadError.message}`);
+
+    const { data: { publicUrl } } = sb.storage.from('reports').getPublicUrl(fileName);
+    return publicUrl;
   }
 
   private buildCandidateHtmlTemplate(res: any) {

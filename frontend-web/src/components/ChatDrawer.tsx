@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Brain, Trash2, X, Send, Trophy, BarChart3, Target, HelpCircle, MessageSquare, Plus, History, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import BrandLogo from './BrandLogo';
 import BrandSpinner from './BrandSpinner';
 
@@ -328,7 +329,22 @@ export default function ChatDrawer({ isOpen, onClose, t, userEmail }: { isOpen: 
                         ? 'bg-[#0369A1] text-white rounded-br-sm'
                         : 'bg-[#020617] text-slate-200 border border-[#1E293B] rounded-bl-sm'
                     }`}>
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      <div className="markdown-content prose prose-invert max-w-none text-sm leading-relaxed">
+                        <ReactMarkdown
+                          components={{
+                            a: ({ node, ...props }) => (
+                              <a
+                                {...props}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#0EA5E9] font-bold underline hover:text-[#38BDF8] transition-colors break-all"
+                              />
+                            ),
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
                     </div>
 
                     {/* Meta-Actions (Suggestions) */}

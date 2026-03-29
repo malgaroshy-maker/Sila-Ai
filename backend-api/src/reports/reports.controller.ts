@@ -25,18 +25,12 @@ export class ReportsController {
     if (!userEmail) throw new NotFoundException('User email missing');
 
     try {
-      const pdfBuffer = await this.reportsService.generateJobReportPdf(
+      const publicUrl = await this.reportsService.generateJobReportPdf(
         userEmail,
         jobId,
       );
 
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=job-report-${jobId}.pdf`,
-        'Content-Length': pdfBuffer.length,
-      });
-
-      res.end(pdfBuffer);
+      res.redirect(publicUrl);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -53,18 +47,12 @@ export class ReportsController {
     if (!userEmail) throw new NotFoundException('User email missing');
 
     try {
-      const pdfBuffer = await this.reportsService.generateCandidateReportPdf(
+      const publicUrl = await this.reportsService.generateCandidateReportPdf(
         userEmail,
         applicationId,
       );
 
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename=candidate-report-${applicationId}.pdf`,
-        'Content-Length': pdfBuffer.length,
-      });
-
-      res.end(pdfBuffer);
+      res.redirect(publicUrl);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
