@@ -45,10 +45,18 @@ export class AiService {
       model: settings.gemini_model || 'models/gemini-3.1-flash-lite-preview',
       aiMode: settings.ai_mode || 'balanced',
       analysisLanguage: settings.analysis_language || 'BH',
+      chatLanguage: settings.chat_language || 'BH',
       evaluationFocus: settings.evaluation_focus || 'balanced',
       maskPii: settings.mask_pii !== false,
+      companyName: settings.company_name || 'SILA AI',
+      webhookUrl: settings.webhook_url || '',
+      exceptionalThreshold: parseInt(settings.exceptional_threshold) || 90,
+      rejectThreshold: parseInt(settings.reject_threshold) || 50,
+      duplicateStrategy: settings.duplicate_strategy || 'update',
+      syncFrequency: settings.sync_frequency || '6h',
     };
   }
+
 
   /**
    * Fetches the curated model list from Supabase.

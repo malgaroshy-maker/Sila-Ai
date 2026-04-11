@@ -137,7 +137,8 @@ export class ChatService {
       BH: 'أجب بنفس لغة سؤال المستخدم (عربي/إنجليزي). إذا كان السؤال هجيناً، أجب بلغة الأغلبية أو العربية كافتراضي.',
     };
 
-    const chatLanguage = (settings as any).chat_language || 'BH';
+    const chatLanguage = settings.chatLanguage || 'BH';
+    this.logger.log(`Chat language preference for ${userEmail}: ${chatLanguage}`);
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
