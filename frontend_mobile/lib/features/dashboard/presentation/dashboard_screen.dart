@@ -129,10 +129,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: const Color(0xFF0EA5E9),
                 backgroundColor: const Color(0xFF1E293B),
                 onRefresh: () async {
-                  ref.invalidate(applicationsProvider);
-                  ref.invalidate(jobsProvider);
-                  await ref.read(applicationsProvider.future);
-                  await ref.read(jobsProvider.future);
+                  await ref.read(applicationsProvider.notifier).refresh();
+                  await ref.refresh(jobsProvider.future);
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -209,10 +207,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     'Error loading candidates',
                     style: TextStyle(color: Color(0xFFEF4444)),
                   ),
-                  TextButton(
-                    onPressed: () => ref.refresh(applicationsProvider.future),
-                    child: const Text('Retry'),
-                  ),
+            TextButton(
+              onPressed: () => ref.read(applicationsProvider.notifier).refresh(),
+              child: const Text('Retry', style: TextStyle(color: Color(0xFF94A3B8))),
+            ),
                 ],
               ),
             ),

@@ -20,6 +20,18 @@ final settingsProvider = FutureProvider<Map<String, String>>((ref) async {
   return settings;
 });
 
+final modelsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final supabase = ref.watch(supabaseProvider);
+  final response = await supabase
+      .from('gemini_models')
+      .select('*')
+      .eq('is_active', true)
+      .contains('task_type', ['generateContent'])
+      .order('display_name', ascending: true);
+  
+  return (response as List);
+});
+
 final settingsActionsProvider = Provider((ref) {
   final supabase = ref.watch(supabaseProvider);
   return SettingsActions(supabase, ref);

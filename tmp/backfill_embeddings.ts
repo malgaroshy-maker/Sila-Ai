@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const SUPABASE_URL = "https://xdzjkqznanqqqlitqnkm.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkemprcXpuYW5xcXFsaXRxbmttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxOTk4MjcsImV4cCI6MjA4OTc3NTgyN30.vnO4mYF3gSKKxDeAIZY9XyFmDQFI7LPoLdvaSjSufDU";
-const GEMINI_API_KEY = "AIzaSyB0XUVaSTs_DBZ404htLU-N1E6pT2LeMHQ";
+const SUPABASE_URL = process.env.SUPABASE_URL || "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "YOUR_GEMINI_API_KEY";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);

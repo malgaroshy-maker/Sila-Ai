@@ -6,12 +6,71 @@ final supabaseProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
 
-final applicationsProvider = FutureProvider<List<Application>>((ref) async {
-  final supabase = ref.watch(supabaseProvider);
-  final userEmail = supabase.auth.currentUser?.email;
+class ApplicationsNotifier extends Notifier<AsyncValue<List<Application>>> {
+  @override
+  AsyncValue<List<Application>> build() {
+    // Initial fetch
+    _fetch();
+    
+    // Subscribe to changes
+    _subscribe();
+    
+    return const AsyncValue.loading();
+  }
 
-  if (userEmail == null) throw Exception('User not authenticated');
+  Future<void> _fetch() async {
+    final supabase = ref.read(supabaseProvider);
+    final userEmail = supabase.auth.currentUser?.email;
+    if (userEmail == null) {
+      state = AsyncValue.error('Not authenticated', StackTrace.current);
+      return;
+    }
 
+    try {
+      final data = await _fetchFullApplications(supabase, userEmail);
+      state = AsyncValue.data(data);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  void _subscribe() {
+    final supabase = ref.read(supabaseProvider);
+    final userEmail = supabase.auth.currentUser?.email;
+    if (userEmail == null) return;
+
+    final channel = supabase.channel('public:applications_changes');
+    
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'applications',
+      callback: (payload) {
+        _fetch();
+      },
+    ).onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'analysis_results',
+      callback: (payload) {
+        _fetch();
+      },
+    ).subscribe();
+
+    ref.onDispose(() {
+      supabase.removeChannel(channel);
+    });
+  }
+
+  Future<void> refresh() => _fetch();
+}
+
+final applicationsProvider = NotifierProvider<ApplicationsNotifier, AsyncValue<List<Application>>>(
+  ApplicationsNotifier.new,
+);
+
+// Helper for full fetch
+Future<List<Application>> _fetchFullApplications(SupabaseClient supabase, String userEmail) async {
   final response = await supabase
       .from('applications')
       .select('*, jobs!inner(*), candidates(*), analysis_results(*)')
@@ -19,7 +78,7 @@ final applicationsProvider = FutureProvider<List<Application>>((ref) async {
       .order('created_at', ascending: false);
 
   return (response as List).map((json) => Application.fromJson(json)).toList();
-});
+}
 
 final jobsProvider = FutureProvider<List<Job>>((ref) async {
   final supabase = ref.watch(supabaseProvider);

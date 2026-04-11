@@ -1,4 +1,4 @@
-# AI Recruitment Intelligence System (ARIS)
+# SILA: AI Recruitment Intelligence System
 
 [English Version](#english-version) | [النسخة العربية](#النسخة-العربية)
 
@@ -6,57 +6,83 @@
 
 <div id="english-version">
 
-# 🚀 AI Recruitment Intelligence System (ARIS)
+<p align="center">
+  <img src="./assets/logo.png" alt="SILA Logo" width="180" />
+</p>
 
-[![Next.js](https://img.shields.io/badge/Next.js-15+-black?logo=next.js)](https://nextjs.org/)
-[![NestJS](https://img.shields.io/badge/NestJS-10+-red?logo=nestjs)](https://nestjs.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-blue?logo=supabase)](https://supabase.com/)
-[![Gemini API](https://img.shields.io/badge/Gemini-AI--Brain-orange?logo=google-gemini)](https://ai.google.dev/)
+<h1 align="center">🚀 SILA</h1>
+<p align="center"><strong>AI Recruitment Intelligence System</strong></p>
 
-**ARIS** is an advanced, AI-powered platform designed for modern HR teams to collect, analyze, rank, and select candidates with unprecedented precision. By leveraging the **Gemini 2.0 Flash API**, it transforms raw CV data into actionable recruitment intelligence.
+<p align="center">
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16--black?logo=next.js" alt="Next.js" /></a>
+  <a href="https://nestjs.com/"><img src="https://img.shields.io/badge/NestJS-11--red?logo=nestjs" alt="NestJS" /></a>
+  <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-PostgreSQL-blue?logo=supabase" alt="Supabase" /></a>
+  <a href="https://ai.google.dev/"><img src="https://img.shields.io/badge/Gemini-3.1--Flash--Lite-orange?logo=google-gemini" alt="Gemini API" /></a>
+</p>
+
+---
+
+**SILA** is an enterprise-grade AI-powered platform designed for HR teams to automate and enhance the candidate selection process. By leveraging **Gemini 3.1 Flash Lite**, it transforms raw resume data into deep recruitment intelligence, providing explainable scores and semantic search capabilities.
 
 ### 🧠 The AI Recruitment Brain
 
-*   **Deep Analysis**: Multi-score system evaluating **Skills, GPA, Language Proficiency, and Industrial Readiness** with contextual justifications.
-*   **Explainable Decisions**: AI-generated strengths, weaknesses, and hiring recommendations for every candidate.
-*   **Multimodal OCR**: High-accuracy text extraction from **PDF, DOCX**, and images (**JPG, PNG**) using Gemini Multimodal.
+*   **Deep Analysis**: Multi-dimensional scoring evaluating **Skills, GPA, Language, and Cultural Fit** with automated justifications.
+*   **Explainable Decisions**: AI-generated reports highlighting strengths, weaknesses, and direct hiring recommendations.
+*   **Multimodal Processing**: High-fidelity text extraction from **PDF, DOCX**, and images using Gemini's multimodal vision.
 
 ### 📥 Intelligent Automation
 
-*   **Automated Collection**: Integrated Gmail & Outlook scanning via OAuth2 to auto-ingest incoming CVs.
-*   **AI Job Generation**: Create structured, professional job descriptions from simple natural language prompts.
-*   **Executive Reporting**: Professional, board-ready PDF exports showing ranked candidates and scoring breakdowns.
+*   **Email Integration**: Automated CV collection from Gmail and Outlook via secure OAuth2 pipelines.
+*   **AI Job Architect**: Generate production-ready job descriptions from simple natural language inputs.
+*   **Executive Reporting**: Board-ready PDF exports with ranked candidate shortlists and scoring breakdowns.
 
-### 📊 Advanced Analytics & Pool Search
+### 📊 Advanced Analytics & RAG
 
-*   **Insights Dashboard**: Full-width professional analytics tracking performance, token usage, and operational costs.
-*   **Semantic RAG Search**: Query your candidate pool using natural language ("Find the top 3 seniors ready for interview").
-*   **Kanban Pipeline**: Visual drag-and-drop management of candidate stages (Applied → Interview → Offered).
+*   **Real-time Insights**: Track hiring performance, token consumption, and operational costs on a high-density dashboard.
+*   **Semantic RAG Search**: Query huge candidate pools using natural language (e.g., *"Find experienced AI engineers with industrial background"*).
+*   **Kanban Workflow**: Visual, drag-and-drop pipeline management from application to final offer.
 
-### ⚙️ Personalization & Privacy
+### 🖼️ Visual Walkthrough
 
-*   **Smart Thresholds**: Automated alerts for exceptional candidates (90%+) and custom auto-rejection rules.
-*   **AI Behavior Modes**: Toggle between **Strict** (high precision) and **Balanced** (looser matching) evaluation logic.
-*   **PII Masking**: Integrated privacy controls to hide sensitive candidate data from AI prompts.
+| Dashboard & Kanban | Candidate Scoring |
+| :--- | :--- |
+| ![Dashboard](./assets/sila-kanban.png) | ![Scorecard](./assets/sila-candidate-list.png) |
+| *Visualizing the recruitment funnel with Kanban* | *Multi-dimensional scoring and analysis* |
+
+| AI Reasoning & Analysis | Strategic Interview Prep |
+| :--- | :--- |
+| ![AI Analysis](./assets/sila-ai-analysis.png) | ![Strategic Prep](./assets/sila-strategic-prep.png) |
+| *Explainable AI showing reasoning chains* | *Context-aware interview questions and roadmaps* |
+
+| AI Agent & Chat | Email Integration |
+| :--- | :--- |
+| ![AI Chat](./assets/sila-ai-chat.png) | ![Email Integration](./assets/sila-email-integration.png) |
+| *Bilingual AI Assistant for candidate interaction* | *Seamless Gmail/Outlook automation* |
+
+| Bilingual Reports | Neural Intelligence |
+| :--- | :--- |
+| ![Bilingual Report](./assets/sila-bilingual-report.png) | ![Neural Intelligence](./assets/sila-neural-intelligence.png) |
+| *Professional reports in English & Arabic* | *Deep profile insights and trajectory prediction* |
 
 ### 🏗️ Architecture
 
 ```mermaid
 graph TB
-    subgraph "Frontend"
+    subgraph "Frontend (Next.js 16)"
         A[Dashboard] --> B[Job Panel]
         A --> C[Kanban Board]
         A --> D[AI Insights]
     end
 
-    subgraph "Backend"
-        E[NestJS API Gateway] --> F[Candidates Service]
+    subgraph "Backend (NestJS)"
+        E[API Gateway] --> F[Candidates Service]
         F --> G[Gemini AI Engine]
         E --> H[Chat Service]
+        E --> L[Email Processor]
     end
 
-    subgraph "Data Layer"
-        I[(Supabase PostgreSQL)]
+    subgraph "Data Layer (Supabase)"
+        I[(PostgreSQL)]
         J[pgvector / Semantic DB]
         K[Realtime Updates]
     end
@@ -69,84 +95,70 @@ graph TB
 
 ### 🛠️ Tech Stack
 
-*   **Frontend**: Next.js 15, Tailwind CSS v4, next-intl, Recharts
-*   **Backend**: NestJS, Puppeteer, Nodemailer
-*   **AI/ML**: Gemini 2.0 Flash, pgvector
-*   **Infrastructure**: Supabase (Database, Auth, Storage, Realtime)
+*   **Core**: Next.js 16 (App Router), React 19, TypeScript
+*   **Styling**: Tailwind CSS v4 (CSS-first configuration)
+*   **Backend**: NestJS, Puppeteer (for PDF generation), Nodemailer
+*   **AI**: Gemini 3.1 Flash Lite, LangChain (RAG)
+*   **Database**: Supabase (PostgreSQL, Vector Search, Auth, Storage)
 
 ---
-*Built with ❤️ by the AI Recruitment Team*
 
 </div>
 
----
-
 <div id="النسخة-العربية" dir="rtl">
 
-# 🚀 نظام ذكاء التوظيف الاصطناعي (ARIS)
+<p align="center">
+  <img src="./assets/logo.png" alt="شعار SILA" width="180" />
+</p>
 
-**ARIS** هي منصة متطورة مدعومة بالذكاء الاصطناعي، مصممة خصيصاً لفرق الموارد البشرية لجمع وتصنيف واختيار الكفاءات بدقة واحترافية. من خلال دمج تقنيات **Gemini**، يقوم النظام بتحويل السير الذاتية المعقدة إلى بيانات استراتيجية تدعم اتخاذ القرار. 
+<h1 align="center">🚀 نظام SILA الذكي</h1>
+<p align="center"><strong>نظام ذكاء التوظيف المعزز بالذكاء الاصطناعي</strong></p>
+
+---
+
+**SILA** هو نظام احترافي مدعوم بالذكاء الاصطناعي، مصمم خصيصاً لفرق الموارد البشرية لأتمتة وتحسين عملية اختيار المرشحين. من خلال دمج تقنيات **Gemini 3.1**، يقوم النظام بتحويل السير الذاتية المعقدة إلى رؤى استراتيجية تدعم اتخاذ القرار.
 
 ### 🧠 عقل التوظيف الذكي
 
-*   **التحليل العميق**: نظام تقييم شامل يشمل **المهارات، المعدل، إتقان اللغات، والجاهزية المهنية** مع مبررات منطقية لكل بنك.
-*   **قرارات مفسرة**: توليد آلي لنقاط القوة والضعف وتوصيات التوظيف المباشرة لكل مرشح.
-*   **استخراج النصوص الذكي (OCR)**: دعم ملفات **PDF، DOCX**، والصور (**JPG, PNG**) بدقة استثنائية.
+*   **التحليل العميق**: تقييم متعدد الأبعاد يشمل **المهارات، المعدل، اللغات، والجاهزية المهنية** مع مبررات آلية.
+*   **قرارات مفسرة**: تقارير مولدة آلياً توضح نقاط القوة والضعف وتوصيات التوظيف المباشرة.
+*   **المعالجة الذكية للمستندات**: استخراج نصوص عالي الدقة من ملفات **PDF، DOCX**، والصور باستخدام رؤية Gemini الحاسوبية.
 
 ### 📥 الأتمتة والتقارير الاحترافية
 
-*   **الجمع التلقائي**: فحص البريد الإلكتروني (Gmail & Outlook) تلقائيًا لاستخراج السير الذاتية الجديدة وحفظها.
-*   **توليد الوظائف بالذكاء الاصطناعي**: تحويل المتطلبات البسيطة إلى وصف وظيفي محترف وهيكلي بلمسة واحدة.
-*   **تقارير تنفيذية**: تصدير ملفات PDF احترافية تعرض تصنيفات المرشحين وتفاصيل التقييم لمشاركتها مع الإدارة.
+*   **الربط مع البريد الإلكتروني**: جمع السير الذاتية تلقائياً من Gmail و Outlook عبر بروتوكولات OAuth2 الآمنة.
+*   **مهندس الوظائف الذكي**: توليد وصف وظيفي محترف من مدخلات بسيطة بلغة طبيعية.
+*   **التقارير التنفيذية**: تصدير ملفات PDF احترافية تعرض تصنيفات المرشحين وتفاصيل التقييم لمشاركتها مع الإدارة.
 
 ### 📊 التحليلات المتقدمة والبحث الدلالي
 
-*   **لوحة رؤى الذكاء الاصطناعي**: واجهة تحليلية شاملة تتبع الأداء، استهلاك الرموز، وتكاليف العمليات لحظيًا.
-*   **البحث الدلالي (RAG)**: ابحث في قاعدة بياناتك باستخدام اللغة الطبيعية ("ابحث عن أفضل 3 مهندسين جاهزين للمقابلة").
-*   **إدارة كانبان (Kanban)**: مسار توظيف مرئي يعتمد على السحب والإفلات لإدارة مراحل المرشحين بكل سهولة.
+*   **لوحة الرؤى اللحظية**: تتبع أداء التوظيف، استهلاك الرموز، وتكاليف العمليات عبر لوحة تحكم متطورة.
+*   **البحث الدلالي (RAG)**: ابحث في قاعدة بيانات المرشحين باستخدام اللغة الطبيعية (مثال: *"ابحث عن مهندسين ذكاء اصطناعي ذوي خبرة صناعية"*).
+*   **إدارة مراحل التوظيف**: مسار توظيف مرئي يعتمد على السحب والإفلات لإدارة المرشحين من التقديم حتى العرض الوظيفي.
 
-### ⚙️ التخصيص والخصوصية
+### 🖼️ معرض الصور الملحق
 
-*   **تنبيهات استثنائية**: نظام تنبيه تلقائي للمرشحين المتفوقين (أعلى من 90%) وقواعد للرفض التلقائي الذكي.
-*   **أنماط التقييم**: التبديل بين وضع التقييم **الصارم** و وضع التقييم **المتوازن** حسب احتياج المنشأة.
-*   **حماية البيانات الحساسة**: ضوابط خصوصية لإخفاء أرقام الهواتف والعناوين لضمان أمان معلومات المرشحين.
+| لوحة التحكم وكانبان | تقييم المرشحين |
+| :--- | :--- |
+| ![Dashboard](./assets/sila-kanban.png) | ![Scorecard](./assets/sila-candidate-list.png) |
+| *عرض مسار التوظيف باستخدام نظام كانبان* | *نظام تقييم وتصنيف متعدد الأبعاد* |
 
-### 🏗️ الهندسة التقنية
+| تحليل الذكاء الاصطناعي | التحضير الاستراتيجي للمقابلات |
+| :--- | :--- |
+| ![AI Analysis](./assets/sila-ai-analysis.png) | ![Strategic Prep](./assets/sila-strategic-prep.png) |
+| *توضيح آلية اتخاذ القرار وسلسلة التفكير* | *أسئلة مقابلة مخصصة وخرائط طريق مهنية* |
 
-```mermaid
-graph TB
-    subgraph "واجهة المستخدم"
-        A[لوحة التحكم] --> B[لوحة الوظائف]
-        A --> C[مسار التوظيف]
-        A --> D[مركز التحليلات]
-    end
+| المساعد الذكي والدردشة | التكامل مع البريد الإلكتروني |
+| :--- | :--- |
+| ![AI Chat](./assets/sila-ai-chat.png) | ![Email Integration](./assets/sila-email-integration.png) |
+| *مساعد ذكي ثنائي اللغة للتفاعل مع البيانات* | *أتمتة كاملة مع Gmail و Outlook* |
 
-    subgraph "الخدمات الخلفية"
-        E[NestJS API] --> F[خدمة المرشحين]
-        F --> G[محرك Gemini]
-        E --> H[خدمة الدردشة]
-    end
-
-    subgraph "طبقة البيانات"
-        I[(قاعدة بيانات Supabase)]
-        J[البحث الدلالي / المتجه]
-        K[الزمن الحقيقي]
-    end
-
-    A --> E
-    G --> I
-    H --> J
-    I --> K
-```
-
-### 🛠️ التقنيات المستخدمة
-
-*   **الواجهة الأمامية**: Next.js 15, Tailwind CSS v4, next-intl
-*   **الخدمات الخلفية**: NestJS, Puppeteer, Nodemailer
-*   **الذكاء الاصطناعي**: Gemini 2.0 Flash, pgvector
-*   **البنية التحتية**: Supabase (Database, Auth, Storage, Realtime)
+| التقارير ثنائية اللغة | الذكاء العصبي |
+| :--- | :--- |
+| ![Bilingual Report](./assets/sila-bilingual-report.png) | ![Neural Intelligence](./assets/sila-neural-intelligence.png) |
+| *تقارير احترافية باللغتين العربية والإنجليزية* | *تحليلات عميقة للملف الشخصي وتنبؤات المسار الوظيفي* |
 
 ---
-*صُنع بكل حب بواسطة فريق ذكاء التوظيف*
+*صُنع بكل حب بواسطة فريق SILA*
 
 </div>
