@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase.service';
+import { JobsService } from '../jobs/jobs.service';
 import * as puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import { AiService } from '../ai/ai.service';
