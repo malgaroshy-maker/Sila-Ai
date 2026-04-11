@@ -44,25 +44,35 @@
 
 ### 🖼️ Visual Walkthrough
 
-| Dashboard & Kanban | Candidate Scoring |
+#### 1. Smart Ingestion & Job Management
+| Dashboard & Pipeline | CV Upload & Analysis |
 | :--- | :--- |
-| ![Dashboard](./assets/sila-kanban.png) | ![Scorecard](./assets/sila-candidate-list.png) |
-| *Visualizing the recruitment funnel with Kanban* | *Multi-dimensional scoring and analysis* |
+| ![Dashboard](./assets/sila-jobs-dashboard.png) | ![CV Upload](./assets/sila-cv-upload.png) |
+| *Managing recruitment pipelines and job requirements* | *High-fidelity CV processing and multi-dimensional scoring* |
 
-| AI Reasoning & Analysis | Strategic Interview Prep |
+#### 2. AI Intelligence & Comparative Analysis
+| AI Reasoning Chains | Comparative Insights |
 | :--- | :--- |
-| ![AI Analysis](./assets/sila-ai-analysis.png) | ![Strategic Prep](./assets/sila-strategic-prep.png) |
-| *Explainable AI showing reasoning chains* | *Context-aware interview questions and roadmaps* |
+| ![AI Analysis](./assets/sila-ai-analysis.png) | ![Comparative Analysis](./assets/sila-ai-comparative-analysis.png) |
+| *Explainable AI showing deep reasoning and justifications* | *Side-by-side candidate evaluations and rankings* |
 
-| AI Agent & Chat | Email Integration |
+#### 3. Automation & Communication
+| AI Chat Automation | Intelligent Invitations |
 | :--- | :--- |
-| ![AI Chat](./assets/sila-ai-chat.png) | ![Email Integration](./assets/sila-email-integration.png) |
-| *Bilingual AI Assistant for candidate interaction* | *Seamless Gmail/Outlook automation* |
+| ![AI Chat](./assets/sila-ai-chat-automation.png) | ![Email Invite](./assets/sila-bilingual-email-invite.png) |
+| *Autonomous candidate interaction and data extraction* | *Bilingual email automation for candidate engagement* |
 
-| Bilingual Reports | Neural Intelligence |
+#### 4. Infrastructure & Personalization
+| AI Job Architect | Global Settings |
 | :--- | :--- |
-| ![Bilingual Report](./assets/sila-bilingual-report.png) | ![Neural Intelligence](./assets/sila-neural-intelligence.png) |
-| *Professional reports in English & Arabic* | *Deep profile insights and trajectory prediction* |
+| ![Job Prep](./assets/sila-ai-job-generation.png) | ![Settings](./assets/sila-ai-settings-panel.png) |
+| *Generating precision JDs from natural language* | *Configuring localization and AI behavior preferences* |
+
+#### 5. Executive Reporting (Localized)
+| Job Summary Report | Candidate localized Report |
+| :--- | :--- |
+| ![Job Report](./assets/sila-job-analysis-report.png) | ![Candidate Report](./assets/sila-english-candidate-report.png) |
+| *Bilingual job-wide analytics and rankings* | *Detailed candidate assessment in the chosen language* |
 
 ### 🏗️ Architecture
 
@@ -138,25 +148,35 @@ graph TB
 
 ### 🖼️ معرض الصور الملحق
 
-| لوحة التحكم وكانبان | تقييم المرشحين |
+#### 1. الإدارة الذكية للوظائف والبيانات
+| لوحة التحكم والمهام | رفع وتحليل السير الذاتية |
 | :--- | :--- |
-| ![Dashboard](./assets/sila-kanban.png) | ![Scorecard](./assets/sila-candidate-list.png) |
-| *عرض مسار التوظيف باستخدام نظام كانبان* | *نظام تقييم وتصنيف متعدد الأبعاد* |
+| ![Dashboard](./assets/sila-jobs-dashboard.png) | ![CV Upload](./assets/sila-cv-upload.png) |
+| *إدارة مسارات التوظيف ومتطلبات الوظائف المفتوحة* | *معالجة ذكية للسير الذاتية وتقييم متعدد الأبعاد* |
 
-| تحليل الذكاء الاصطناعي | التحضير الاستراتيجي للمقابلات |
+#### 2. ذكاء التقييم والتحليل المقارن
+| سلاسل تفكير الذكاء الاصطناعي | رؤى التحليل المقارن |
 | :--- | :--- |
-| ![AI Analysis](./assets/sila-ai-analysis.png) | ![Strategic Prep](./assets/sila-strategic-prep.png) |
-| *توضيح آلية اتخاذ القرار وسلسلة التفكير* | *أسئلة مقابلة مخصصة وخرائط طريق مهنية* |
+| ![AI Analysis](./assets/sila-ai-analysis.png) | ![Comparative Analysis](./assets/sila-ai-comparative-analysis.png) |
+| *ذكاء اصطناعي مفسر يوضح آليات التقييم والمبررات* | *تقييمات مقارنة بين المرشحين لتسهيل المفاضلة* |
 
-| المساعد الذكي والدردشة | التكامل مع البريد الإلكتروني |
+#### 3. الأتمتة والتواصل الذكي
+| أتمتة المحادثة الذكية | دعوات التواصل الذكية |
 | :--- | :--- |
-| ![AI Chat](./assets/sila-ai-chat.png) | ![Email Integration](./assets/sila-email-integration.png) |
-| *مساعد ذكي ثنائي اللغة للتفاعل مع البيانات* | *أتمتة كاملة مع Gmail و Outlook* |
+| ![AI Chat](./assets/sila-ai-chat-automation.png) | ![Email Invite](./assets/sila-bilingual-email-invite.png) |
+| *تفاعل تلقائي مع المرشحين واستخراج البيانات* | *أتمتة البريد الإلكتروني ثنائي اللغة للتواصل الفعال* |
 
-| التقارير ثنائية اللغة | الذكاء العصبي |
+#### 4. البنية التحتية والتخصيص
+| مهندس الوظائف الذكي | الإعدادات العامة |
 | :--- | :--- |
-| ![Bilingual Report](./assets/sila-bilingual-report.png) | ![Neural Intelligence](./assets/sila-neural-intelligence.png) |
-| *تقارير احترافية باللغتين العربية والإنجليزية* | *تحليلات عميقة للملف الشخصي وتنبؤات المسار الوظيفي* |
+| ![Job Prep](./assets/sila-ai-job-generation.png) | ![Settings](./assets/sila-ai-settings-panel.png) |
+| *توليد وصف وظيفي دقيق من اللغة الطبيعية* | *تخصيص إعدادات اللغة وتفضيلات سلوك النظام* |
+
+#### 5. التقارير التنفيذية (المعربة)
+| تقرير ملخص الوظيفة | تقرير المرشح المترجم |
+| :--- | :--- |
+| ![Job Report](./assets/sila-job-analysis-report.png) | ![Candidate Report](./assets/sila-english-candidate-report.png) |
+| *تحليلات شاملة للوظيفة باللغتين العربية والإنجليزية* | *تقييم تفصيلي للمرشح باللغة المختارة* |
 
 ---
 *صُنع بكل حب بواسطة فريق SILA*
