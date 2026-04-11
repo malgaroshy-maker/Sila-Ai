@@ -22,7 +22,7 @@ export const generateExceptionalCandidateEmail = (data: AlertEmailData) => {
     skillsScore,
     culturalFitScore,
     recommendation,
-    dashboardUrl = 'https://sila-ai.vercel.app/dashboard',
+    dashboardUrl = process.env.FRONTEND_URL || 'https://ai-cv-scan.vercel.app/',
   } = data;
 
   const emerald = '#10b981';

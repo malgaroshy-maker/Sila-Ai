@@ -142,6 +142,7 @@ export class WebhooksService {
       skillsScore: analysisResult?.skills_score,
       culturalFitScore: analysisResult?.cultural_fit_score,
       recommendation: analysisResult?.recommendation,
+      dashboardUrl: process.env.FRONTEND_URL,
     });
 
     // Try to send via user's connected Gmail/Microsoft account first
