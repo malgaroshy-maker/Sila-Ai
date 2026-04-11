@@ -57,10 +57,10 @@
 | *Explainable AI showing deep reasoning and justifications* | *Side-by-side candidate evaluations and rankings* |
 
 #### 3. Automation & Communication
-| AI Chat Automation | Intelligent Invitations |
+| AI Intelligence Assistant | Exceptional Candidate Alert |
 | :--- | :--- |
-| ![AI Chat](./assets/sila-ai-chat-automation.png) | ![Email Invite](./assets/sila-bilingual-email-invite.png) |
-| *Autonomous candidate interaction and data extraction* | *Bilingual email automation for candidate engagement* |
+| ![AI Assistant](./assets/sila-ai-intelligence-assistant.png) | ![Exceptional Alert](./assets/sila-exceptional-candidate-alert.png) |
+| *Autonomous candidate interaction and data extraction* | *Premium automated alerts for top-tier matches* |
 
 #### 4. Infrastructure & Personalization
 | AI Job Architect | Global Settings |
@@ -161,10 +161,10 @@ graph TB
 | *ذكاء اصطناعي مفسر يوضح آليات التقييم والمبررات* | *تقييمات مقارنة بين المرشحين لتسهيل المفاضلة* |
 
 #### 3. الأتمتة والتواصل الذكي
-| أتمتة المحادثة الذكية | دعوات التواصل الذكية |
+| مساعد الذكاء الاصطناعي | تنبيه المرشح الاستثنائي |
 | :--- | :--- |
-| ![AI Chat](./assets/sila-ai-chat-automation.png) | ![Email Invite](./assets/sila-bilingual-email-invite.png) |
-| *تفاعل تلقائي مع المرشحين واستخراج البيانات* | *أتمتة البريد الإلكتروني ثنائي اللغة للتواصل الفعال* |
+| ![AI Assistant](./assets/sila-ai-intelligence-assistant.png) | ![Exceptional Alert](./assets/sila-exceptional-candidate-alert.png) |
+| *تفاعل تلقائي مع المرشحين واستخراج البيانات* | *تنبيهات تلقائية متميزة للمرشحين المتميزين* |
 
 #### 4. البنية التحتية والتخصيص
 | مهندس الوظائف الذكي | الإعدادات العامة |
