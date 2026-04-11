@@ -219,7 +219,9 @@ export class CandidatesService {
 
       const fileName = `${userEmail}/${Date.now()}_${safeOriginalName || 'uploaded_cv'}`;
 
-      const { data: uploadData, error: uploadError } = await sb.storage
+      // Use admin client to bypass RLS for storage (backups bucket is restricted)
+      const adminSb = this.supabaseService.getAdminClient();
+      const { data: uploadData, error: uploadError } = await adminSb.storage
         .from('cv-backups')
         .upload(fileName, file.buffer, {
           contentType: file.mimetype,
@@ -233,7 +235,7 @@ export class CandidatesService {
       } else {
         const {
           data: { publicUrl },
-        } = sb.storage.from('cv-backups').getPublicUrl(fileName);
+        } = adminSb.storage.from('cv-backups').getPublicUrl(fileName);
         cvUrl = publicUrl;
       }
     }

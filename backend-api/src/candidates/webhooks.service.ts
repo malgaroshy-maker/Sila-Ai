@@ -22,11 +22,17 @@ export class WebhooksService {
       this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT) || 587,
+        secure: Number(process.env.SMTP_PORT) === 465,
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
         },
-      });
+        family: 4, // Force IPv4
+        connectionTimeout: 10000,
+        greetingTimeout: 5000,
+        socketTimeout: 15000,
+        dnsTimeout: 5000,
+      } as any);
     } else {
       this.logger.warn(
         'No SMTP credentials found in env. Creating an Ethereal test account for email alerts...',
@@ -41,7 +47,7 @@ export class WebhooksService {
           user: testAccount.user, // generated ethereal user
           pass: testAccount.pass, // generated ethereal password
         },
-      });
+      } as any);
       this.logger.log(`Ethereal test account created: ${testAccount.user}`);
     }
   }
@@ -482,38 +488,68 @@ export class WebhooksService {
     account: any,
     cvData?: { buffer?: Buffer; filename?: string } | null,
   ) {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        type: 'OAuth2',
-        user: recipient,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: account.refresh_token,
-        accessToken: account.access_token,
+    // Switch from SMTP (Nodemailer) to Gmail API (HTTPS) for better reliability
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+    oauth2Client.setCredentials({
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    
+    // Construct MIME message
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subjectText).toString('base64')}?=`;
+    const boundary = '__next_part__';
+    
+    let messageParts = [
+      `To: ${recipient}`,
+      `Subject: ${utf8Subject}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/html; charset=utf-8',
+      'MIME-Version: 1.0',
+      'Content-Transfer-Encoding: 7bit',
+      '',
+      htmlContent,
+      '',
+    ];
+
+    if (cvData && cvData.buffer && cvData.filename) {
+      messageParts = messageParts.concat([
+        `--${boundary}`,
+        `Content-Type: application/pdf; name="${cvData.filename}"`,
+        'MIME-Version: 1.0',
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${cvData.filename}"`,
+        '',
+        cvData.buffer.toString('base64'),
+        '',
+      ]);
+    }
+
+    messageParts.push(`--${boundary}--`);
+    
+    const message = messageParts.join('\n');
+    const encodedMessage = Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage,
       },
     });
 
-    const attachments = [];
-    if (cvData && cvData.buffer && cvData.filename) {
-      attachments.push({
-        filename: cvData.filename,
-        content: cvData.buffer,
-      });
-    }
-
-    await transporter.sendMail({
-      from: `"AI Recruitment System" <${recipient}>`,
-      to: recipient,
-      subject: subjectText,
-      html: htmlContent,
-      attachments,
-    });
-
     this.logger.log(
-      `✅ Alert email sent successfully to ${recipient} using their own Gmail API (Nodemailer OAuth2)!`,
+      `✅ Alert email sent successfully to ${recipient} using Gmail API (HTTPS)!`,
     );
   }
 }
