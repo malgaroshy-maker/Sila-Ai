@@ -14,7 +14,7 @@ export class VerificationService {
   ) {}
 
   async startVerification(applicationId: string, userEmail: string) {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
     const settings = await this.aiService.getSettings(userEmail);
 
     if (settings.whatsapp_enabled !== 'true') {
@@ -129,7 +129,7 @@ export class VerificationService {
   }
 
   async handleIncomingMessage(fromPhone: string, body: string) {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
 
     const { data: session } = await sb
       .from('whatsapp_verification_sessions')
@@ -340,7 +340,7 @@ export class VerificationService {
   }
 
   private async generateVerificationQuestions(session: any): Promise<any[]> {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
     const settings = await this.aiService.getSettings(session.user_email);
     const questionCount = parseInt(settings.whatsapp_question_count || '4');
     const lang = session.preferred_language || 'ar';
@@ -443,7 +443,7 @@ Return ONLY valid JSON:
   }
 
   async analyzeSession(sessionId: string) {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
 
     const { data: session } = await sb
       .from('whatsapp_verification_sessions')
@@ -608,7 +608,7 @@ Analyze for authenticity using these signals:
   }
 
   async getSession(userEmail: string, sessionId: string) {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
     const { data: session } = await sb
       .from('whatsapp_verification_sessions')
       .select('*')
@@ -628,7 +628,7 @@ Analyze for authenticity using these signals:
   }
 
   async getLatestForCandidate(userEmail: string, candidateId: string) {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
     const { data } = await sb
       .from('whatsapp_verification_sessions')
       .select('*')
@@ -650,7 +650,7 @@ Analyze for authenticity using these signals:
   }
 
   async retrySession(userEmail: string, sessionId: string) {
-    const sb = this.supabaseService.getClient();
+    const sb = this.supabaseService.getAdminClient();
     const { data: session } = await sb
       .from('whatsapp_verification_sessions')
       .select('*')
