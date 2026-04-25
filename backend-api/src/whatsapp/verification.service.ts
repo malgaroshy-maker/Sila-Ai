@@ -29,22 +29,41 @@ export class VerificationService {
       throw new Error('Twilio credentials are not configured.');
     }
 
-    // Fetch the application with candidate and job info
-    const { data: appData } = await sb
+    // Fetch the application
+    const { data: appData, error: appErr } = await sb
       .from('applications')
-      .select('id, job_id, candidate_id, candidates!inner(name, phone), jobs!inner(title)')
+      .select('id, job_id, candidate_id')
       .eq('id', applicationId)
-      .eq('jobs.user_email', userEmail)
-      .single();
+      .maybeSingle();
 
+    if (appErr) throw new Error(`Database error: ${appErr.message}`);
     if (!appData) throw new Error('Application not found.');
 
-    const app = appData as any;
-    if (!app.candidates?.phone) throw new Error('No phone number found for this candidate.');
+    // Verify the job belongs to this user
+    const { data: jobData } = await sb
+      .from('jobs')
+      .select('id, title')
+      .eq('id', appData.job_id)
+      .eq('user_email', userEmail)
+      .maybeSingle();
 
-    const phone: string = app.candidates.phone;
-    const candidateName: string = app.candidates.name;
-    const jobTitle: string | null = app.jobs?.title || null;
+    if (!jobData) throw new Error('Job not found or access denied.');
+
+    // Fetch candidate info
+    const { data: candidateData } = await sb
+      .from('candidates')
+      .select('id, name, phone')
+      .eq('id', appData.candidate_id)
+      .maybeSingle();
+
+    if (!candidateData) throw new Error('Candidate not found.');
+    if (!candidateData.phone) throw new Error('No phone number found for this candidate.');
+
+    const phone = candidateData.phone;
+    const candidateName = candidateData.name;
+    const jobTitle = jobData.title || null;
+    const candidateId = appData.candidate_id;
+    const jobId = appData.job_id;
 
     // Check for existing session
     const { data: existingSession } = await sb
@@ -65,8 +84,8 @@ export class VerificationService {
       .from('whatsapp_verification_sessions')
       .insert({
         application_id: applicationId,
-        candidate_id: app.candidate_id,
-        job_id: app.job_id,
+        candidate_id: candidateId,
+        job_id: jobId,
         user_email: userEmail,
         phone_number: phone,
         status: 'pending',
