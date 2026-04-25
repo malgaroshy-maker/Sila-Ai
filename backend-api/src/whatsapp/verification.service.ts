@@ -80,7 +80,7 @@ export class VerificationService {
     }
 
     // Create session
-    const { data: session } = await sb
+    const { data: session, error: sessionErr } = await sb
       .from('whatsapp_verification_sessions')
       .insert({
         application_id: applicationId,
@@ -92,6 +92,9 @@ export class VerificationService {
       })
       .select()
       .single();
+
+    if (sessionErr) throw new Error(`Failed to create session: ${sessionErr.message}`);
+    if (!session) throw new Error('Failed to create verification session.');
 
     // Build consent message
     const consentMsg = this.buildConsentMessage(candidateName, settings.companyName, jobTitle);
