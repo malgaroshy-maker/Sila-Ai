@@ -69,6 +69,15 @@ export class WhatsAppController {
     return this.verificationService.getSession(userEmail, sessionId);
   }
 
+  @Get('sessions/from-app/:applicationId')
+  async getSessionByApp(
+    @Headers('x-user-email') userEmail: string,
+    @Param('applicationId') applicationId: string,
+  ) {
+    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
+    return this.verificationService.getSessionByApp(userEmail, applicationId);
+  }
+
   @Get('candidate/:candidateId/latest')
   async getLatestForCandidate(
     @Headers('x-user-email') userEmail: string,

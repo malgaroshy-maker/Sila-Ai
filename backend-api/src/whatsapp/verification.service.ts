@@ -650,6 +650,34 @@ Analyze for authenticity using these signals:
     return { session: data, questions };
   }
 
+  async getSessionByApp(userEmail: string, applicationId: string) {
+    const sb = this.supabaseService.getAdminClient();
+    const { data: session } = await sb
+      .from('whatsapp_verification_sessions')
+      .select('*')
+      .eq('application_id', applicationId)
+      .eq('user_email', userEmail)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!session) return { session: null, questions: [], candidateName: '' };
+
+    const { data: questions } = await sb
+      .from('verification_questions')
+      .select('*')
+      .eq('session_id', session.id)
+      .order('question_number', { ascending: true });
+
+    const { data: candidate } = await sb
+      .from('candidates')
+      .select('name')
+      .eq('id', session.candidate_id)
+      .single();
+
+    return { session, questions: questions || [], candidateName: candidate?.name || '' };
+  }
+
   async retrySession(userEmail: string, sessionId: string) {
     const sb = this.supabaseService.getAdminClient();
     const { data: session } = await sb

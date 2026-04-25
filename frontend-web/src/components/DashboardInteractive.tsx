@@ -6,6 +6,7 @@ import SettingsModal from './SettingsModal';
 import ChatDrawer from './ChatDrawer';
 import KanbanBoard from './KanbanBoard';
 import AiInsights from './AiInsights';
+import WhatsAppResults from './WhatsAppResults';
 import LanguageSwitcher from './LanguageSwitcher';
 import { Link } from '@/i18n/routing';
 import {
@@ -114,6 +115,10 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
   const [isDeletingJobId, setIsDeletingJobId] = useState<string | null>(null);
   const [isDeletingCandId, setIsDeletingCandId] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [whatsappResultOpen, setWhatsappResultOpen] = useState(false);
+  const [whatsappSession, setWhatsappSession] = useState<any>(null);
+  const [whatsappQuestions, setWhatsappQuestions] = useState<any[]>([]);
+  const [whatsappCandidateName, setWhatsappCandidateName] = useState('');
   const [analyzingTask, setAnalyzingTask] = useState<string | null>(null);
 
   useEffect(() => {
@@ -256,6 +261,23 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
       await handleStageChange(applicationId, 'WhatsApp Verification');
     } catch (e: any) {
       setAiError(e.message || 'Failed to start WhatsApp verification');
+    }
+  };
+
+  const handleViewWhatsappResults = async (applicationId: string) => {
+    if (!userEmail) return;
+    try {
+      const res = await fetch(`${API_URL}/whatsapp/sessions/from-app/${applicationId}`, {
+        headers: { 'x-user-email': userEmail }
+      });
+      if (!res.ok) throw new Error('Failed to load results');
+      const data = await res.json();
+      setWhatsappSession(data.session);
+      setWhatsappQuestions(data.questions || []);
+      setWhatsappCandidateName(data.candidateName || '');
+      setWhatsappResultOpen(true);
+    } catch (e: any) {
+      setAiError(e.message);
     }
   };
 
@@ -1078,6 +1100,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
         onStageChange={handleStageChange}
         onDelete={handleDeleteCandidate}
         onVerifyWhatsapp={handleVerifyWhatsapp}
+        onViewWhatsappResults={handleViewWhatsappResults}
         t={t}
         locale={locale}
                     selectedCandidateIds={selectedCandidateIds}
@@ -1534,6 +1557,7 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
 
       <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} userEmail={userEmail} t={t} />
       <ChatDrawer isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} t={t} userEmail={userEmail} />
+      <WhatsAppResults isOpen={whatsappResultOpen} onClose={() => setWhatsappResultOpen(false)} session={whatsappSession} questions={whatsappQuestions} candidateName={whatsappCandidateName} t={t} />
       {userEmail && <SyncStatus userEmail={userEmail} onComplete={() => loadData(userEmail)} />}
     </div>
   );

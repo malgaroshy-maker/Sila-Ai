@@ -61,13 +61,14 @@ interface KanbanProps {
   onStageChange: (applicationId: string, newStage: string) => Promise<void>;
   onDelete?: (candidateId: string, name: string) => Promise<void>;
   onVerifyWhatsapp?: (applicationId: string) => Promise<void>;
+  onViewWhatsappResults?: (applicationId: string) => void;
   t: Record<string, string>;
   locale?: string;
   selectedCandidateIds?: Set<string>;
   onSelectCandidate?: (candidateId: string, checked: boolean) => void;
 }
 
-export default function KanbanBoard({ results, onStageChange, onDelete, onVerifyWhatsapp, t, locale = 'en', selectedCandidateIds = new Set(), onSelectCandidate }: KanbanProps) {
+export default function KanbanBoard({ results, onStageChange, onDelete, onVerifyWhatsapp, onViewWhatsappResults, t, locale = 'en', selectedCandidateIds = new Set(), onSelectCandidate }: KanbanProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -129,6 +130,7 @@ export default function KanbanBoard({ results, onStageChange, onDelete, onVerify
             t={t}
             onDelete={onDelete}
             onVerifyWhatsapp={onVerifyWhatsapp}
+            onViewWhatsappResults={onViewWhatsappResults}
             locale={locale}
             selectedCandidateIds={selectedCandidateIds}
             onSelectCandidate={onSelectCandidate}
@@ -155,7 +157,7 @@ export default function KanbanBoard({ results, onStageChange, onDelete, onVerify
   );
 }
 
-function KanbanColumn({ stage, items, t, onDelete, onVerifyWhatsapp, locale, selectedCandidateIds, onSelectCandidate }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, locale?: string, selectedCandidateIds?: Set<string>, onSelectCandidate?: (id: string, checked: boolean) => void }) {
+function KanbanColumn({ stage, items, t, onDelete, onVerifyWhatsapp, onViewWhatsappResults, locale, selectedCandidateIds, onSelectCandidate }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, onViewWhatsappResults?: (applicationId: string) => void, locale?: string, selectedCandidateIds?: Set<string>, onSelectCandidate?: (id: string, checked: boolean) => void }) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
   });
@@ -183,7 +185,7 @@ function KanbanColumn({ stage, items, t, onDelete, onVerifyWhatsapp, locale, sel
         >
           <div className="space-y-3">
             {items.map(item => (
-              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} onVerifyWhatsapp={onVerifyWhatsapp} locale={locale} isSelected={selectedCandidateIds?.has(item.candidate_id)} onSelect={onSelectCandidate} />
+              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} onVerifyWhatsapp={onVerifyWhatsapp} onViewWhatsappResults={onViewWhatsappResults} locale={locale} isSelected={selectedCandidateIds?.has(item.candidate_id)} onSelect={onSelectCandidate} />
             ))}
           </div>
         </SortableContext>
@@ -192,7 +194,7 @@ function KanbanColumn({ stage, items, t, onDelete, onVerifyWhatsapp, locale, sel
   );
 }
 
-function SortableCandidateCard({ result, onDelete, onVerifyWhatsapp, locale, isSelected, onSelect }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
+function SortableCandidateCard({ result, onDelete, onVerifyWhatsapp, onViewWhatsappResults, locale, isSelected, onSelect }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, onViewWhatsappResults?: (applicationId: string) => void, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
   const {
     attributes,
     listeners,
@@ -210,12 +212,12 @@ function SortableCandidateCard({ result, onDelete, onVerifyWhatsapp, locale, isS
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CandidateCard result={result} onDelete={onDelete} onVerifyWhatsapp={onVerifyWhatsapp} locale={locale} isSelected={isSelected} onSelect={onSelect} />
+      <CandidateCard result={result} onDelete={onDelete} onVerifyWhatsapp={onVerifyWhatsapp} onViewWhatsappResults={onViewWhatsappResults} locale={locale} isSelected={isSelected} onSelect={onSelect} />
     </div>
   );
 }
 
-function CandidateCard({ result, onDelete, onVerifyWhatsapp, isOverlay = false, locale = 'en', isSelected = false, onSelect }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, isOverlay?: boolean, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
+function CandidateCard({ result, onDelete, onVerifyWhatsapp, onViewWhatsappResults, isOverlay = false, locale = 'en', isSelected = false, onSelect }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, onViewWhatsappResults?: (applicationId: string) => void, isOverlay?: boolean, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
   if (!result || !result.candidates) return null;
   const candidate = result.candidates;
   const score = result.analysis_results?.final_score || 0;
@@ -317,6 +319,14 @@ function CandidateCard({ result, onDelete, onVerifyWhatsapp, isOverlay = false, 
             </div>
           )}
         </div>
+        {onViewWhatsappResults && result.pipeline_stage === 'WhatsApp Verification' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onViewWhatsappResults(result.id); }}
+            className="px-2 py-0.5 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-md text-[9px] font-bold transition-colors cursor-pointer"
+          >
+            {t.whatsapp_verification || 'View Results'}
+          </button>
+        )}
         {onVerifyWhatsapp && result.pipeline_stage !== 'WhatsApp Verification' && (
           <button
             onClick={(e) => { e.stopPropagation(); onVerifyWhatsapp(result.id); }}
