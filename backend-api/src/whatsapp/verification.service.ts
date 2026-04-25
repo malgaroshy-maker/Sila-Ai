@@ -59,7 +59,7 @@ export class VerificationService {
     if (!candidateData) throw new Error('Candidate not found.');
     if (!candidateData.phone) throw new Error('No phone number found for this candidate.');
 
-    const phone = candidateData.phone;
+    const phone = candidateData.phone.replace(/[\s\-\(\)\.]/g, '');
     const candidateName = candidateData.name;
     const jobTitle = jobData.title || null;
     const candidateId = appData.candidate_id;
@@ -128,8 +128,9 @@ export class VerificationService {
     return `السلام عليكم ${name}!\n${firstName}، معاك نظام صلة للتوظيف.\n${companyLine}عندك دقيقتين بالكثير توا باش نتحققو من المعلومات اللي في سيرتك الذاتية؟\nرد علي بـ "نعم" ولا "لا" باهي.`;
   }
 
-  async handleIncomingMessage(fromPhone: string, body: string) {
+  async handleIncomingMessage(rawPhone: string, body: string) {
     const sb = this.supabaseService.getAdminClient();
+    const fromPhone = rawPhone.replace(/[\s\-\(\)\.]/g, '');
 
     const { data: session } = await sb
       .from('whatsapp_verification_sessions')
