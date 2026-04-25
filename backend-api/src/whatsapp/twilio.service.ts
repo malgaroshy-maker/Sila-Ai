@@ -16,19 +16,23 @@ export class TwilioService {
     to: string,
     body: string,
   ): Promise<{ sid: string; status: string }> {
+    // Sanitize phone numbers: remove spaces, dashes, parentheses, dots
+    const cleanTo = to.replace(/[\s\-\(\)\.]/g, '');
+    const cleanFrom = from.replace(/[\s\-\(\)\.]/g, '');
+
     const client = this.createClient(accountSid, authToken);
 
     try {
       const message = await client.messages.create({
-        from: `whatsapp:${from}`,
-        to: `whatsapp:${to}`,
+        from: `whatsapp:${cleanFrom}`,
+        to: `whatsapp:${cleanTo}`,
         body,
       });
 
-      this.logger.log(`WhatsApp message sent to ${to} — SID: ${message.sid}`);
+      this.logger.log(`WhatsApp message sent to ${cleanTo} — SID: ${message.sid}`);
       return { sid: message.sid, status: message.status };
     } catch (error: any) {
-      this.logger.error(`Failed to send WhatsApp message to ${to}: ${error.message}`);
+      this.logger.error(`Failed to send WhatsApp message to ${cleanTo}: ${error.message}`);
       throw error;
     }
   }
