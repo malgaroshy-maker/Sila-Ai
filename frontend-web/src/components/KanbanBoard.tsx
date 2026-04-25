@@ -324,7 +324,7 @@ function CandidateCard({ result, onDelete, onVerifyWhatsapp, onViewWhatsappResul
             onClick={(e) => { e.stopPropagation(); onViewWhatsappResults(result.id); }}
             className="px-2 py-0.5 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-md text-[9px] font-bold transition-colors cursor-pointer"
           >
-            {t.whatsapp_verification || 'View Results'}
+            {locale === 'ar' ? 'عرض النتائج' : 'View Results'}
           </button>
         )}
         {onVerifyWhatsapp && result.pipeline_stage !== 'WhatsApp Verification' && (
