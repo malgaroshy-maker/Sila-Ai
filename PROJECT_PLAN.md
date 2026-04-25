@@ -77,6 +77,24 @@
 - [ ] Role-Based Access: Admin (Full), Recruiter (Standard), Viewer (Read-only)
 - [ ] Supabase RLS policies for tenant isolation
 
+### 9.4 WhatsApp CV Verification Bot ⏳ PLANNED
+*Target: AI-powered WhatsApp bot to verify candidate CV authenticity via rapid-fire Q&A.*
+
+- [ ] **Twilio Integration**: Install `twilio` SDK, implement `TwilioService` (send/receive/webhook)
+- [ ] **Database Schema**: Create `whatsapp_verification_sessions` + `verification_questions` tables with RLS
+- [ ] **Phone Extraction**: Extend `AiService.extractCandidateInfo()` to extract phone numbers from CVs
+- [ ] **Pipeline Stage**: Add `whatsapp_verification` stage to applications pipeline (between Screening & Interview)
+- [ ] **VerificationService State Machine**: Consent → Language → Availability → Q&A → Analysis
+- [ ] **AI Question Generation**: Gemini generates 3-5 unique verification questions per candidate CV in Libyan Arabic dialect
+- [ ] **AI Authenticity Analysis**: Multi-signal fraud detection (timing, linguistics, CV consistency, internet patterns)
+- [ ] **Conversation Flow**: Natural Libyan Arabic dialect (bilingual EN/AR fallback)
+- [ ] **Twilio Webhook**: Incoming message handler for real-time candidate responses
+- [ ] **Session Timeout**: Auto-expire unresponsive sessions, send reminders
+- [ ] **Frontend Settings**: WhatsApp config section in `SettingsModal` (Twilio SID/Token, question count, timeout)
+- [ ] **Frontend Dashboard**: "Verify via WhatsApp" button on Kanban cards, `WhatsAppResults` panel
+- [ ] **Function Calling**: Add `start_whatsapp_verification` and `get_verification_results` tools to `ChatService`
+- [ ] **i18n**: EN + AR translations for all WhatsApp UI elements
+
 ---
 
 ## 🛠 Tech Stack Snapshot

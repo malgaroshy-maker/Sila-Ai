@@ -54,6 +54,12 @@ export class AiService {
       rejectThreshold: parseInt(settings.reject_threshold) || 50,
       duplicateStrategy: settings.duplicate_strategy || 'update',
       syncFrequency: settings.sync_frequency || '6h',
+      whatsapp_enabled: settings.whatsapp_enabled || 'false',
+      whatsapp_twilio_sid: settings.whatsapp_twilio_sid || '',
+      whatsapp_twilio_token: settings.whatsapp_twilio_token || '',
+      whatsapp_twilio_from: settings.whatsapp_twilio_from || '',
+      whatsapp_question_count: settings.whatsapp_question_count || '4',
+      whatsapp_timeout_minutes: settings.whatsapp_timeout_minutes || '3',
     };
   }
 
@@ -474,7 +480,7 @@ export class AiService {
     cvText: string,
     cvBuffer?: Buffer,
     mimeType?: string,
-  ): Promise<{ name: string; email: string; is_cv: boolean }> {
+  ): Promise<{ name: string; email: string; phone: string; is_cv: boolean }> {
     const settings = await this.getSettings(userEmail);
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -486,7 +492,7 @@ export class AiService {
     const prompt = `
       Today's Date: ${today}
       
-      Extract the candidate's full name and email address from this text.
+      Extract the candidate's full name, email address, and phone number from this text.
       Also, determine if this document is actually a Professional CV/Resume for a job candidate.
       
       Text Content:
@@ -498,6 +504,7 @@ export class AiService {
       properties: {
         name: { type: 'string' },
         email: { type: 'string' },
+        phone: { type: 'string' },
         is_cv: { type: 'boolean' },
       },
       required: ['name', 'email', 'is_cv'],
@@ -513,7 +520,6 @@ export class AiService {
       );
       const parts = result.candidates?.[0]?.content?.parts;
       const responseText = parts?.[0]?.text || '{}';
-      // No regex cleaning needed anymore with JSON schema
       const parsed = JSON.parse(responseText);
 
       await this.logUsage(
@@ -530,11 +536,12 @@ export class AiService {
           parsed.email && parsed.email.trim() !== ''
             ? parsed.email
             : 'unknown@uploaded.cv',
+        phone: parsed.phone || '',
         is_cv: parsed.is_cv === true,
       };
     } catch (error: any) {
       this.logger.error('Failed to extract candidate info:', error.message);
-      return { name: 'Unknown', email: 'unknown@uploaded.cv', is_cv: true };
+      return { name: 'Unknown', email: 'unknown@uploaded.cv', phone: '', is_cv: true };
     }
   }
 

@@ -138,6 +138,7 @@ export class CandidatesService {
     // 1.5 Extract candidate name and email from CV text using AI for better accuracy
     let finalName = name;
     let finalEmail = email;
+    let finalPhone = '';
 
     // Fetch settings for duplicate strategy
     const { data: userSettings } = await sb
@@ -179,6 +180,9 @@ export class CandidatesService {
         extracted.email.includes('@')
       ) {
         finalEmail = extracted.email;
+      }
+      if (extracted.phone && extracted.phone.trim() !== '') {
+        finalPhone = extracted.phone.trim();
       }
 
       this.logger.log(
@@ -247,9 +251,10 @@ export class CandidatesService {
         {
           name: finalName,
           email: finalEmail,
+          phone: finalPhone || undefined,
           cv_text: cvText,
           user_email: userEmail,
-          cv_url: cvUrl, // Store the public URL for manual uploads
+          cv_url: cvUrl,
           gmail_message_id: gmailMessageId,
           gmail_attachment_id: gmailAttachmentId,
           ai_error: aiError,

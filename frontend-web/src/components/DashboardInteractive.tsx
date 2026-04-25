@@ -239,6 +239,26 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
     }
   };
 
+  const handleVerifyWhatsapp = async (applicationId: string) => {
+    if (!userEmail) return;
+    setAiError(null);
+    try {
+      const res = await fetch(`${API_URL}/whatsapp/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-email': userEmail },
+        body: JSON.stringify({ application_id: applicationId })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to start verification');
+      }
+      // Move to WhatsApp Verification stage
+      await handleStageChange(applicationId, 'WhatsApp Verification');
+    } catch (e: any) {
+      setAiError(e.message || 'Failed to start WhatsApp verification');
+    }
+  };
+
   const loadData = async (email: string) => {
     const { data: jobsData } = await supabase.from('jobs').select('*').eq('user_email', email).order('created_at', { ascending: false });
     
@@ -1055,10 +1075,11 @@ export default function DashboardInteractive({ initialJobs, initialResults, t, l
                 <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
                   <KanbanBoard 
                     results={filteredResults} 
-                    onStageChange={handleStageChange}
-                    onDelete={handleDeleteCandidate}
-                    t={t}
-                    locale={locale}
+        onStageChange={handleStageChange}
+        onDelete={handleDeleteCandidate}
+        onVerifyWhatsapp={handleVerifyWhatsapp}
+        t={t}
+        locale={locale}
                     selectedCandidateIds={selectedCandidateIds}
                     onSelectCandidate={handleSelectCandidate}
                   />

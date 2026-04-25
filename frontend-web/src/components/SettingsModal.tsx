@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History, Building } from 'lucide-react';
+import { X, Key, Cpu, Save, Loader2, Mail, LayoutTemplate, RefreshCw, Bell, Shield, Languages, Target, History, Building, MessageCircle } from 'lucide-react';
 
 interface Model {
   model_id: string;
@@ -29,6 +29,12 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   const [maskPii, setMaskPii] = useState(true);
   const [provider, setProvider] = useState<string>('google');
   const [connectedEmail, setConnectedEmail] = useState<string>('');
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappTwilioSid, setWhatsappTwilioSid] = useState('');
+  const [whatsappTwilioToken, setWhatsappTwilioToken] = useState('');
+  const [whatsappTwilioFrom, setWhatsappTwilioFrom] = useState('');
+  const [whatsappQuestionCount, setWhatsappQuestionCount] = useState(4);
+  const [whatsappTimeoutMinutes, setWhatsappTimeoutMinutes] = useState(3);
   
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isModelsLoading, setIsModelsLoading] = useState(false);
@@ -68,6 +74,12 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
         setMaskPii(data.mask_pii !== false); // Default to true
         setProvider(data.email_provider || 'google');
         setConnectedEmail(data.connected_email || userEmail);
+        setWhatsappEnabled(data.whatsapp_enabled === 'true');
+        setWhatsappTwilioSid(data.whatsapp_twilio_sid || '');
+        setWhatsappTwilioToken(data.whatsapp_twilio_token || '');
+        setWhatsappTwilioFrom(data.whatsapp_twilio_from || '');
+        setWhatsappQuestionCount(parseInt(data.whatsapp_question_count) || 4);
+        setWhatsappTimeoutMinutes(parseInt(data.whatsapp_timeout_minutes) || 3);
       }
       
       if (data.gemini_api_key) {
@@ -130,7 +142,13 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
           chat_language: chatLanguage,
           evaluation_focus: evaluationFocus,
           sync_frequency: syncFrequency,
-          mask_pii: maskPii
+          mask_pii: maskPii,
+          whatsapp_enabled: whatsappEnabled ? 'true' : 'false',
+          whatsapp_twilio_sid: whatsappTwilioSid,
+          whatsapp_twilio_token: whatsappTwilioToken,
+          whatsapp_twilio_from: whatsappTwilioFrom,
+          whatsapp_question_count: whatsappQuestionCount.toString(),
+          whatsapp_timeout_minutes: whatsappTimeoutMinutes.toString(),
         })
       });
       
@@ -390,6 +408,67 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                 />
               </div>
             </div>
+          </div>
+
+          {/* Section: WhatsApp Verification */}
+          <div className="space-y-4 pt-4 border-t border-[#1E293B]">
+            <h3 className="text-xs font-bold text-green-500 uppercase tracking-widest flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              {t.whatsapp_verification || 'WhatsApp Verification'}
+            </h3>
+
+            <div className="flex items-center justify-between p-3 bg-[#020617] rounded-xl border border-[#1E293B]">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-white">{t.whatsapp_enabled || 'Enable WhatsApp'}</p>
+                <p className="text-[10px] text-slate-500">{t.whatsapp_enabled_desc || 'Send verification questions to candidates via WhatsApp.'}</p>
+              </div>
+              <button 
+                onClick={() => setWhatsappEnabled(!whatsappEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${whatsappEnabled ? 'bg-[#0EA5E9]' : 'bg-[#1E293B]'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${whatsappEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {whatsappEnabled && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.whatsapp_twilio_sid || 'Twilio Account SID'}</label>
+                  <input type="password" value={whatsappTwilioSid}
+                    onChange={e => setWhatsappTwilioSid(e.target.value)}
+                    placeholder="AC..."
+                    className="w-full bg-[#0F172A] border border-[#1E293B] rounded-lg px-4 py-2 text-sm text-slate-200 focus:border-[#0EA5E9] outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.whatsapp_twilio_token || 'Twilio Auth Token'}</label>
+                  <input type="password" value={whatsappTwilioToken}
+                    onChange={e => setWhatsappTwilioToken(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-[#0F172A] border border-[#1E293B] rounded-lg px-4 py-2 text-sm text-slate-200 focus:border-[#0EA5E9] outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.whatsapp_twilio_from || 'WhatsApp Sender Number'}</label>
+                  <input type="text" value={whatsappTwilioFrom}
+                    onChange={e => setWhatsappTwilioFrom(e.target.value)}
+                    placeholder="+14155238886"
+                    className="w-full bg-[#0F172A] border border-[#1E293B] rounded-lg px-4 py-2 text-sm text-slate-200 focus:border-[#0EA5E9] outline-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.whatsapp_question_count || 'Questions'}</label>
+                    <input type="number" min={3} max={8} value={whatsappQuestionCount}
+                      onChange={e => setWhatsappQuestionCount(parseInt(e.target.value) || 4)}
+                      className="w-full bg-[#0F172A] border border-[#1E293B] rounded-lg px-4 py-2 text-sm text-slate-200 focus:border-[#0EA5E9] outline-none" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.whatsapp_timeout || 'Timeout (min)'}</label>
+                    <input type="number" min={2} max={10} value={whatsappTimeoutMinutes}
+                      onChange={e => setWhatsappTimeoutMinutes(parseInt(e.target.value) || 3)}
+                      className="w-full bg-[#0F172A] border border-[#1E293B] rounded-lg px-4 py-2 text-sm text-slate-200 focus:border-[#0EA5E9] outline-none" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section: Data & Sync */}

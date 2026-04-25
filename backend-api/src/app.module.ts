@@ -10,6 +10,7 @@ import { EmailModule } from './email/email.module';
 import { SettingsModule } from './settings/settings.module';
 import { ChatModule } from './chat/chat.module';
 import { ReportsModule } from './reports/reports.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ReportsModule } from './reports/reports.module';
     SettingsModule,
     ChatModule,
     ReportsModule,
+    WhatsAppModule,
   ],
   controllers: [AppController],
   providers: [AppService],

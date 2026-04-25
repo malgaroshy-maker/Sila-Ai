@@ -65,6 +65,7 @@
 | 48 | Mobile App Implementation (Flutter) | §5 | 20h+ | ⏳ |
 | 49 | Multi-Company SaaS Platform | §9 | 20h+ | ⏳ |
 | 50 | Enterprise RBAC (Admin/Recruiter/Viewer) | §7 | 4h | ⏳ |
+| 51 | **WhatsApp CV Verification Bot** | - | 14h | ⏳ PLANNED |
 
 ---
 
@@ -82,14 +83,18 @@ graph TD
         D -->|JSON Schema| E[Analysis Results]
         F[Chat Interface] -->|Function Calling| G[Action Layer]
         G -->|Update Stage| E
+        K[WhatsApp Bot] -->|Twilio| L[Candidate Phone]
+        K -->|AI Analysis| D
     end
 
     subgraph Storage
         E --> H[(Supabase Postgres)]
         B --> I[(pgvector RAG)]
+        K -->|Sessions/Answers| H
     end
 
     subgraph Client
         J[Next.js 16 Dashboard] <-->|Realtime| H
+        J -->|Trigger Verification| K
     end
 ```

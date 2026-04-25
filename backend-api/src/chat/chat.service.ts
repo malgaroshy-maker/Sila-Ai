@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from '../supabase.service';
 import { AiService } from '../ai/ai.service';
 import { EmailService } from '../email/email.service';
+import { VerificationService } from '../whatsapp/verification.service';
 import { generateBilingualEmail } from '../email/email-templates';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class ChatService {
     private readonly supabaseService: SupabaseService,
     private readonly aiService: AiService,
     private readonly emailService: EmailService,
+    private readonly verificationService: VerificationService,
   ) {}
 
   async chat(
@@ -215,7 +217,7 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                 stage: {
                   type: 'string',
                   description:
-                    'The new stage name. Valid values: Applied, Screening, Interview, Offered, Hired, Rejected.',
+                    'The new stage name. Valid values: Applied, Screening, WhatsApp Verification, Interview, Offered, Hired, Rejected.',
                 },
               },
               required: ['application_id', 'stage'],
@@ -462,6 +464,36 @@ ${analysisSummary || 'No candidate analyses available yet.'}
             name: 'export_candidate_report',
             description:
               'Generates a comprehensive summary report for a candidate application.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'start_whatsapp_verification',
+            description:
+              'Start a WhatsApp verification session for a candidate to verify their CV authenticity via rapid-fire questions.',
+            parameters: {
+              type: 'object',
+              properties: {
+                application_id: {
+                  type: 'string',
+                  description: 'The UUID of the candidate application to verify.',
+                },
+              },
+              required: ['application_id'],
+            },
+          },
+          {
+            name: 'get_whatsapp_verification_results',
+            description:
+              'Get the WhatsApp verification results and authenticity report for a candidate.',
             parameters: {
               type: 'object',
               properties: {
@@ -1061,6 +1093,87 @@ ${analysisSummary || 'No candidate analyses available yet.'}
           status: 'success',
           duplicates: dupes || [],
           message: `Found ${dupes?.length || 0} candidate(s) matching "${query}".`,
+        };
+      }
+
+      if (call.name === 'start_whatsapp_verification') {
+        const { application_id } = call.args;
+        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
+
+        if (!resolvedId) {
+          throw new Error(`Could not find application for ID: ${application_id}`);
+        }
+
+        try {
+          const result = await this.verificationService.startVerification(resolvedId, userEmail);
+          return {
+            status: 'success',
+            message: `WhatsApp verification started for the candidate. Session status: ${result.status}.`,
+            session_id: result.sessionId,
+          };
+        } catch (e: any) {
+          return { status: 'error', message: e.message };
+        }
+      }
+
+      if (call.name === 'get_whatsapp_verification_results') {
+        const { application_id } = call.args;
+        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
+
+        if (!resolvedId) {
+          throw new Error(`Could not find application for ID: ${application_id}`);
+        }
+
+        const { data: app } = await sb
+          .from('applications')
+          .select('candidate_id')
+          .eq('id', resolvedId)
+          .single();
+
+        if (!app) throw new Error('Application not found.');
+
+        const { data: session } = await sb
+          .from('whatsapp_verification_sessions')
+          .select('*')
+          .eq('candidate_id', app.candidate_id)
+          .eq('user_email', userEmail)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!session) {
+          return {
+            status: 'success',
+            message: 'No WhatsApp verification session found for this candidate.',
+            session: null,
+          };
+        }
+
+        const { data: questions } = await sb
+          .from('verification_questions')
+          .select('*')
+          .eq('session_id', session.id)
+          .order('question_number', { ascending: true });
+
+        return {
+          status: 'success',
+          session: {
+            id: session.id,
+            status: session.status,
+            authenticity_score: session.authenticity_score,
+            authenticity_verdict: session.authenticity_verdict,
+            red_flags: session.red_flags,
+            summary: session.summary,
+          },
+          questions: questions?.map((q) => ({
+            number: q.question_number,
+            text: q.question_text,
+            answer: q.answer_text,
+            response_delay_ms: q.response_delay_ms,
+            naturalness_score: q.naturalness_score,
+            consistency_score: q.consistency_score,
+            copy_paste_likelihood: q.copy_paste_likelihood,
+          })),
         };
       }
 

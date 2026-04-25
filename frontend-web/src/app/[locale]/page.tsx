@@ -102,7 +102,13 @@ async function DashboardClient({ locale }: { locale: string }) {
     'sync_manual', 'sync_1h', 'sync_6h', 'sync_24h', 'badge_fastest', 'badge_strongest',
     'preview', 'save_settings', 'get_api_key_link', 'category_free_tier', 'category_trial', 
     'category_experimental', 'category_legacy', 'error_ai_failed', 'error_unknown', 
-    'error_download_failed', 'error_connection_download'
+    'error_download_failed', 'error_connection_download',
+    'whatsapp_verification', 'whatsapp_enabled', 'whatsapp_enabled_desc',
+    'whatsapp_twilio_sid', 'whatsapp_twilio_token', 'whatsapp_twilio_from',
+    'whatsapp_question_count', 'whatsapp_timeout', 'verify_whatsapp',
+    'whatsapp_session_pending', 'whatsapp_session_active', 'whatsapp_session_complete',
+    'whatsapp_verdict_genuine', 'whatsapp_verdict_suspicious', 'whatsapp_verdict_fabricated',
+    'whatsapp_no_phone'
   ];
   
   const translations: Record<string, string> = {};

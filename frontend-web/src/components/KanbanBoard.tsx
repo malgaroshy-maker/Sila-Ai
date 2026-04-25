@@ -21,12 +21,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { 
   Mail, Clock, 
-  Loader2, GraduationCap, Trash2, AlertTriangle
+  Loader2, GraduationCap, Trash2, AlertTriangle, MessageCircle
 } from 'lucide-react';
 
 const STAGES = [
   { id: 'Applied', label: 'Applied', color: 'slate' },
   { id: 'Screening', label: 'Screening', color: 'blue' },
+  { id: 'WhatsApp Verification', label: 'WhatsApp', color: 'green' },
   { id: 'Interview', label: 'Interview', color: 'indigo' },
   { id: 'Offered', label: 'Offered', color: 'amber' },
   { id: 'Hired', label: 'Hired', color: 'emerald' },
@@ -59,13 +60,14 @@ interface KanbanProps {
   results: Application[];
   onStageChange: (applicationId: string, newStage: string) => Promise<void>;
   onDelete?: (candidateId: string, name: string) => Promise<void>;
+  onVerifyWhatsapp?: (applicationId: string) => Promise<void>;
   t: Record<string, string>;
   locale?: string;
   selectedCandidateIds?: Set<string>;
   onSelectCandidate?: (candidateId: string, checked: boolean) => void;
 }
 
-export default function KanbanBoard({ results, onStageChange, onDelete, t, locale = 'en', selectedCandidateIds = new Set(), onSelectCandidate }: KanbanProps) {
+export default function KanbanBoard({ results, onStageChange, onDelete, onVerifyWhatsapp, t, locale = 'en', selectedCandidateIds = new Set(), onSelectCandidate }: KanbanProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -126,6 +128,7 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
             items={grouped[stage.id]} 
             t={t}
             onDelete={onDelete}
+            onVerifyWhatsapp={onVerifyWhatsapp}
             locale={locale}
             selectedCandidateIds={selectedCandidateIds}
             onSelectCandidate={onSelectCandidate}
@@ -152,7 +155,7 @@ export default function KanbanBoard({ results, onStageChange, onDelete, t, local
   );
 }
 
-function KanbanColumn({ stage, items, t, onDelete, locale, selectedCandidateIds, onSelectCandidate }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, locale?: string, selectedCandidateIds?: Set<string>, onSelectCandidate?: (id: string, checked: boolean) => void }) {
+function KanbanColumn({ stage, items, t, onDelete, onVerifyWhatsapp, locale, selectedCandidateIds, onSelectCandidate }: { stage: { id: string, label: string, color: string }, items: Application[], t: Record<string, string>, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, locale?: string, selectedCandidateIds?: Set<string>, onSelectCandidate?: (id: string, checked: boolean) => void }) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
   });
@@ -180,7 +183,7 @@ function KanbanColumn({ stage, items, t, onDelete, locale, selectedCandidateIds,
         >
           <div className="space-y-3">
             {items.map(item => (
-              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} locale={locale} isSelected={selectedCandidateIds?.has(item.candidate_id)} onSelect={onSelectCandidate} />
+              <SortableCandidateCard key={item.id} result={item} onDelete={onDelete} onVerifyWhatsapp={onVerifyWhatsapp} locale={locale} isSelected={selectedCandidateIds?.has(item.candidate_id)} onSelect={onSelectCandidate} />
             ))}
           </div>
         </SortableContext>
@@ -189,7 +192,7 @@ function KanbanColumn({ stage, items, t, onDelete, locale, selectedCandidateIds,
   );
 }
 
-function SortableCandidateCard({ result, onDelete, locale, isSelected, onSelect }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
+function SortableCandidateCard({ result, onDelete, onVerifyWhatsapp, locale, isSelected, onSelect }: { result: Application, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
   const {
     attributes,
     listeners,
@@ -207,12 +210,12 @@ function SortableCandidateCard({ result, onDelete, locale, isSelected, onSelect 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <CandidateCard result={result} onDelete={onDelete} locale={locale} isSelected={isSelected} onSelect={onSelect} />
+      <CandidateCard result={result} onDelete={onDelete} onVerifyWhatsapp={onVerifyWhatsapp} locale={locale} isSelected={isSelected} onSelect={onSelect} />
     </div>
   );
 }
 
-function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en', isSelected = false, onSelect }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, isOverlay?: boolean, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
+function CandidateCard({ result, onDelete, onVerifyWhatsapp, isOverlay = false, locale = 'en', isSelected = false, onSelect }: { result: Application | undefined, onDelete?: (id: string, name: string) => Promise<void>, onVerifyWhatsapp?: (applicationId: string) => Promise<void>, isOverlay?: boolean, locale?: string, isSelected?: boolean, onSelect?: (id: string, checked: boolean) => void }) {
   if (!result || !result.candidates) return null;
   const candidate = result.candidates;
   const score = result.analysis_results?.final_score || 0;
@@ -314,6 +317,15 @@ function CandidateCard({ result, onDelete, isOverlay = false, locale = 'en', isS
             </div>
           )}
         </div>
+        {onVerifyWhatsapp && result.pipeline_stage !== 'WhatsApp Verification' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onVerifyWhatsapp(result.id); }}
+            className="flex items-center gap-1 px-2 py-1 bg-green-600/20 text-green-400 rounded-lg text-[9px] font-bold hover:bg-green-600/30 transition-colors cursor-pointer"
+            title="Verify via WhatsApp"
+          >
+            <MessageCircle className="w-3 h-3" />
+          </button>
+        )}
         <div className="text-[9px] font-medium text-slate-600 group-hover:text-slate-400 transition-colors">
           {new Date(result.created_at).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' })}
         </div>
