@@ -42,6 +42,13 @@
 *   **Semantic RAG Search**: Query huge candidate pools using natural language (e.g., *"Find experienced AI engineers with industrial background"*).
 *   **Kanban Workflow**: Visual, drag-and-drop pipeline management from application to final offer.
 
+### 💬 WhatsApp CV Verification
+
+*   **Automated Verification**: AI bot contacts candidates via WhatsApp to verify CV claims through rapid-fire Q&A.
+*   **Libyan Arabic Voice**: Speaks natural Libyan dialect (بلهجة ليبية), with bilingual EN/AR fallback.
+*   **Anti-Cheat Detection**: Multi-signal AI analysis flags copy-pasted responses, suspicious timing, and fabricated experience.
+*   **Pipeline Integration**: Dedicated Kanban stage with "Verify via WhatsApp" button, per-question analysis, and authenticity score (0-100).
+
 ### 🖼️ Visual Walkthrough
 
 #### 1. Smart Ingestion & Job Management
@@ -89,18 +96,23 @@ graph TB
         F --> G[Gemini AI Engine]
         E --> H[Chat Service]
         E --> L[Email Processor]
+        M[WhatsApp Bot] -->|Twilio| N[Candidate Phone]
+        M --> G
     end
 
     subgraph "Data Layer (Supabase)"
         I[(PostgreSQL)]
         J[pgvector / Semantic DB]
         K[Realtime Updates]
+        O[WhatsApp Sessions]
     end
 
     A --> E
     G --> I
     H --> J
     I --> K
+    M --> O
+    A -->|Trigger Verification| M
 ```
 
 ### 🛠️ Tech Stack
@@ -110,6 +122,7 @@ graph TB
 *   **Backend**: NestJS, Puppeteer (for PDF generation), Nodemailer
 *   **AI**: Gemini 3.1 Flash Lite, LangChain (RAG)
 *   **Database**: Supabase (PostgreSQL, Vector Search, Auth, Storage)
+*   **Messaging**: Twilio WhatsApp API (Sandbox / Business API)
 
 ---
 
@@ -145,6 +158,13 @@ graph TB
 *   **لوحة الرؤى اللحظية**: تتبع أداء التوظيف، استهلاك الرموز، وتكاليف العمليات عبر لوحة تحكم متطورة.
 *   **البحث الدلالي (RAG)**: ابحث في قاعدة بيانات المرشحين باستخدام اللغة الطبيعية (مثال: *"ابحث عن مهندسين ذكاء اصطناعي ذوي خبرة صناعية"*).
 *   **إدارة مراحل التوظيف**: مسار توظيف مرئي يعتمد على السحب والإفلات لإدارة المرشحين من التقديم حتى العرض الوظيفي.
+
+### 💬 التحقق عبر واتساب (صلة)
+
+*   **تحقق آلي**: بوت ذكي يتواصل مع المرشحين عبر واتساب للتحقق من صحة بيانات السيرة الذاتية عبر أسئلة سريعة.
+*   **بلهجة ليبية طبيعية**: البوت يتحدث باللهجة الليبية الدارجة، مع دعم التبديل للغة الإنجليزية.
+*   **كشف التزييف**: تحليل متعدد الإشارات لاكتشاف الإجابات المنسوخة من النت والردود غير الطبيعية.
+*   **متكامل مع مسار التوظيف**: مرحلة مخصصة في كانبان مع زر "تحقق عبر واتساب" وتقرير تحليل لكل سؤال.
 
 ### 🖼️ معرض الصور الملحق
 
