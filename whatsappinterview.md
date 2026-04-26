@@ -1,8 +1,9 @@
 # WhatsApp Interview Verification — SILA Feature Plan
 
-> **Status:** Phase 9 — Planned
+> **Status:** Phase 9 — ✅ COMPLETED (v1.0)
 > **Priority:** P1
-> **Est. Effort:** 12-16 hours
+> **Est. Effort:** 14 hours
+> **Deployment:** Live on Render + Vercel
 
 ---
 
@@ -786,6 +787,52 @@ function analyzeTiming(
 - [ ] Test edge cases (no phone, timeout, decline, language switch)
 - [ ] Backend unit tests for VerificationService
 - [ ] Frontend lint + build verification
+
+---
+
+## 13. Implementation Notes (v1.0 — April 2026)
+
+### What Was Actually Built
+
+| Component | Files | Notes |
+|:--|:--|:--|
+| **TwilioService** | `backend-api/src/whatsapp/twilio.service.ts` | Phone number sanitization (strip spaces/dashes) |
+| **VerificationService** | `backend-api/src/whatsapp/verification.service.ts` | State machine, Gemini question gen, AI analysis, all 6 states |
+| **WhatsAppController** | `backend-api/src/whatsapp/whatsapp.controller.ts` | 6 endpoints: start, webhook, getSession, getByApp, retry, sandbox/status |
+| **WhatsAppModule** | `backend-api/src/whatsapp/whatsapp.module.ts` | Wired into AppModule |
+| **Phone extraction** | `backend-api/src/ai/ai.service.ts` | Extended `extractCandidateInfo` schema with `phone` field |
+| **Phone in DB** | `backend-api/src/candidates/candidates.service.ts` | `phone` column existed; now populated from AI extraction |
+| **Function calling** | `backend-api/src/chat/chat.service.ts` | +2 tools: `start_whatsapp_verification`, `get_whatsapp_verification_results` |
+| **Settings UI** | `frontend-web/src/components/SettingsModal.tsx` | WhatsApp section with Twilio credentials, question count, timeout |
+| **Kanban column** | `frontend-web/src/components/KanbanBoard.tsx` | New `WhatsApp Verification` stage + verify & view-results buttons |
+| **Results panel** | `frontend-web/src/components/WhatsAppResults.tsx` | Wide modal with score, red flags, per-question analysis |
+| **Dashboard handler** | `frontend-web/src/components/DashboardInteractive.tsx` | `handleVerifyWhatsapp` + `handleViewWhatsappResults` |
+| **Translations** | `messages/en.json` + `messages/ar.json` | 17 keys + page.tsx registration |
+
+### Issues Fixed During Implementation
+
+| Issue | Fix |
+|:--|:--|
+| Supabase `!inner` joins returning null in production | Split into 3 separate queries (app → job → candidate) |
+| RLS blocking writes on new tables | Use `getAdminClient()` (service_role key) instead of `getClient()` |
+| Phone number format mismatch (CV vs Twilio) | Strip spaces/dashes on both storage and lookup |
+| Session creation returning null after insert | Added null check + error capture |
+| `CandidateCard` missing `t` prop for translations | Switched to `locale`-based text for button labels |
+| Vercel TypeScript type-check on `onViewWhatsappResults` not reaching descendant | Threaded it through all 4 component levels |
+
+### Database Tables Created
+
+| Table | Rows | Purpose |
+|:--|:--|:--|
+| `whatsapp_verification_sessions` | ~1 | State machine tracking (pending→consent→language→availability→q&a→complete) |
+| `verification_questions` | ~4 | Per-question answers, timing, AI scores |
+
+### Live Demo
+
+- Backend: `https://ai-cv-scan.onrender.com`
+- Frontend: Vercel-deployed
+- Twilio: Sandbox mode (join code required for each test number)
+- Analysis generates: authenticity_score (0-100), verdict (genuine/suspicious/likely_fabricated), red_flags[], per-question analysis
 
 ---
 
