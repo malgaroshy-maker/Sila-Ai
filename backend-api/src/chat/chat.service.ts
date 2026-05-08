@@ -140,7 +140,9 @@ export class ChatService {
     };
 
     const chatLanguage = settings.chatLanguage || 'BH';
-    this.logger.log(`Chat language preference for ${userEmail}: ${chatLanguage}`);
+    this.logger.log(
+      `Chat language preference for ${userEmail}: ${chatLanguage}`,
+    );
     const today = new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -315,11 +317,13 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                 },
                 duration_en: {
                   type: 'string',
-                  description: 'Optional duration in English (e.g. "45 minutes").',
+                  description:
+                    'Optional duration in English (e.g. "45 minutes").',
                 },
                 duration_ar: {
                   type: 'string',
-                  description: 'Optional duration in Arabic (e.g. "45 دقيقة"). Use Western digits.',
+                  description:
+                    'Optional duration in Arabic (e.g. "45 دقيقة"). Use Western digits.',
                 },
                 interviewer_names_en: {
                   type: 'string',
@@ -339,7 +343,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
                 },
                 optional_notes_ar: {
                   type: 'string',
-                  description: 'Any additional notes in Arabic. Use Western digits.',
+                  description:
+                    'Any additional notes in Arabic. Use Western digits.',
                 },
                 interview_link: {
                   type: 'string',
@@ -484,7 +489,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
               properties: {
                 application_id: {
                   type: 'string',
-                  description: 'The UUID of the candidate application to verify.',
+                  description:
+                    'The UUID of the candidate application to verify.',
                 },
               },
               required: ['application_id'],
@@ -706,7 +712,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
     this.logger.log(`Attempting to resolve ID: ${id} for user: ${userEmail}`);
 
     // Clean the input: check if it's a concatenated string like UUID-Name
-    const uuidMatch = id.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const uuidMatch = id.match(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
     const cleanId = uuidMatch ? uuidMatch[0] : id.trim();
 
     // 1. Try directly as application_id
@@ -740,12 +748,14 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       .maybeSingle();
 
     if (appFromCandidate) return appFromCandidate.id;
-    
+
     // 4. Try as candidate name (exact/fuzzy matching)
     // Use the original 'id' string for name matching in case it's actually a name
     this.logger.log(`Attempting resolution by Candidate Name: ${id}`);
-    const nameToMatch = uuidMatch ? id.replace(uuidMatch[0], '').replace(/^[-\s]+|[-\s]+$/g, '') : id.trim();
-    
+    const nameToMatch = uuidMatch
+      ? id.replace(uuidMatch[0], '').replace(/^[-\s]+|[-\s]+$/g, '')
+      : id.trim();
+
     const { data: appFromName } = await sb
       .from('applications')
       .select('id, candidates!inner(name), jobs!inner(user_email)')
@@ -756,7 +766,9 @@ ${analysisSummary || 'No candidate analyses available yet.'}
       .maybeSingle();
 
     if (appFromName) {
-      this.logger.log(`Resolved ${id} to application ID: ${appFromName.id} via Name Match`);
+      this.logger.log(
+        `Resolved ${id} to application ID: ${appFromName.id} via Name Match`,
+      );
       return appFromName.id;
     }
 
@@ -1098,14 +1110,23 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 
       if (call.name === 'start_whatsapp_verification') {
         const { application_id } = call.args;
-        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
+        const resolvedId = await this.resolveApplicationId(
+          sb,
+          application_id,
+          userEmail,
+        );
 
         if (!resolvedId) {
-          throw new Error(`Could not find application for ID: ${application_id}`);
+          throw new Error(
+            `Could not find application for ID: ${application_id}`,
+          );
         }
 
         try {
-          const result = await this.verificationService.startVerification(resolvedId, userEmail);
+          const result = await this.verificationService.startVerification(
+            resolvedId,
+            userEmail,
+          );
           return {
             status: 'success',
             message: `WhatsApp verification started for the candidate. Session status: ${result.status}.`,
@@ -1118,10 +1139,16 @@ ${analysisSummary || 'No candidate analyses available yet.'}
 
       if (call.name === 'get_whatsapp_verification_results') {
         const { application_id } = call.args;
-        const resolvedId = await this.resolveApplicationId(sb, application_id, userEmail);
+        const resolvedId = await this.resolveApplicationId(
+          sb,
+          application_id,
+          userEmail,
+        );
 
         if (!resolvedId) {
-          throw new Error(`Could not find application for ID: ${application_id}`);
+          throw new Error(
+            `Could not find application for ID: ${application_id}`,
+          );
         }
 
         const { data: app } = await sb
@@ -1144,7 +1171,8 @@ ${analysisSummary || 'No candidate analyses available yet.'}
         if (!session) {
           return {
             status: 'success',
-            message: 'No WhatsApp verification session found for this candidate.',
+            message:
+              'No WhatsApp verification session found for this candidate.',
             session: null,
           };
         }

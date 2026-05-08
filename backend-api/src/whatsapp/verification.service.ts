@@ -57,7 +57,8 @@ export class VerificationService {
       .maybeSingle();
 
     if (!candidateData) throw new Error('Candidate not found.');
-    if (!candidateData.phone) throw new Error('No phone number found for this candidate.');
+    if (!candidateData.phone)
+      throw new Error('No phone number found for this candidate.');
 
     const phone = candidateData.phone.replace(/[\s\-\(\)\.]/g, '');
     const candidateName = candidateData.name;
@@ -75,8 +76,15 @@ export class VerificationService {
       .limit(1)
       .maybeSingle();
 
-    if (existingSession && !['completed', 'expired', 'candidate_declined'].includes(existingSession.status)) {
-      throw new Error(`An active verification session already exists for this candidate (status: ${existingSession.status}).`);
+    if (
+      existingSession &&
+      !['completed', 'expired', 'candidate_declined'].includes(
+        existingSession.status,
+      )
+    ) {
+      throw new Error(
+        `An active verification session already exists for this candidate (status: ${existingSession.status}).`,
+      );
     }
 
     // Create session
@@ -93,13 +101,22 @@ export class VerificationService {
       .select()
       .single();
 
-    if (sessionErr) throw new Error(`Failed to create session: ${sessionErr.message}`);
+    if (sessionErr)
+      throw new Error(`Failed to create session: ${sessionErr.message}`);
     if (!session) throw new Error('Failed to create verification session.');
 
     // Build consent message
-    const consentMsg = this.buildConsentMessage(candidateName, settings.companyName, jobTitle);
+    const consentMsg = this.buildConsentMessage(
+      candidateName,
+      settings.companyName,
+      jobTitle,
+    );
     const twilioResult = await this.twilioService.sendMessage(
-      twilioSid, twilioToken, twilioFrom, phone, consentMsg,
+      twilioSid,
+      twilioToken,
+      twilioFrom,
+      phone,
+      consentMsg,
     );
 
     // Update session
@@ -115,7 +132,11 @@ export class VerificationService {
     return { sessionId: session.id, status: 'consent_requested', phone };
   }
 
-  private buildConsentMessage(name: string, companyName: string | undefined, jobTitle: string | null): string {
+  private buildConsentMessage(
+    name: string,
+    companyName: string | undefined,
+    jobTitle: string | null,
+  ): string {
     const firstName = name.split(' ')[0];
     let companyLine = '';
 
@@ -136,7 +157,12 @@ export class VerificationService {
       .from('whatsapp_verification_sessions')
       .select('*')
       .eq('phone_number', fromPhone)
-      .in('status', ['consent_requested', 'language_selected', 'availability_check', 'in_progress'])
+      .in('status', [
+        'consent_requested',
+        'language_selected',
+        'availability_check',
+        'in_progress',
+      ])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -154,18 +180,52 @@ export class VerificationService {
     const timeoutMinutes = parseInt(settings.whatsapp_timeout_minutes || '3');
 
     const response = body.trim();
-    this.logger.log(`Handling message from ${fromPhone} — state: ${session.status}, response: "${response}"`);
+    this.logger.log(
+      `Handling message from ${fromPhone} — state: ${session.status}, response: "${response}"`,
+    );
 
     try {
       switch (session.status) {
         case 'consent_requested':
-          return this.handleConsentResponse(sb, session, response, twilioSid, twilioToken, twilioFrom);
+          return this.handleConsentResponse(
+            sb,
+            session,
+            response,
+            twilioSid,
+            twilioToken,
+            twilioFrom,
+          );
         case 'language_selected':
-          return this.handleLanguageSelection(sb, session, response, twilioSid, twilioToken, twilioFrom);
+          return this.handleLanguageSelection(
+            sb,
+            session,
+            response,
+            twilioSid,
+            twilioToken,
+            twilioFrom,
+          );
         case 'availability_check':
-          return this.handleAvailabilityResponse(sb, session, response, questionCount, twilioSid, twilioToken, twilioFrom, timeoutMinutes);
+          return this.handleAvailabilityResponse(
+            sb,
+            session,
+            response,
+            questionCount,
+            twilioSid,
+            twilioToken,
+            twilioFrom,
+            timeoutMinutes,
+          );
         case 'in_progress':
-          return this.handleQuestionResponse(sb, session, response, questionCount, twilioSid, twilioToken, twilioFrom, timeoutMinutes);
+          return this.handleQuestionResponse(
+            sb,
+            session,
+            response,
+            questionCount,
+            twilioSid,
+            twilioToken,
+            twilioFrom,
+            timeoutMinutes,
+          );
       }
     } catch (error: any) {
       this.logger.error(`Error handling message: ${error.message}`);
@@ -173,60 +233,105 @@ export class VerificationService {
   }
 
   private async handleConsentResponse(
-    sb: any, session: any, response: string,
-    twilioSid: string, twilioToken: string, twilioFrom: string,
+    sb: any,
+    session: any,
+    response: string,
+    twilioSid: string,
+    twilioToken: string,
+    twilioFrom: string,
   ) {
-    const isYes = response.toLowerCase().includes('نعم') || response.toLowerCase().includes('yes') || response.toLowerCase().includes('يب') || response.toLowerCase().includes('أيوا') || response.toLowerCase().includes('ايه') || response.toLowerCase().includes('باهي');
+    const isYes =
+      response.toLowerCase().includes('نعم') ||
+      response.toLowerCase().includes('yes') ||
+      response.toLowerCase().includes('يب') ||
+      response.toLowerCase().includes('أيوا') ||
+      response.toLowerCase().includes('ايه') ||
+      response.toLowerCase().includes('باهي');
 
     if (isYes) {
-      await sb.from('whatsapp_verification_sessions').update({ status: 'language_selected' }).eq('id', session.id);
+      await sb
+        .from('whatsapp_verification_sessions')
+        .update({ status: 'language_selected' })
+        .eq('id', session.id);
 
       await this.twilioService.sendMessage(
-        twilioSid, twilioToken, twilioFrom, session.phone_number,
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
         'باهي، قبل ما نبداو — شنو تفضل: نحكيو بالعربي ولا English؟',
       );
     } else {
-      await sb.from('whatsapp_verification_sessions').update({ status: 'candidate_declined' }).eq('id', session.id);
+      await sb
+        .from('whatsapp_verification_sessions')
+        .update({ status: 'candidate_declined' })
+        .eq('id', session.id);
 
       await this.twilioService.sendMessage(
-        twilioSid, twilioToken, twilioFrom, session.phone_number,
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
         'مافيش مشكلة حبيبي، مشكور على وقتك. نتواصلو معاك بعدين ان شاء لله.',
       );
     }
   }
 
   private async handleLanguageSelection(
-    sb: any, session: any, response: string,
-    twilioSid: string, twilioToken: string, twilioFrom: string,
+    sb: any,
+    session: any,
+    response: string,
+    twilioSid: string,
+    twilioToken: string,
+    twilioFrom: string,
   ) {
     const wantsEnglish = /english|eng|en|انجليزي|انجلش|إنكليزي/i.test(response);
     const lang = wantsEnglish ? 'en' : 'ar';
 
-    await sb.from('whatsapp_verification_sessions').update({
-      status: 'availability_check',
-      preferred_language: lang,
-    }).eq('id', session.id);
+    await sb
+      .from('whatsapp_verification_sessions')
+      .update({
+        status: 'availability_check',
+        preferred_language: lang,
+      })
+      .eq('id', session.id);
 
     if (lang === 'en') {
       await this.twilioService.sendMessage(
-        twilioSid, twilioToken, twilioFrom, session.phone_number,
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
         'Got it! Are you available now for a few quick questions? (Yes/No)',
       );
     } else {
       await this.twilioService.sendMessage(
-        twilioSid, twilioToken, twilioFrom, session.phone_number,
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
         `باهي، توا نبي نسألك شوية أسئلة سريعة باش نتأكدو من خبرتك.\nشن رايك — جاهز توا ولا تحب نرجعو في وقت ثاني؟`,
       );
     }
   }
 
   private async handleAvailabilityResponse(
-    sb: any, session: any, response: string, questionCount: number,
-    twilioSid: string, twilioToken: string, twilioFrom: string, timeoutMinutes: number,
+    sb: any,
+    session: any,
+    response: string,
+    questionCount: number,
+    twilioSid: string,
+    twilioToken: string,
+    twilioFrom: string,
+    timeoutMinutes: number,
   ) {
-    const isYes = response.toLowerCase().includes('نعم') || response.toLowerCase().includes('yes') ||
-      response.toLowerCase().includes('جاهز') || response.toLowerCase().includes('توا') ||
-      response.toLowerCase().includes('مستعد') || response.toLowerCase().includes('باهي');
+    const isYes =
+      response.toLowerCase().includes('نعم') ||
+      response.toLowerCase().includes('yes') ||
+      response.toLowerCase().includes('جاهز') ||
+      response.toLowerCase().includes('توا') ||
+      response.toLowerCase().includes('مستعد') ||
+      response.toLowerCase().includes('باهي');
 
     if (isYes) {
       // Generate questions
@@ -245,34 +350,56 @@ export class VerificationService {
 
       const lang = session.preferred_language || 'ar';
 
-      await sb.from('whatsapp_verification_sessions').update({
-        status: 'in_progress',
-        current_question_index: 0,
-        is_available_now: true,
-        session_started_at: new Date().toISOString(),
-      }).eq('id', session.id);
+      await sb
+        .from('whatsapp_verification_sessions')
+        .update({
+          status: 'in_progress',
+          current_question_index: 0,
+          is_available_now: true,
+          session_started_at: new Date().toISOString(),
+        })
+        .eq('id', session.id);
 
       // Send intro + first question
-      const introMsg = lang === 'ar'
-        ? `ماشي يا سيدها! خلينا نبدو.\nالمهم تجاوب بسرعة وبطريقة طبيعية، ومن غير ما تطلع على النت.\nيلا!\n\nسؤال 1 من ${questionCount}:\n${questions[0].text}`
-        : `Alright! Let's begin.\nImportant: answer quickly and naturally, without looking up the internet.\nLet's go!\n\nQuestion 1 of ${questionCount}:\n${questions[0].text}`;
-
-      await this.twilioService.sendMessage(twilioSid, twilioToken, twilioFrom, session.phone_number, introMsg);
-    } else {
-      await sb.from('whatsapp_verification_sessions').update({
-        status: 'candidate_declined',
-      }).eq('id', session.id);
+      const introMsg =
+        lang === 'ar'
+          ? `ماشي يا سيدها! خلينا نبدو.\nالمهم تجاوب بسرعة وبطريقة طبيعية، ومن غير ما تطلع على النت.\nيلا!\n\nسؤال 1 من ${questionCount}:\n${questions[0].text}`
+          : `Alright! Let's begin.\nImportant: answer quickly and naturally, without looking up the internet.\nLet's go!\n\nQuestion 1 of ${questionCount}:\n${questions[0].text}`;
 
       await this.twilioService.sendMessage(
-        twilioSid, twilioToken, twilioFrom, session.phone_number,
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
+        introMsg,
+      );
+    } else {
+      await sb
+        .from('whatsapp_verification_sessions')
+        .update({
+          status: 'candidate_declined',
+        })
+        .eq('id', session.id);
+
+      await this.twilioService.sendMessage(
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
         'مافيش مشكلة حبيبي، مشكور على وقتك. نتواصلو معاك بعدين ان شاء لله.',
       );
     }
   }
 
   private async handleQuestionResponse(
-    sb: any, session: any, response: string, questionCount: number,
-    twilioSid: string, twilioToken: string, twilioFrom: string, timeoutMinutes: number,
+    sb: any,
+    session: any,
+    response: string,
+    questionCount: number,
+    twilioSid: string,
+    twilioToken: string,
+    twilioFrom: string,
+    timeoutMinutes: number,
   ) {
     const now = new Date();
 
@@ -289,13 +416,18 @@ export class VerificationService {
     if (!currentQuestion) return;
 
     // Calculate response delay
-    const lastMessageTime = currentIndex === 0
-      ? new Date(session.session_started_at).getTime()
-      : new Date(questions[currentIndex - 1]?.answered_at || session.session_started_at).getTime();
+    const lastMessageTime =
+      currentIndex === 0
+        ? new Date(session.session_started_at).getTime()
+        : new Date(
+            questions[currentIndex - 1]?.answered_at ||
+              session.session_started_at,
+          ).getTime();
     const responseDelayMs = now.getTime() - lastMessageTime;
 
     // Update the question with answer
-    await sb.from('verification_questions')
+    await sb
+      .from('verification_questions')
       .update({
         answer_text: response,
         answered_at: now.toISOString(),
@@ -308,35 +440,57 @@ export class VerificationService {
 
     if (nextIndex >= questionCount || nextIndex >= questions.length) {
       // All questions answered — analyze session
-      await sb.from('whatsapp_verification_sessions').update({
-        status: 'completed',
-        current_question_index: nextIndex,
-        session_ended_at: now.toISOString(),
-      }).eq('id', session.id);
+      await sb
+        .from('whatsapp_verification_sessions')
+        .update({
+          status: 'completed',
+          current_question_index: nextIndex,
+          session_ended_at: now.toISOString(),
+        })
+        .eq('id', session.id);
 
       // Closing message
-      const closingMsg = lang === 'ar'
-        ? `صحيت! خلصنا من الأسئلة.\nباهي، راح نراجعو إجاباتك ونتواصلو معاك في أقرب وقت على الخطوة الجاية.\nيعطيك الصحة على وقتك!`
-        : `Thanks! We're done with the questions.\nWe'll review your answers and contact you soon about next steps.\nThank you for your time!`;
+      const closingMsg =
+        lang === 'ar'
+          ? `صحيت! خلصنا من الأسئلة.\nباهي، راح نراجعو إجاباتك ونتواصلو معاك في أقرب وقت على الخطوة الجاية.\nيعطيك الصحة على وقتك!`
+          : `Thanks! We're done with the questions.\nWe'll review your answers and contact you soon about next steps.\nThank you for your time!`;
 
-      await this.twilioService.sendMessage(twilioSid, twilioToken, twilioFrom, session.phone_number, closingMsg);
+      await this.twilioService.sendMessage(
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
+        closingMsg,
+      );
 
       // Run AI analysis
       this.analyzeSession(session.id).catch((err) =>
-        this.logger.error(`Analysis failed for session ${session.id}: ${err.message}`),
+        this.logger.error(
+          `Analysis failed for session ${session.id}: ${err.message}`,
+        ),
       );
     } else {
       // Update index and send next question
-      await sb.from('whatsapp_verification_sessions').update({
-        current_question_index: nextIndex,
-      }).eq('id', session.id);
+      await sb
+        .from('whatsapp_verification_sessions')
+        .update({
+          current_question_index: nextIndex,
+        })
+        .eq('id', session.id);
 
       const nextQuestion = questions[nextIndex];
-      const qMsg = lang === 'ar'
-        ? `سؤال ${nextIndex + 1} من ${questionCount}:\n${nextQuestion.question_text}`
-        : `Question ${nextIndex + 1} of ${questionCount}:\n${nextQuestion.question_text}`;
+      const qMsg =
+        lang === 'ar'
+          ? `سؤال ${nextIndex + 1} من ${questionCount}:\n${nextQuestion.question_text}`
+          : `Question ${nextIndex + 1} of ${questionCount}:\n${nextQuestion.question_text}`;
 
-      await this.twilioService.sendMessage(twilioSid, twilioToken, twilioFrom, session.phone_number, qMsg);
+      await this.twilioService.sendMessage(
+        twilioSid,
+        twilioToken,
+        twilioFrom,
+        session.phone_number,
+        qMsg,
+      );
     }
   }
 
@@ -363,8 +517,9 @@ export class VerificationService {
     const jobTitle = job?.title || '';
     const jobReqs = JSON.stringify(job?.requirements || []);
 
-    const styleRules = lang === 'ar'
-      ? `=== LANGUAGE STYLE (CRITICAL) ===
+    const styleRules =
+      lang === 'ar'
+        ? `=== LANGUAGE STYLE (CRITICAL) ===
 Write questions in natural Libyan Arabic dialect, NOT Modern Standard Arabic (Fusha).
 Key rules:
 - "شنو" not "ما" or "ماذا"
@@ -376,7 +531,7 @@ Key rules:
 - "شن رايك" not "ما رأيك"
 - Conversational, warm, friendly tone — like talking to a friend
 - Keep sentences short and natural`
-      : 'Write questions in natural, conversational English. Keep them short and friendly.';
+        : 'Write questions in natural, conversational English. Keep them short and friendly.';
 
     const prompt = `You are an expert recruitment fraud detector. Generate ${questionCount} rapid-fire verification questions for a candidate who claims the following CV details:
 
@@ -435,10 +590,16 @@ Return ONLY valid JSON:
     );
 
     const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!responseText) throw new Error('Empty response from AI when generating questions');
+    if (!responseText)
+      throw new Error('Empty response from AI when generating questions');
 
     const parsed = JSON.parse(responseText);
-    await this.aiService.logUsage(session.user_email, 'whatsapp_questions', result.usageMetadata, 'gemini');
+    await this.aiService.logUsage(
+      session.user_email,
+      'whatsapp_questions',
+      result.usageMetadata,
+      'gemini',
+    );
 
     return parsed.questions || [];
   }
@@ -470,9 +631,13 @@ Return ONLY valid JSON:
       .order('question_number', { ascending: true });
 
     const cvText = (candidate?.cv_text || '').slice(0, 3000);
-    const qaText = questions?.map(q =>
-      `Q${q.question_number}: ${q.question_text}\nA${q.question_number}: ${q.answer_text || '(no answer)'}\nResponse delay: ${q.response_delay_ms || 0}ms`
-    ).join('\n\n') || '';
+    const qaText =
+      questions
+        ?.map(
+          (q) =>
+            `Q${q.question_number}: ${q.question_text}\nA${q.question_number}: ${q.answer_text || '(no answer)'}\nResponse delay: ${q.response_delay_ms || 0}ms`,
+        )
+        .join('\n\n') || '';
 
     const prompt = `You are an expert recruitment fraud analyst. Analyze this candidate's WhatsApp verification session to determine if their CV claims are genuine.
 
@@ -542,11 +707,19 @@ Analyze for authenticity using these signals:
               copy_paste_likelihood: { type: 'integer' },
               ai_notes: { type: 'string' },
             },
-            required: ['question_number', 'naturalness_score', 'consistency_score', 'copy_paste_likelihood'],
+            required: [
+              'question_number',
+              'naturalness_score',
+              'consistency_score',
+              'copy_paste_likelihood',
+            ],
           },
         },
         overall_authenticity_score: { type: 'integer' },
-        verdict: { type: 'string', enum: ['genuine', 'suspicious', 'likely_fabricated'] },
+        verdict: {
+          type: 'string',
+          enum: ['genuine', 'suspicious', 'likely_fabricated'],
+        },
         red_flags: {
           type: 'array',
           items: {
@@ -560,7 +733,13 @@ Analyze for authenticity using these signals:
         },
         summary: { type: 'string' },
       },
-      required: ['per_question_analysis', 'overall_authenticity_score', 'verdict', 'red_flags', 'summary'],
+      required: [
+        'per_question_analysis',
+        'overall_authenticity_score',
+        'verdict',
+        'red_flags',
+        'summary',
+      ],
     };
 
     try {
@@ -578,8 +757,9 @@ Analyze for authenticity using these signals:
       const analysis = JSON.parse(responseText);
 
       // Save per-question analysis
-      for (const pq of (analysis.per_question_analysis || [])) {
-        await sb.from('verification_questions')
+      for (const pq of analysis.per_question_analysis || []) {
+        await sb
+          .from('verification_questions')
           .update({
             naturalness_score: pq.naturalness_score,
             consistency_score: pq.consistency_score,
@@ -591,7 +771,8 @@ Analyze for authenticity using these signals:
       }
 
       // Save overall results
-      await sb.from('whatsapp_verification_sessions')
+      await sb
+        .from('whatsapp_verification_sessions')
         .update({
           authenticity_score: analysis.overall_authenticity_score,
           authenticity_verdict: analysis.verdict,
@@ -600,11 +781,20 @@ Analyze for authenticity using these signals:
         })
         .eq('id', sessionId);
 
-      await this.aiService.logUsage(session.user_email, 'whatsapp_analysis', result.usageMetadata, 'gemini');
+      await this.aiService.logUsage(
+        session.user_email,
+        'whatsapp_analysis',
+        result.usageMetadata,
+        'gemini',
+      );
 
-      this.logger.log(`Analysis complete for session ${sessionId} — Score: ${analysis.overall_authenticity_score}, Verdict: ${analysis.verdict}`);
+      this.logger.log(
+        `Analysis complete for session ${sessionId} — Score: ${analysis.overall_authenticity_score}, Verdict: ${analysis.verdict}`,
+      );
     } catch (error: any) {
-      this.logger.error(`Analysis failed for session ${sessionId}: ${error.message}`);
+      this.logger.error(
+        `Analysis failed for session ${sessionId}: ${error.message}`,
+      );
     }
   }
 
@@ -675,7 +865,11 @@ Analyze for authenticity using these signals:
       .eq('id', session.candidate_id)
       .single();
 
-    return { session, questions: questions || [], candidateName: candidate?.name || '' };
+    return {
+      session,
+      questions: questions || [],
+      candidateName: candidate?.name || '',
+    };
   }
 
   async retrySession(userEmail: string, sessionId: string) {
@@ -690,10 +884,14 @@ Analyze for authenticity using these signals:
     if (!session) throw new Error('Session not found');
 
     // Delete old questions
-    await sb.from('verification_questions').delete().eq('session_id', sessionId);
+    await sb
+      .from('verification_questions')
+      .delete()
+      .eq('session_id', sessionId);
 
     // Reset session
-    await sb.from('whatsapp_verification_sessions')
+    await sb
+      .from('whatsapp_verification_sessions')
       .update({
         status: 'pending',
         current_question_index: 0,

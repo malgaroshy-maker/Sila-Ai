@@ -107,7 +107,15 @@ export class WebhooksService {
     const companyName = settingsMap.company_name || 'AI Recruitment System';
 
     // 2. Send email notification anyway
-    this.sendAlertEmail(userEmail, candidateName, score, jobTitle, analysisResult, cvData, companyName);
+    this.sendAlertEmail(
+      userEmail,
+      candidateName,
+      score,
+      jobTitle,
+      analysisResult,
+      cvData,
+      companyName,
+    );
   }
 
   private async triggerWebhook(url: string, payload: any) {
@@ -132,18 +140,19 @@ export class WebhooksService {
     cvData?: { buffer?: Buffer; filename?: string } | null,
     companyName: string = 'AI Recruitment System',
   ) {
-    const { subject: subjectText, html: htmlContent } = generateExceptionalCandidateEmail({
-      candidateName: name,
-      jobTitle: job,
-      score,
-      companyName,
-      justification: analysisResult?.justification,
-      strengths: analysisResult?.strengths,
-      skillsScore: analysisResult?.skills_score,
-      culturalFitScore: analysisResult?.cultural_fit_score,
-      recommendation: analysisResult?.recommendation,
-      dashboardUrl: process.env.FRONTEND_URL,
-    });
+    const { subject: subjectText, html: htmlContent } =
+      generateExceptionalCandidateEmail({
+        candidateName: name,
+        jobTitle: job,
+        score,
+        companyName,
+        justification: analysisResult?.justification,
+        strengths: analysisResult?.strengths,
+        skillsScore: analysisResult?.skills_score,
+        culturalFitScore: analysisResult?.cultural_fit_score,
+        recommendation: analysisResult?.recommendation,
+        dashboardUrl: process.env.FRONTEND_URL,
+      });
 
     // Try to send via user's connected Gmail/Microsoft account first
     try {
@@ -396,11 +405,11 @@ export class WebhooksService {
     });
 
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    
+
     // Construct MIME message
     const utf8Subject = `=?utf-8?B?${Buffer.from(subjectText).toString('base64')}?=`;
     const boundary = '__next_part__';
-    
+
     let messageParts = [
       `To: ${recipient}`,
       `Subject: ${utf8Subject}`,
@@ -430,7 +439,7 @@ export class WebhooksService {
     }
 
     messageParts.push(`--${boundary}--`);
-    
+
     const message = messageParts.join('\n');
     const encodedMessage = Buffer.from(message)
       .toString('base64')

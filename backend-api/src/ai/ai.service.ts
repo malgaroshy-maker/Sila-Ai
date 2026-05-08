@@ -63,7 +63,6 @@ export class AiService {
     };
   }
 
-
   /**
    * Fetches the curated model list from Supabase.
    * Filters for models that support text generation (chat/analysis).
@@ -541,7 +540,12 @@ export class AiService {
       };
     } catch (error: any) {
       this.logger.error('Failed to extract candidate info:', error.message);
-      return { name: 'Unknown', email: 'unknown@uploaded.cv', phone: '', is_cv: true };
+      return {
+        name: 'Unknown',
+        email: 'unknown@uploaded.cv',
+        phone: '',
+        is_cv: true,
+      };
     }
   }
 

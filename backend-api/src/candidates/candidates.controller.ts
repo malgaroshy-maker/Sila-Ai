@@ -108,7 +108,11 @@ export class CandidatesController {
     @Res() res: Response,
   ) {
     this.requireEmail(userEmail);
-    if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+    if (
+      !candidateIds ||
+      !Array.isArray(candidateIds) ||
+      candidateIds.length === 0
+    ) {
       throw new BadRequestException('candidateIds array is required');
     }
     return this.candidatesService.bulkDownloadCV(userEmail, candidateIds, res);
@@ -138,7 +142,11 @@ export class CandidatesController {
     @Body('candidateIds') candidateIds: string[],
   ) {
     this.requireEmail(userEmail);
-    if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+    if (
+      !candidateIds ||
+      !Array.isArray(candidateIds) ||
+      candidateIds.length === 0
+    ) {
       throw new BadRequestException('candidateIds array is required');
     }
     return this.candidatesService.bulkDeleteCandidates(userEmail, candidateIds);

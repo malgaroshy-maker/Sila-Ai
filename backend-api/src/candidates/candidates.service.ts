@@ -938,7 +938,9 @@ export class CandidatesService {
 
   async bulkDeleteCandidates(userEmail: string, candidateIds: string[]) {
     const sb = this.supabaseService.getClient();
-    this.logger.log(`Bulk deleting ${candidateIds.length} candidates for user ${userEmail}`);
+    this.logger.log(
+      `Bulk deleting ${candidateIds.length} candidates for user ${userEmail}`,
+    );
 
     // 1. Fetch candidates to get CV URLs
     const { data: candidates, error: fetchError } = await sb
@@ -951,13 +953,13 @@ export class CandidatesService {
       throw new NotFoundException('Candidates not found or unauthorized');
     }
 
-    const validCandidateIds = candidates.map(c => c.id);
+    const validCandidateIds = candidates.map((c) => c.id);
 
     // 2. Delete CVs from storage
     const filePathsToDelete = candidates
-      .map(c => c.cv_url)
-      .filter(url => Boolean(url))
-      .map(url => {
+      .map((c) => c.cv_url)
+      .filter((url) => Boolean(url))
+      .map((url) => {
         try {
           const urlParts = url.split('/cv-backups/');
           return urlParts.length > 1 ? decodeURIComponent(urlParts[1]) : null;
@@ -968,13 +970,17 @@ export class CandidatesService {
       .filter((path): path is string => path !== null);
 
     if (filePathsToDelete.length > 0) {
-      this.logger.log(`Deleting ${filePathsToDelete.length} CV files from storage`);
+      this.logger.log(
+        `Deleting ${filePathsToDelete.length} CV files from storage`,
+      );
       const { error: storageError } = await sb.storage
         .from('cv-backups')
         .remove(filePathsToDelete);
 
       if (storageError) {
-        this.logger.error(`Failed to bulk delete CVs from storage: ${storageError.message}`);
+        this.logger.error(
+          `Failed to bulk delete CVs from storage: ${storageError.message}`,
+        );
       }
     }
 
@@ -991,13 +997,19 @@ export class CandidatesService {
       .eq('user_email', userEmail);
 
     if (deleteError) {
-      throw new InternalServerErrorException(`Failed to bulk delete candidates: ${deleteError.message}`);
+      throw new InternalServerErrorException(
+        `Failed to bulk delete candidates: ${deleteError.message}`,
+      );
     }
 
     return { success: true, deleted: deletedRows || validCandidateIds.length };
   }
 
-  async bulkDownloadCV(userEmail: string, candidateIds: string[], res: Response) {
+  async bulkDownloadCV(
+    userEmail: string,
+    candidateIds: string[],
+    res: Response,
+  ) {
     const sb = this.supabaseService.getClient();
 
     const { data: candidates, error } = await sb
@@ -1007,14 +1019,19 @@ export class CandidatesService {
       .eq('user_email', userEmail);
 
     if (error || !candidates || candidates.length === 0) {
-      throw new NotFoundException('No valid candidates found for bulk download');
+      throw new NotFoundException(
+        'No valid candidates found for bulk download',
+      );
     }
 
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="candidates_cvs.zip"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="candidates_cvs.zip"',
+    );
 
     const archive = archiver.create('zip', {
-      zlib: { level: 5 }
+      zlib: { level: 5 },
     });
 
     archive.on('error', (err) => {
@@ -1030,7 +1047,7 @@ export class CandidatesService {
       try {
         const cvData = await this.downloadCV(userEmail, candidate.id);
         const nameClean = candidate.name.replace(/\s+/g, '_');
-        
+
         if ('buffer' in cvData && cvData.buffer) {
           archive.append(cvData.buffer, { name: `CV_${nameClean}.pdf` });
         } else if ('url' in cvData && cvData.url) {
@@ -1042,7 +1059,9 @@ export class CandidatesService {
           }
         }
       } catch (err: any) {
-        this.logger.warn(`Failed to fetch CV for candidate ${candidate.id}: ${err.message}`);
+        this.logger.warn(
+          `Failed to fetch CV for candidate ${candidate.id}: ${err.message}`,
+        );
       }
     }
 

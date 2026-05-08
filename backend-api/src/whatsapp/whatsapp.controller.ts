@@ -27,17 +27,19 @@ export class WhatsAppController {
     @Headers('x-user-email') userEmail: string,
     @Body() body: { application_id: string },
   ) {
-    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
-    if (!body.application_id) throw new BadRequestException('application_id is required');
+    if (!userEmail)
+      throw new UnauthorizedException('x-user-email header is required');
+    if (!body.application_id)
+      throw new BadRequestException('application_id is required');
 
-    return this.verificationService.startVerification(body.application_id, userEmail);
+    return this.verificationService.startVerification(
+      body.application_id,
+      userEmail,
+    );
   }
 
   @Post('webhook')
-  async twilioWebhook(
-    @Req() req: Request,
-    @Body() body: any,
-  ) {
+  async twilioWebhook(@Req() req: Request, @Body() body: any) {
     const twilioSignature = req.headers['x-twilio-signature'] as string;
 
     // Skip signature validation in development/sandbox mode
@@ -54,7 +56,10 @@ export class WhatsAppController {
       throw new BadRequestException('Missing From or Body in webhook payload');
     }
 
-    await this.verificationService.handleIncomingMessage(fromPhone, messageBody);
+    await this.verificationService.handleIncomingMessage(
+      fromPhone,
+      messageBody,
+    );
 
     // Return empty 200 for Twilio
     return '';
@@ -65,7 +70,8 @@ export class WhatsAppController {
     @Headers('x-user-email') userEmail: string,
     @Param('id') sessionId: string,
   ) {
-    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
+    if (!userEmail)
+      throw new UnauthorizedException('x-user-email header is required');
     return this.verificationService.getSession(userEmail, sessionId);
   }
 
@@ -74,7 +80,8 @@ export class WhatsAppController {
     @Headers('x-user-email') userEmail: string,
     @Param('applicationId') applicationId: string,
   ) {
-    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
+    if (!userEmail)
+      throw new UnauthorizedException('x-user-email header is required');
     return this.verificationService.getSessionByApp(userEmail, applicationId);
   }
 
@@ -83,8 +90,12 @@ export class WhatsAppController {
     @Headers('x-user-email') userEmail: string,
     @Param('candidateId') candidateId: string,
   ) {
-    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
-    return this.verificationService.getLatestForCandidate(userEmail, candidateId);
+    if (!userEmail)
+      throw new UnauthorizedException('x-user-email header is required');
+    return this.verificationService.getLatestForCandidate(
+      userEmail,
+      candidateId,
+    );
   }
 
   @Post('retry')
@@ -92,15 +103,18 @@ export class WhatsAppController {
     @Headers('x-user-email') userEmail: string,
     @Body() body: { session_id: string },
   ) {
-    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
-    if (!body.session_id) throw new BadRequestException('session_id is required');
+    if (!userEmail)
+      throw new UnauthorizedException('x-user-email header is required');
+    if (!body.session_id)
+      throw new BadRequestException('session_id is required');
 
     return this.verificationService.retrySession(userEmail, body.session_id);
   }
 
   @Get('sandbox/status')
   async getSandboxStatus(@Headers('x-user-email') userEmail: string) {
-    if (!userEmail) throw new UnauthorizedException('x-user-email header is required');
+    if (!userEmail)
+      throw new UnauthorizedException('x-user-email header is required');
     const settings = await this.aiService.getSettings(userEmail);
 
     const hasSid = !!settings.whatsapp_twilio_sid;

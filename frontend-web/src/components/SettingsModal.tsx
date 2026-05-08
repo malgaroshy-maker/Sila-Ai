@@ -35,6 +35,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
   const [whatsappTwilioFrom, setWhatsappTwilioFrom] = useState('');
   const [whatsappQuestionCount, setWhatsappQuestionCount] = useState(4);
   const [whatsappTimeoutMinutes, setWhatsappTimeoutMinutes] = useState(3);
+  const [emailScanFilter, setEmailScanFilter] = useState<'unread' | 'all'>('unread');
   
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isModelsLoading, setIsModelsLoading] = useState(false);
@@ -80,6 +81,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
         setWhatsappTwilioFrom(data.whatsapp_twilio_from || '');
         setWhatsappQuestionCount(parseInt(data.whatsapp_question_count) || 4);
         setWhatsappTimeoutMinutes(parseInt(data.whatsapp_timeout_minutes) || 3);
+        setEmailScanFilter(data.email_scan_filter || 'unread');
       }
       
       if (data.gemini_api_key) {
@@ -149,6 +151,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
           whatsapp_twilio_from: whatsappTwilioFrom,
           whatsapp_question_count: whatsappQuestionCount.toString(),
           whatsapp_timeout_minutes: whatsappTimeoutMinutes.toString(),
+          email_scan_filter: emailScanFilter,
         })
       });
       
@@ -504,6 +507,18 @@ export default function SettingsModal({ isOpen, onClose, userEmail, t = {} }: { 
                   <option value="24h">{t.sync_24h || 'Daily'}</option>
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">{t.email_scan_filter || 'Email Scan'}</label>
+              <select 
+                value={emailScanFilter}
+                onChange={(e) => setEmailScanFilter(e.target.value as 'unread' | 'all')}
+                className="w-full px-3 py-2 rounded-lg border border-[#1E293B] bg-[#020617] text-white text-sm"
+              >
+                <option value="unread">{t.email_scan_unread || 'Unread Only'}</option>
+                <option value="all">{t.email_scan_all || 'All Emails'}</option>
+              </select>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-[#020617] rounded-xl border border-[#1E293B]">

@@ -29,10 +29,14 @@ export class TwilioService {
         body,
       });
 
-      this.logger.log(`WhatsApp message sent to ${cleanTo} — SID: ${message.sid}`);
+      this.logger.log(
+        `WhatsApp message sent to ${cleanTo} — SID: ${message.sid}`,
+      );
       return { sid: message.sid, status: message.status };
     } catch (error: any) {
-      this.logger.error(`Failed to send WhatsApp message to ${cleanTo}: ${error.message}`);
+      this.logger.error(
+        `Failed to send WhatsApp message to ${cleanTo}: ${error.message}`,
+      );
       throw error;
     }
   }

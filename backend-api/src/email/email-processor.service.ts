@@ -133,6 +133,7 @@ export class EmailProcessorService {
         }, {} as any);
 
         const syncFreq = settingsMap.sync_frequency || '6h';
+        const emailScanFilter = settingsMap.email_scan_filter || 'unread';
 
         // 2. Cooldown check based on sync_frequency
         if (!force) {
@@ -161,9 +162,17 @@ export class EmailProcessorService {
         }
 
         if (account.provider === 'google') {
-          await this.processGoogleAccount(account, emitProgress);
+          await this.processGoogleAccount(
+            account,
+            emitProgress,
+            emailScanFilter,
+          );
         } else if (account.provider === 'microsoft') {
-          await this.processMicrosoftAccount(account, emitProgress);
+          await this.processMicrosoftAccount(
+            account,
+            emitProgress,
+            emailScanFilter,
+          );
         }
 
         // Update last_synced_at IMMEDIATELY after account processing
@@ -187,6 +196,7 @@ export class EmailProcessorService {
   private async processGoogleAccount(
     account: any,
     onProgress: (data: any) => void,
+    emailScanFilter = 'unread',
   ) {
     const sb = this.supabaseService.getClient();
     try {
@@ -211,7 +221,7 @@ export class EmailProcessorService {
 
       const res = await gmail.users.messages.list({
         userId: 'me',
-        q: 'is:unread has:attachment (filename:pdf OR filename:docx OR filename:doc OR filename:png OR filename:jpg OR filename:jpeg)',
+        q: `${emailScanFilter === 'all' ? '' : 'is:unread '}has:attachment (filename:pdf OR filename:docx OR filename:doc OR filename:png OR filename:jpg OR filename:jpeg)`,
         maxResults: 20,
         includeSpamTrash: false,
         quotaUser: qUser,
@@ -509,6 +519,7 @@ export class EmailProcessorService {
   private async processMicrosoftAccount(
     account: any,
     onProgress: (data: any) => void,
+    emailScanFilter = 'unread',
   ) {
     const sb = this.supabaseService.getClient();
     try {
@@ -526,8 +537,9 @@ export class EmailProcessorService {
         // fallback to old token
       }
 
-      // Graph API: fetch unread messages with attachments
-      const graphApiUrl = `https://graph.microsoft.com/v1.0/me/messages?$filter=isRead eq false and hasAttachments eq true&$top=20`;
+      const readFilter =
+        emailScanFilter === 'all' ? '' : 'isRead eq false and ';
+      const graphApiUrl = `https://graph.microsoft.com/v1.0/me/messages?$filter=${readFilter}hasAttachments eq true&$top=20`;
       const msgesRes = await fetch(graphApiUrl, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });

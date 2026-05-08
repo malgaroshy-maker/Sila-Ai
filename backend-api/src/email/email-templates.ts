@@ -8,7 +8,7 @@ export interface EmailTemplateData {
 }
 
 /**
- * Ensures Western numerals (0-9) are used. 
+ * Ensures Western numerals (0-9) are used.
  * Converts Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩) to Western (0123456789).
  */
 const normalizeNumbers = (str: string): string => {
@@ -19,7 +19,14 @@ export const generateBilingualEmail = (
   type: 'rejection' | 'interview' | 'offer',
   data: EmailTemplateData,
 ) => {
-  const { candidateName, jobTitle, details, strengths, requirements, companyName } = data;
+  const {
+    candidateName,
+    jobTitle,
+    details,
+    strengths,
+    requirements,
+    companyName,
+  } = data;
   const brandName = companyName || 'SILA Recruitment';
 
   const styles = `
@@ -59,25 +66,41 @@ export const generateBilingualEmail = (
 
     case 'interview':
       subject = `Interview Invitation: ${jobTitle} - ${brandName}`;
-      
+
       const dateEn = details?.dateEn || 'To be confirmed';
       const dateAr = normalizeNumbers(details?.dateAr || 'سيتم تأكيده');
       const locEn = details?.locationEn || 'Online';
       const locAr = details?.locationAr || 'عبر الإنترنت';
       const typeEn = details?.typeEn || 'Interview';
       const typeAr = details?.typeAr || 'مقابلة وظيفية';
-      
-      const durationEn = details?.durationEn ? `<p><b>Duration:</b> ${details.durationEn}</p>` : '';
-      const durationAr = details?.durationAr ? `<p><b>المدة المتوقعة:</b> ${normalizeNumbers(details.durationAr)}</p>` : '';
-      
-      const interviewersEn = details?.interviewersEn ? `<p><b>Interviewers:</b> ${details.interviewersEn}</p>` : '';
-      const interviewersAr = details?.interviewersAr ? `<p><b>المقابلون:</b> ${details.interviewersAr}</p>` : '';
 
-      const contactEn = details?.reschedulingContact ? `<p><b>Rescheduling Contact:</b> ${details.reschedulingContact}</p>` : '';
-      const contactAr = details?.reschedulingContact ? `<p><b>لإعادة الجدولة:</b> ${details.reschedulingContact}</p>` : '';
+      const durationEn = details?.durationEn
+        ? `<p><b>Duration:</b> ${details.durationEn}</p>`
+        : '';
+      const durationAr = details?.durationAr
+        ? `<p><b>المدة المتوقعة:</b> ${normalizeNumbers(details.durationAr)}</p>`
+        : '';
 
-      const notesEn = details?.notesEn ? `<div style="margin-top:15px; font-style:italic; color:#64748b;">Note: ${details.notesEn}</div>` : '';
-      const notesAr = details?.notesAr ? `<div style="margin-top:15px; font-style:italic; color:#64748b;">ملاحظة: ${normalizeNumbers(details.notesAr)}</div>` : '';
+      const interviewersEn = details?.interviewersEn
+        ? `<p><b>Interviewers:</b> ${details.interviewersEn}</p>`
+        : '';
+      const interviewersAr = details?.interviewersAr
+        ? `<p><b>المقابلون:</b> ${details.interviewersAr}</p>`
+        : '';
+
+      const contactEn = details?.reschedulingContact
+        ? `<p><b>Rescheduling Contact:</b> ${details.reschedulingContact}</p>`
+        : '';
+      const contactAr = details?.reschedulingContact
+        ? `<p><b>لإعادة الجدولة:</b> ${details.reschedulingContact}</p>`
+        : '';
+
+      const notesEn = details?.notesEn
+        ? `<div style="margin-top:15px; font-style:italic; color:#64748b;">Note: ${details.notesEn}</div>`
+        : '';
+      const notesAr = details?.notesAr
+        ? `<div style="margin-top:15px; font-style:italic; color:#64748b;">ملاحظة: ${normalizeNumbers(details.notesAr)}</div>`
+        : '';
 
       const link = details?.link
         ? `<p><b>Meeting Link:</b> <a href="${details.link}">${details.link}</a></p>`

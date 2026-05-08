@@ -31,8 +31,12 @@ export const generateExceptionalCandidateEmail = (data: AlertEmailData) => {
   const slate800 = '#1e293b';
   const silver = '#f8fafc';
 
-  const strengthsListEn = (strengths || []).map(s => `<li>${s}</li>`).join('');
-  const strengthsListAr = (strengths || []).map(s => `<li>${s}</li>`).join('');
+  const strengthsListEn = (strengths || [])
+    .map((s) => `<li>${s}</li>`)
+    .join('');
+  const strengthsListAr = (strengths || [])
+    .map((s) => `<li>${s}</li>`)
+    .join('');
 
   return {
     subject: `🚀 Exceptional Match: ${candidateName} for ${jobTitle}`,
