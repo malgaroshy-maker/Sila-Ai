@@ -206,30 +206,63 @@ export class AiService {
     const settings = await this.getSettings(userEmail);
     const fallbackModel = 'models/gemini-3.1-flash-lite-preview';
 
-    // Attempt primary model, fallback if 429
-    try {
-      return await this.executeGeminiCall(
-        settings.model,
-        userEmail,
-        settings,
-        body,
-        tools,
+    // Pre-flight: check if primary model is blocked
+    const { blocked: primaryBlocked } = await this.checkModelBlocked(
+      settings.apiKey,
+      settings.model,
+    );
+
+    const modelsToTry: string[] = [];
+    if (!primaryBlocked) {
+      modelsToTry.push(settings.model);
+    } else {
+      this.logger.warn(
+        `Primary model ${settings.model} is blocked, skipping to fallback`,
       );
-    } catch (error: any) {
-      if (error.status === 429 && settings.model !== fallbackModel) {
-        this.logger.warn(
-          `Quota exceeded for ${settings.model}, retrying with ${fallbackModel}`,
-        );
+    }
+    if (settings.model !== fallbackModel) {
+      const { blocked: fallbackBlocked } = await this.checkModelBlocked(
+        settings.apiKey,
+        fallbackModel,
+      );
+      if (!fallbackBlocked) {
+        modelsToTry.push(fallbackModel);
+      } else {
+        this.logger.warn(`Fallback model ${fallbackModel} is also blocked`);
+      }
+    }
+
+    if (modelsToTry.length === 0) {
+      throw Object.assign(
+        new Error(
+          `All models blocked. Primary: ${settings.model}, Fallback: ${fallbackModel}`,
+        ),
+        { status: 429 },
+      );
+    }
+
+    let lastError: any;
+    for (const model of modelsToTry) {
+      try {
         return await this.executeGeminiCall(
-          fallbackModel,
+          model,
           userEmail,
           settings,
           body,
           tools,
         );
+      } catch (error: any) {
+        lastError = error;
+        if (error.status === 429) {
+          this.logger.warn(
+            `Model ${model} returned 429${modelsToTry.length > 1 ? ', trying next' : ''}`,
+          );
+          continue;
+        }
+        throw error;
       }
-      throw error;
     }
+    throw lastError;
   }
 
   private async executeGeminiCall(
@@ -258,6 +291,20 @@ export class AiService {
       `Gemini request size for ${modelId}: ${(bodyStr.length / 1024 / 1024).toFixed(2)} MB`,
     );
 
+    // Pre-flight: skip if model is blocked
+    const { blocked, blockedUntil } = await this.checkModelBlocked(
+      settings.apiKey,
+      modelId,
+    );
+    if (blocked) {
+      const blockedErr = new Error(
+        `Model ${modelId} is blocked until ${blockedUntil}`,
+      ) as any;
+      blockedErr.status = 429;
+      blockedErr.blockedUntil = blockedUntil;
+      throw blockedErr;
+    }
+
     const response = await fetch(baseUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -272,9 +319,15 @@ export class AiService {
       this.logger.error(
         `Gemini API Error (Status ${response.status}): ${responseText}`,
       );
-      throw new Error(
+      // On 429, mark the model as blocked so subsequent calls skip it
+      if (response.status === 429) {
+        await this.markModelBlocked(settings.apiKey, modelId, responseText);
+      }
+      const apiErr = new Error(
         `AI Analysis failed (Status ${response.status}): ${responseText || 'No error message provided'}`,
-      );
+      ) as any;
+      apiErr.status = response.status;
+      throw apiErr;
     }
 
     if (!responseText) {
@@ -295,6 +348,69 @@ export class AiService {
     });
 
     return result;
+  }
+
+  private async markModelBlocked(
+    apiKey: string,
+    modelId: string,
+    errorBody: string,
+  ) {
+    let blockSeconds = 60; // Default 60s
+    try {
+      const parsed = JSON.parse(errorBody);
+      const details = parsed?.error?.details || [];
+      for (const detail of details) {
+        if (
+          detail?.['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' &&
+          detail?.retryDelay
+        ) {
+          const delay = parseFloat(String(detail.retryDelay).replace('s', ''));
+          if (!isNaN(delay) && delay > 0) {
+            blockSeconds = delay + 2; // 2s safety buffer
+          }
+        }
+      }
+    } catch {
+      // Use default
+    }
+
+    const blockedUntil = new Date(
+      Date.now() + blockSeconds * 1000,
+    ).toISOString();
+    const hash = this.hashKey(apiKey);
+    const sb = this.supabaseService.getClient();
+    await sb.from('live_api_status').upsert(
+      {
+        api_key_hash: hash,
+        model_id: modelId,
+        is_blocked: true,
+        blocked_until: blockedUntil,
+        last_updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'api_key_hash,model_id' },
+    );
+    this.logger.warn(
+      `Model ${modelId} blocked until ${blockedUntil} (${blockSeconds}s)`,
+    );
+  }
+
+  private async checkModelBlocked(apiKey: string, modelId: string) {
+    const hash = this.hashKey(apiKey);
+    const sb = this.supabaseService.getClient();
+    const { data } = await sb
+      .from('live_api_status')
+      .select('is_blocked, blocked_until')
+      .eq('api_key_hash', hash)
+      .eq('model_id', modelId)
+      .single();
+
+    if (data?.is_blocked && data?.blocked_until) {
+      const blockedUntil = new Date(data.blocked_until).getTime();
+      if (Date.now() < blockedUntil) {
+        return { blocked: true, blockedUntil: data.blocked_until };
+      }
+    }
+    return { blocked: false, blockedUntil: null };
   }
 
   /**
